@@ -16,7 +16,7 @@ trait ShardResolution[A] extends EntityIdResolution[A] {
 
   def shardResolutionStrategy: ShardResolutionStrategy
 
-  val shardResolver: ShardResolver = shardResolutionStrategy(entityIdResolver)
+  def shardResolver: ShardResolver = shardResolutionStrategy(entityIdResolver)
 
   val idExtractor: IdExtractor = {
     case em: EntityMessage => (entityIdResolver(em), em)
