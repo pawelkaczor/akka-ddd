@@ -5,7 +5,7 @@ import akka.actor._
 import akka.persistence._
 import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
 import pl.newicom.dddd.actor.{PassivationConfig, GracefulPassivation, BusinessEntityActorFactory}
-import pl.newicom.dddd.aggregate.AggregateRoot.Event
+import pl.newicom.dddd.aggregate.AggregateRoot.DomainEvent
 import pl.newicom.dddd.delivery.protocol.Acknowledged
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
@@ -14,11 +14,11 @@ import pl.newicom.dddd.messaging.event.{AggregateSnapshotId, DomainEventMessage,
 import scala.concurrent.duration.{Duration, _}
 
 object AggregateRoot {
-  type Event = DomainEvent
+  type DomainEvent = AnyRef
 }
 
 trait AggregateState {
-  type StateMachine = PartialFunction[Event, AggregateState]
+  type StateMachine = PartialFunction[DomainEvent, AggregateState]
   def apply: StateMachine
 }
 
@@ -30,7 +30,7 @@ abstract class AggregateRootActorFactory[A <: AggregateRoot[_]] extends Business
 trait AggregateRoot[S <: AggregateState]
   extends BusinessEntity with GracefulPassivation with PersistentActor with EventHandler with ActorLogging {
 
-  type AggregateRootFactory = PartialFunction[Event, S]
+  type AggregateRootFactory = PartialFunction[DomainEvent, S]
   private var stateOpt: Option[S] = None
   private var _lastCommandMessage: Option[CommandMessage] = None
   val factory: AggregateRootFactory
@@ -58,12 +58,12 @@ trait AggregateRoot[S <: AggregateState]
 
   def handleCommand: Receive
 
-  def updateState(event: Event) {
+  def updateState(event: DomainEvent) {
     val nextState = if (initialized) state.apply(event) else factory.apply(event)
     stateOpt = Option(nextState.asInstanceOf[S])
   }
 
-  def raise(event: Event) {
+  def raise(event: DomainEvent) {
     persist(new EventMessage(event = event, metaData = commandMessage.metaData)) {
       persisted =>
         {

@@ -1,7 +1,7 @@
 package pl.newicom.dddd.eventhandling
 
 import akka.actor.{Actor, Props}
-import pl.newicom.dddd.aggregate.DomainEvent
+import pl.newicom.dddd.aggregate.AggregateRoot.DomainEvent
 import pl.newicom.dddd.delivery.DeliveryContext._
 import pl.newicom.dddd.messaging.event.DomainEventMessage
 import pl.newicom.dddd.serialization.SerializationSupportForActor

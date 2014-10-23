@@ -2,7 +2,7 @@ package pl.newicom.dddd.messaging.event
 
 import java.util.{Date, UUID}
 
-import pl.newicom.dddd.aggregate.DomainEvent
+import pl.newicom.dddd.aggregate.AggregateRoot.DomainEvent
 import pl.newicom.dddd.messaging.EntityMessage
 import pl.newicom.dddd.messaging.Message._
 

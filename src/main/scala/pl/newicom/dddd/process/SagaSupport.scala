@@ -2,7 +2,7 @@ package pl.newicom.dddd.process
 
 import akka.actor.{ActorRef, ActorSystem}
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
-import pl.newicom.dddd.aggregate.DomainEvent
+import pl.newicom.dddd.aggregate.AggregateRoot.DomainEvent
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.office.{Office, OfficeFactory}
 

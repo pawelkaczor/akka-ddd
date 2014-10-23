@@ -3,7 +3,8 @@ package pl.newicom.dddd.process
 import akka.actor.{ActorLogging, ActorRef, Props}
 import akka.persistence.PersistentActor
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
-import pl.newicom.dddd.aggregate.{BusinessEntity, DomainEvent}
+import pl.newicom.dddd.aggregate.AggregateRoot.DomainEvent
+import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.delivery.protocol.Acknowledged
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.process.Saga.SagaState

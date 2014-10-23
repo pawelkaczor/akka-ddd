@@ -1,7 +1,7 @@
 package pl.newicom.dddd.test
 
 import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.{AggregateRoot, AggregateState, Command, DomainEvent}
+import pl.newicom.dddd.aggregate.{AggregateRoot, AggregateState, Command}
 import pl.newicom.dddd.test.DummyAggregateRoot.{Create, Created}
 
 object DummyAggregateRoot {
@@ -12,7 +12,7 @@ object DummyAggregateRoot {
   }
 
   // events
-  case class Created(name: String = "dummy") extends DomainEvent
+  case class Created(name: String = "dummy")
 }
 
 class DummyAggregateRoot extends AggregateRoot[DummyState] {
