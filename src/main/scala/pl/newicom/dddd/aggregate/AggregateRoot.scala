@@ -64,7 +64,7 @@ trait AggregateRoot[S <: AggregateState]
   }
 
   def raise(event: DomainEvent) {
-    persist(new EventMessage(event = event, metaData = commandMessage.metaData)) {
+    persist(new EventMessage(event = event).withMetaData[EventMessage](commandMessage.metadata)) {
       persisted =>
         {
           log.info("Event persisted: {}", event)
@@ -75,7 +75,7 @@ trait AggregateRoot[S <: AggregateState]
   }
 
   def toDomainEventMessage(persisted: EventMessage) =
-    new DomainEventMessage(persisted, AggregateSnapshotId(id, lastSequenceNr))
+    new DomainEventMessage(persisted, AggregateSnapshotId(id, lastSequenceNr)).withMetaData[DomainEventMessage](persisted.metadata)
 
   override def handle(event: DomainEventMessage) {
     sender ! Acknowledged

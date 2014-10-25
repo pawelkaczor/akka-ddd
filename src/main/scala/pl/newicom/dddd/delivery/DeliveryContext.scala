@@ -32,14 +32,15 @@ object DeliveryContext {
        * request ddd.support.domain.protocol.Confirm
        */
       def requestConfirmation(deliveryId: Long)(implicit requester: ActorRef) = {
-        requestDLR[Confirm].withMetaAttribute(DeliveryId, deliveryId)
+        val msg: Message = requestDLR[Confirm]
+        msg.withMetaAttribute[Message](DeliveryId, deliveryId)
       }
 
       /**
        * dlr - delivery receipt
        */
       def requestDLR[A](implicit t: ClassTag[A], requester: ActorRef) = {
-        msg.withMetaAttribute(ReceiptsRequested,
+        msg.withMetaAttribute[Message](ReceiptsRequested,
           msg.tryGetMetaAttribute[Set[ReceiptRequested]](ReceiptsRequested).getOrElse(Set[ReceiptRequested]())
             .+((t.runtimeClass, serialize(requester))))
       }
