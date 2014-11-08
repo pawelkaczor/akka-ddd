@@ -7,9 +7,9 @@ import akka.testkit.{EventFilter, ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.slf4j.LoggerFactory
 import pl.newicom.dddd.actor.CreationSupport
 import pl.newicom.dddd.aggregate.EntityId
-import pl.newicom.dddd.logging.RainbowLogger
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
 
 import scala.concurrent.duration._
@@ -23,7 +23,7 @@ abstract class EventsourcedAggregateRootSpec[A](_system: ActorSystem)(implicit a
   with WordSpecLike with Matchers
   with BeforeAndAfterAll with BeforeAndAfter {
 
-  implicit val logger = new RainbowLogger(suiteName)
+  val logger = LoggerFactory.getLogger(getClass)
 
   val domain = arClassTag.runtimeClass.getSimpleName
 
