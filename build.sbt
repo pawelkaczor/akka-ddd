@@ -15,23 +15,24 @@ scalacOptions in ThisBuild := Seq("-encoding", "utf8", "-feature", "-language:po
 publishMavenStyle in ThisBuild := true
 
 lazy val root = (project in file("."))
+  .settings(`Pub&RelSettings`: _*)
   .aggregate(`akka-ddd-messaging`, `akka-ddd-core`, `akka-ddd-view`)
   .settings(
-    packagedArtifacts := Map.empty)
+    publishArtifact := false)
 
 lazy val `akka-ddd-messaging` = project
-  .settings(Publish.settings ++ releaseSettings: _*)
+  .settings(`Pub&RelSettings`: _*)
   .settings(
     licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
     startYear := Some(2014)
   )
 
 lazy val `akka-ddd-core` = project
-  .settings(Publish.settings ++ releaseSettings: _*)
+  .settings(`Pub&RelSettings`: _*)
   .settings(
     licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
     startYear := Some(2014),
-    publishArtifact in (Test, packageBin) := true,
+    publishArtifact in Test := true,
     libraryDependencies ++= Seq(
       Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j,
       Akka.testkit, Akka.multiNodeTestkit,
@@ -44,7 +45,7 @@ lazy val `akka-ddd-core` = project
 
 
 lazy val `akka-ddd-view` = project
-  .settings(Publish.settings ++ releaseSettings: _*)
+  .settings(`Pub&RelSettings`: _*)
   .settings(
     licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
     libraryDependencies ++= Seq(
@@ -54,4 +55,5 @@ lazy val `akka-ddd-view` = project
   .dependsOn(`akka-ddd-messaging`)
 
 
+lazy val `Pub&RelSettings`: Seq[Def.Setting[_]] = Publish.settings ++ releaseSettings
 
