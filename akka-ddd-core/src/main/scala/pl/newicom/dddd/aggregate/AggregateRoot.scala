@@ -35,6 +35,7 @@ trait AggregateRoot[S <: AggregateState]
 
   override def receiveCommand: Receive = {
     case cm: CommandMessage =>
+      log.debug(s"Received: $cm")
       _lastCommandMessage = Some(cm)
       handleCommand.applyOrElse(cm.command, unhandled)
   }
