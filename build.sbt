@@ -25,7 +25,8 @@ lazy val `akka-ddd-messaging` = project
   .settings(
     licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
     libraryDependencies ++= Seq(
-      Akka.actor
+      Akka.actor,
+      "com.github.nscala-time" %% "nscala-time" % "1.4.0"
     ),
     startYear := Some(2014)
   )
