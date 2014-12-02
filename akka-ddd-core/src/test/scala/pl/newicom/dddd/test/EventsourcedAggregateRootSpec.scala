@@ -27,7 +27,20 @@ abstract class EventsourcedAggregateRootSpec[A](_system: ActorSystem)(implicit a
 
   val domain = arClassTag.runtimeClass.getSimpleName
 
-  implicit val arbitraryId: Gen[EntityId] = Gen.const[EntityId](domain + "-" + UUID.randomUUID().toString.subSequence(0, 6))
+  implicit val aggregateIdGen: Gen[EntityId] = Gen.const[EntityId](domain + "-" + UUID.randomUUID().toString.subSequence(0, 6))
+
+  case class When(when: () => Unit) {
+    def expectEventPublishedMatching[E](matcher: PartialFunction[Any, E])(implicit t: ClassTag[E]): E = {
+      val probe = TestProbe()
+      system.eventStream.subscribe(probe.ref, t.runtimeClass)
+      when()
+      probe.expectMsgPF[E](10 seconds)(matcher)
+    }
+  }
+
+  def when(whenFun: => Unit) = When(() => whenFun)
+
+  def aggregateId(implicit aggregateIdGen: Gen[EntityId]): EntityId = aggregateIdGen.sample.get
 
   def arbitraryForCurrentAR[T](implicit aggregateIdGen: Gen[EntityId], a: Arbitrary[T]): T = {
     a.arbitrary.sample.get
@@ -42,7 +55,7 @@ abstract class EventsourcedAggregateRootSpec[A](_system: ActorSystem)(implicit a
     }
   }
 
-  implicit def defaultCaseIdResolution[A] = new AggregateIdResolution[A]
+  implicit def defaultCaseIdResolution[AA]: AggregateIdResolution[AA] = new AggregateIdResolution[AA]
 
   override def afterAll() {
     TestKit.shutdownActorSystem(system)
@@ -100,7 +113,7 @@ abstract class EventsourcedAggregateRootSpec[A](_system: ActorSystem)(implicit a
 
   def expectFailure[E](awaitable: Future[Any])(implicit t: ClassTag[E]) {
     implicit val timeout = Timeout(5, SECONDS)
-    val future = Await.ready(awaitable, timeout.duration).asInstanceOf[Future[Any]]
+    val future = Await.ready(awaitable, timeout.duration)
     val futureValue = future.value.get
     futureValue match {
       case Failure(ex) if ex.getClass.equals(t.runtimeClass) => () //ok
