@@ -23,18 +23,21 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_sys
 
   val domain = arClassTag.runtimeClass.getSimpleName
 
-  override def officeUnderTest: ActorRef = _officeUnderTest
+  override def officeUnderTest: ActorRef = {
+    if (_officeUnderTest == null) _officeUnderTest = office[A]
+    _officeUnderTest
+  }
+
   private var _officeUnderTest: ActorRef = null
 
   implicit var aggregateIdGen: Gen[EntityId] = null
 
   before {
     aggregateIdGen = Gen.const[EntityId](domain + "-" + randomUUID().toString.subSequence(0, 6))
-    _officeUnderTest = office[A]
   }
 
   after {
-    ensureActorTerminated(_officeUnderTest)
+    ensureOfficeTerminated() //will nullify _officeUnderTest
   }
 
   override def afterAll() {
@@ -58,6 +61,11 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_sys
   }
 
   implicit def defaultCaseIdResolution[AA]: AggregateIdResolution[AA] = new AggregateIdResolution[AA]
+
+  def ensureOfficeTerminated(): Unit = {
+    ensureActorTerminated(_officeUnderTest)
+    _officeUnderTest = null
+  }
 
   def ensureActorTerminated(actor: ActorRef) = {
     watch(actor)
