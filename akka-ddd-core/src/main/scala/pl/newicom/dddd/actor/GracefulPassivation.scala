@@ -11,15 +11,15 @@ case class PassivationConfig(passivationMsg: Any = PoisonPill, inactivityTimeout
 
 trait GracefulPassivation extends Actor {
 
-  val passivationConfig: PassivationConfig
+  val pc: PassivationConfig
 
   override def preStart() {
-    context.setReceiveTimeout(passivationConfig.inactivityTimeout)
+    context.setReceiveTimeout(pc.inactivityTimeout)
   }
 
   override def unhandled(message: Any) {
     message match {
-      case ReceiveTimeout => context.parent ! passivationConfig.passivationMsg
+      case ReceiveTimeout => context.parent ! pc.passivationMsg
       case _ => super.unhandled(message)
     }
   }

@@ -18,7 +18,7 @@ trait AggregateState {
 }
 
 abstract class AggregateRootActorFactory[A <: AggregateRoot[_]] extends BusinessEntityActorFactory[A] {
-  def props(passivationConfig: PassivationConfig): Props
+  def props(pc: PassivationConfig): Props
   def inactivityTimeout: Duration = 1.minute
 }
 
