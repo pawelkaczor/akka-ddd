@@ -42,15 +42,17 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   }
 
   case class When(whenFun: () => Unit) {
-    def expectEvent[E](e: E)(implicit t: ClassTag[E]): Unit = expectEventMatching[E] {
-      case actual if actual == e => e
-    }
+    def expectEvent[E](e: E)(implicit t: ClassTag[E]): Unit =
+      expectEventMatching[E](
+        matcher = { case actual if actual == e => e},
+        hint = e.toString
+      )
 
-    def expectEventMatching[E](matcher: PartialFunction[Any, E])(implicit t: ClassTag[E]): E = {
+    def expectEventMatching[E](matcher: PartialFunction[Any, E], hint: String = "")(implicit t: ClassTag[E]): E = {
       val probe = TestProbe()
       _system.eventStream.subscribe(probe.ref, t.runtimeClass)
       whenFun()
-      probe.expectMsgPF[E](3 seconds)(matcher)
+      probe.expectMsgPF[E](3 seconds, hint)(matcher)
     }
   }
 

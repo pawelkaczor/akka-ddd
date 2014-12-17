@@ -28,7 +28,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](testSystem) {
         CreateDummy(aggregateId)
       )
       .expectEvent(
-        DummyCreated(aggregateId)
+        DummyCreated(aggregateId, version = 0)
       )
     }
   }
@@ -42,8 +42,24 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](testSystem) {
         UpdateDummy(aggregateId)
       )
       .expectEvent(
-        DummyUpdated(aggregateId)
+        DummyUpdated(aggregateId, version = 1)
       )
     }
   }
+
+  "Dummy office" should {
+    "handle subsequent Update command" in {
+      givenCommands(
+        CreateDummy(aggregateId),
+        UpdateDummy(aggregateId)
+      )
+      .whenCommand(
+        UpdateDummy(aggregateId)
+      )
+      .expectEvent(
+        DummyUpdated(aggregateId, version = 2)
+      )
+    }
+  }
+
 }

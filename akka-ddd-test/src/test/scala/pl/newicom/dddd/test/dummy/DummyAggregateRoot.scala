@@ -8,18 +8,23 @@ import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
 object DummyAggregateRoot {
 
+  //
+  // Commands
+  //
   sealed trait Command extends aggregate.Command {
     def name: EntityId
     override def aggregateId: String = name
   }
-  // commands
-  case class CreateDummy(name: EntityId = "dummy") extends Command
 
-  case class UpdateDummy(name: EntityId = "dummy") extends Command
+  case class CreateDummy(name: EntityId) extends Command
+  case class UpdateDummy(name: EntityId) extends Command
 
-  // events
-  case class DummyCreated(name: String = "dummy")
-  case class DummyUpdated(name: String = "dummy")
+  //
+  // Events
+  //
+  case class DummyCreated(name: String, version: Long)
+  case class DummyUpdated(name: String, version: Long)
+
 
   case class DummyState(name: String) extends AggregateState {
     override def apply = {
@@ -35,12 +40,12 @@ class DummyAggregateRoot extends AggregateRoot[DummyState] {
   override def persistenceId = "Dummy-" + id
 
   override val factory: AggregateRootFactory = {
-    case DummyAggregateRoot.DummyCreated(name) => DummyState(name)
+    case DummyAggregateRoot.DummyCreated(name, _) => DummyState(name)
   }
 
   override def handleCommand: Receive = {
-    case CreateDummy(name) => raise(DummyCreated(name))
-    case UpdateDummy(name) => raise(DummyUpdated(name))
+    case CreateDummy(name) => raise(DummyCreated(name, lastSequenceNr))
+    case UpdateDummy(name) => raise(DummyUpdated(name, lastSequenceNr))
   }
 
   override val pc: PassivationConfig = PassivationConfig()
