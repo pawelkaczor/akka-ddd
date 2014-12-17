@@ -16,7 +16,7 @@ publishMavenStyle in ThisBuild := true
 
 lazy val root = (project in file("."))
   .settings(`Pub&RelSettings`: _*)
-  .aggregate(`akka-ddd-messaging`, `akka-ddd-core`, `akka-ddd-view`)
+  .aggregate(`akka-ddd-messaging`, `akka-ddd-core`, `akka-ddd-view`, `akka-ddd-test`)
   .settings(
     publishArtifact := false)
 
@@ -38,12 +38,7 @@ lazy val `akka-ddd-core` = project
     startYear := Some(2014),
     publishArtifact in Test := true,
     libraryDependencies ++= Seq(
-      Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j,
-      Akka.testkit, Akka.multiNodeTestkit,
-      "org.scalacheck" %% "scalacheck" % "1.11.6" % "test",
-      "org.scalatest" %% "scalatest" % "2.1.6" % "test",
-      "commons-io" % "commons-io" % "2.4" % "test",
-      "pl.project13.scala" %% "rainbow" % "0.2" % "test"
+      Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j
     ))
   .dependsOn(`akka-ddd-messaging`)
 
@@ -58,6 +53,20 @@ lazy val `akka-ddd-view` = project
     startYear := Some(2014))
   .dependsOn(`akka-ddd-messaging`)
 
+lazy val `akka-ddd-test` = project
+  .settings(`Pub&RelSettings`: _*)
+  .settings(
+    licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
+    libraryDependencies ++= Seq(
+      Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j,
+      Akka.testkit, Akka.multiNodeTestkit,
+      "org.scalacheck" %% "scalacheck" % "1.11.6",
+      "org.scalatest" %% "scalatest" % "2.1.6",
+      "commons-io" % "commons-io" % "2.4",
+      "pl.project13.scala" %% "rainbow" % "0.2"
+    ),
+    startYear := Some(2014))
+  .dependsOn(`akka-ddd-core`)
 
 lazy val `Pub&RelSettings`: Seq[Def.Setting[_]] = Publish.settings ++ releaseSettings
 

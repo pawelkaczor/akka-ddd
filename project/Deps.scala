@@ -10,8 +10,8 @@ object Deps {
     val slf4j = apply("slf4j")
     val persistence = apply("persistence-experimental")
     val contrib = apply("contrib")
-    val testkit = apply("testkit") % "test"
-    val multiNodeTestkit = apply("multi-node-testkit") % "test"
+    val testkit = apply("testkit")
+    val multiNodeTestkit = apply("multi-node-testkit")
 
     private def apply(moduleName: String) = "com.typesafe.akka" %% s"akka-$moduleName" % AkkaVersion withSources()
   }
