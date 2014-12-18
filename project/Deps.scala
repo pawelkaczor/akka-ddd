@@ -3,7 +3,7 @@ import Keys._
 
 object Deps {
 
-  val AkkaVersion = "2.3.6"
+  val AkkaVersion = "2.3.8"
 
   object Akka {
     val actor = apply("actor")

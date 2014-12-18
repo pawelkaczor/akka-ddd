@@ -8,7 +8,7 @@ version in ThisBuild := "1.0.0-SNAPSHOT"
 
 organization in ThisBuild := "pl.newicom.dddd"
 
-scalaVersion in ThisBuild := "2.11.2"
+scalaVersion in ThisBuild := "2.11.4"
 
 scalacOptions in ThisBuild := Seq("-encoding", "utf8", "-feature", "-language:postfixOps")
 
@@ -61,9 +61,8 @@ lazy val `akka-ddd-test` = project
       Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j,
       Akka.testkit, Akka.multiNodeTestkit,
       "org.scalacheck" %% "scalacheck" % "1.11.6",
-      "org.scalatest" %% "scalatest" % "2.1.6",
-      "commons-io" % "commons-io" % "2.4",
-      "pl.project13.scala" %% "rainbow" % "0.2"
+      "org.scalatest" %% "scalatest" % "2.2.2",
+      "commons-io" % "commons-io" % "2.4"
     ),
     startYear := Some(2014))
   .dependsOn(`akka-ddd-core`)
