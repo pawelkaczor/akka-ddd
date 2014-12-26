@@ -63,7 +63,9 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_sys
   implicit def defaultCaseIdResolution[AA]: AggregateIdResolution[AA] = new AggregateIdResolution[AA]
 
   def ensureOfficeTerminated(): Unit = {
-    ensureActorTerminated(_officeUnderTest)
+    if (_officeUnderTest != null) {
+      ensureActorTerminated(_officeUnderTest)
+    }
     _officeUnderTest = null
   }
 
