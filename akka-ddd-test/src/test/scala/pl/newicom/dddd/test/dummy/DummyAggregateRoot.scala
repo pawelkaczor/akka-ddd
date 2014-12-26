@@ -18,6 +18,7 @@ object DummyAggregateRoot {
 
   case class CreateDummy(name: EntityId) extends Command
   case class UpdateDummy(name: EntityId) extends Command
+  case class InvalidUpdateDummy(name: EntityId) extends Command
 
   //
   // Events
@@ -44,9 +45,13 @@ class DummyAggregateRoot extends AggregateRoot[DummyState] {
   }
 
   override def handleCommand: Receive = {
-    case CreateDummy(name) => raise(DummyCreated(name, lastSequenceNr))
-    case UpdateDummy(name) => raise(DummyUpdated(name, lastSequenceNr))
+    case CreateDummy(name) =>
+      raise(DummyCreated(name, lastSequenceNr))
+    case UpdateDummy(name) =>
+      raise(DummyUpdated(name, lastSequenceNr))
+    case InvalidUpdateDummy(name) =>
+      throw new RuntimeException("Update rejected")
   }
 
-  override val pc: PassivationConfig = PassivationConfig()
+  override val pc = PassivationConfig()
 }

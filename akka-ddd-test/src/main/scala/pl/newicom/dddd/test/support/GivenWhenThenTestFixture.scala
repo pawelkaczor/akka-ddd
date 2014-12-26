@@ -1,5 +1,6 @@
 package pl.newicom.dddd.test.support
 
+import akka.actor.Status.Failure
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import pl.newicom.dddd.delivery.protocol.Acknowledged
@@ -42,11 +43,19 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   }
 
   case class When(whenFun: () => Unit) {
+
     def expectEvent[E](e: E)(implicit t: ClassTag[E]): Unit =
       expectEventMatching[E](
         matcher = { case actual if actual == e => e},
         hint = e.toString
       )
+
+    def expectException[E <: Exception](message: String = null)(implicit t: ClassTag[E]): Unit = {
+      whenFun()
+      expectMsgPF[Boolean](3 seconds, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
+        case actual @ Failure(ex) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
+      }
+    }
 
     def expectEventMatching[E](matcher: PartialFunction[Any, E], hint: String = "")(implicit t: ClassTag[E]): E = {
       val probe = TestProbe()
@@ -54,6 +63,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
       whenFun()
       probe.expectMsgPF[E](3 seconds, hint)(matcher)
     }
+
   }
 
   def when(whenFun: => Unit) = When(() => whenFun)

@@ -4,7 +4,7 @@ import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.eventhandling.LocalPublisher
-import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{CreateDummy, DummyCreated, DummyUpdated, UpdateDummy}
+import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 import DummyOfficeSpec._
@@ -59,6 +59,18 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](testSystem) {
       .expectEvent(
         DummyUpdated(aggregateId, version = 2)
       )
+    }
+  }
+
+  "Dummy office" should {
+    "reject InvalidUpdate command" in {
+      givenCommand(
+        CreateDummy(aggregateId)
+      )
+      .whenCommand(
+        InvalidUpdateDummy(aggregateId)
+      )
+      .expectException[RuntimeException]("Update rejected")
     }
   }
 
