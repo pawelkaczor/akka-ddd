@@ -67,5 +67,18 @@ lazy val `akka-ddd-test` = project
     startYear := Some(2014))
   .dependsOn(`akka-ddd-core`)
 
+lazy val `eventstore-akka-persistence` = project
+  .settings(`Pub&RelSettings`: _*)
+  .settings(
+    licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
+    libraryDependencies ++= Seq(
+      Eventstore.client excludeAll ExclusionRule(organization = "com.typesafe.akka"),
+      Eventstore.akkaJournal excludeAll ExclusionRule(organization = "com.typesafe.akka"),
+      Json4s.native, Json4s.ext,
+      Akka.slf4j, Akka.persistence
+    ),
+    startYear := Some(2014))
+  .dependsOn(`akka-ddd-messaging`)
+
 lazy val `Pub&RelSettings`: Seq[Def.Setting[_]] = Publish.settings ++ releaseSettings
 

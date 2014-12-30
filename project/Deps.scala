@@ -16,4 +16,17 @@ object Deps {
     private def apply(moduleName: String) = "com.typesafe.akka" %% s"akka-$moduleName" % AkkaVersion withSources()
   }
 
+  object Json4s {
+    val native = apply("native")
+    val ext = apply("ext")
+
+    private def apply(moduleName: String) = "org.json4s" %% s"json4s-$moduleName" % "3.2.11" withSources()
+  }
+
+  object Eventstore {
+    val client = apply("eventstore-client", "1.0.1")
+    // fork available here: https://github.com/pawelkaczor/EventStore.Akka.Persistence
+    val akkaJournal = apply("akka-persistence-eventstore", "1.1.1-SNAPSHOT")
+    private def apply(moduleName: String, ver: String) = "com.geteventstore" %% moduleName % ver withSources()
+  }
 }
