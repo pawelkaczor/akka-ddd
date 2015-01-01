@@ -29,4 +29,13 @@ object Deps {
     val akkaJournal = apply("akka-persistence-eventstore", "1.1.1-SNAPSHOT")
     private def apply(moduleName: String, ver: String) = "com.geteventstore" %% moduleName % ver withSources()
   }
+
+  object SqlDb {
+    val `slick-for-pg` = "com.github.tminglei" %% "slick-pg" % "0.7.0"
+    val testDriver = "com.h2database" % "h2" % "1.3.170" % "test"
+
+    def prod = `slick-for-pg`
+
+    def apply() = Seq(`slick-for-pg`, testDriver)
+  }
 }
