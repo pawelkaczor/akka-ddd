@@ -7,6 +7,7 @@ object Deps {
 
   object Akka {
     val actor = apply("actor")
+    val http  = "com.typesafe.akka" %% "akka-http-experimental" % "1.0-M2"
     val slf4j = apply("slf4j")
     val persistence = apply("persistence-experimental")
     val contrib = apply("contrib")
@@ -14,6 +15,10 @@ object Deps {
     val multiNodeTestkit = apply("multi-node-testkit")
 
     private def apply(moduleName: String) = "com.typesafe.akka" %% s"akka-$moduleName" % AkkaVersion withSources()
+  }
+
+  object Json {
+    val `4s`  = Seq(Json4s.native, Json4s.ext)
   }
 
   object Json4s {

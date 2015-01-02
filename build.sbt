@@ -16,7 +16,7 @@ publishMavenStyle in ThisBuild := true
 
 lazy val root = (project in file("."))
   .settings(`Pub&RelSettings`: _*)
-  .aggregate(`akka-ddd-messaging`, `akka-ddd-core`, `view-update`, `view-update-sql`, `akka-ddd-test`, `eventstore-akka-persistence`)
+  .aggregate(`akka-ddd-messaging`, `akka-ddd-core`, `akka-ddd-write-front`, `view-update`, `view-update-sql`, `akka-ddd-test`, `eventstore-akka-persistence`)
   .settings(
     publishArtifact := false)
 
@@ -42,6 +42,16 @@ lazy val `akka-ddd-core` = project
     ))
   .dependsOn(`akka-ddd-messaging`)
 
+lazy val `akka-ddd-write-front` = project
+  .settings(`Pub&RelSettings`: _*)
+  .settings(
+    licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
+    startYear := Some(2014),
+    publishArtifact in Test := true,
+    libraryDependencies ++= Json.`4s` ++ Seq(
+      Akka.http, Akka.contrib
+    ))
+  .dependsOn(`akka-ddd-messaging`)
 
 lazy val `view-update` = project
   .settings(`Pub&RelSettings`: _*)
