@@ -12,15 +12,15 @@ class SqlViewHandler(override val config: Config, override val vuConfig: SqlView
 
   private lazy val viewMetadataDao = new ViewMetadataDao
 
-  def handle(eventMessage: DomainEventMessage, eventNumber: Int) =
+  def handle(eventMessage: DomainEventMessage, eventNumber: Long) =
      viewStore withTransaction  { implicit s =>
        vuConfig.projections.foreach(_.consume(eventMessage))
        viewMetadataDao.insertOrUpdate(viewName, eventNumber)
      }
 
-  def lastEventNumber: Int = {
+  def lastEventNumber: Option[Long] = {
     viewStore withSession { implicit session =>
-      viewMetadataDao.lastEventNr(viewName).getOrElse(0)
+      viewMetadataDao.lastEventNr(viewName)
     }
   }
 }

@@ -4,9 +4,9 @@ import pl.newicom.dddd.messaging.event.DomainEventMessage
 
 abstract class ViewHandler(val vuConfig: ViewUpdateConfig) {
 
-  def handle(eventMessage: DomainEventMessage, eventNumber: Int)
+  def handle(eventMessage: DomainEventMessage, eventNumber: Long)
 
-  def lastEventNumber: Int
+  def lastEventNumber: Option[Long]
 
   protected def viewName = vuConfig.viewName
 

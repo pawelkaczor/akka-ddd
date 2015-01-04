@@ -6,20 +6,24 @@ import scala.slick.jdbc.meta.MTable
 class ViewMetadataDao(implicit val profile: JdbcProfile) {
   import profile.simple._
 
-  case class ViewMetadataRecord(id: String, viewId: String, lastEventNr: Int)
+  case class ViewMetadataRecord(id: Long, viewId: String, lastEventNr: Long)
 
   object ViewMetadata {
     val TableName = "view_metadata"
   }
 
   class ViewMetadata(tag: Tag) extends Table[ViewMetadataRecord](tag, ViewMetadata.TableName) {
-    def id = column[String]("ID", O.PrimaryKey, O.AutoInc)
+    def id = column[Long]("ID", O.PrimaryKey, O.AutoInc)
     def viewId = column[String]("VIEW_ID", O.NotNull)
-    def lastEventNr = column[Int]("LAST_EVENT_NR", O.NotNull)
+    def lastEventNr = column[Long]("LAST_EVENT_NR", O.NotNull)
     def * = (id, viewId, lastEventNr) <> (ViewMetadataRecord.tupled, ViewMetadataRecord.unapply)
   }
 
   val viewMetadata = TableQuery[ViewMetadata]
+
+  private val by_view_id = viewMetadata.findBy(_.viewId)
+
+  def byViewId(viewId: String)(implicit s: Session) = by_view_id(viewId).run.headOption
 
   def create(implicit s: Session) =
     if (MTable.getTables(ViewMetadata.TableName).list.isEmpty) {
@@ -28,11 +32,16 @@ class ViewMetadataDao(implicit val profile: JdbcProfile) {
 
   def drop(implicit s: Session) = viewMetadata.ddl.drop
 
-  def insertOrUpdate(viewId: String, lastEventNr: Int)(implicit session: Session) {
-    viewMetadata.insertOrUpdate(ViewMetadataRecord(null, viewId, lastEventNr))
+  def insertOrUpdate(viewId: String, lastEventNr: Long)(implicit session: Session) {
+    val oldOpt = byViewId(viewId)
+    if (oldOpt.isDefined) {
+      viewMetadata.update(oldOpt.get.copy(lastEventNr = lastEventNr))
+    } else {
+      viewMetadata.insert(ViewMetadataRecord(-1, viewId, lastEventNr))
+    }
   }
 
-  def lastEventNr(viewId: String)(implicit session: Session): Option[Int] = {
-    viewMetadata.filter(_.viewId === viewId).firstOption.map(record => record.lastEventNr)
+  def lastEventNr(viewId: String)(implicit session: Session): Option[Long] = {
+    byViewId(viewId).map(record => record.lastEventNr)
   }
 }

@@ -20,18 +20,19 @@ class ViewUpdater(esConn: ActorRef, val stream: String, val viewHandler: ViewHan
 
   @scala.throws[Exception](classOf[Exception])
   override def preStart(): Unit = {
-    context.actorOf(streamSubscription(stream, Exact(lastEventNumber)), s"$stream-subscription")
+    context.actorOf(streamSubscription(stream, lastEventNumber.map(l => Exact(l.toInt))), s"$stream-subscription")
   }
 
-  def streamSubscription(stream: String, lastEventNr: EventNumber) =
-    StreamSubscriptionActor.props(esConn, self, System(s"ce-$stream"), Some(lastEventNr), resolveLinkTos = true)
+  def streamSubscription(stream: String, lastEventNr: Option[EventNumber]) =
+    StreamSubscriptionActor.props(esConn, self, System(s"ce-$stream"), lastEventNr, resolveLinkTos = true)
 
   override def receive: Receive = {
     case Failure(EsException(NotAuthenticated, _)) =>
       log.error("Invalid credentials")
       throw new RuntimeException("Invalid credentials")
 
-    case ResolvedEvent(EventRecord(streamId, Exact(eventNumber), eventData, _), _) =>
+    case ResolvedEvent(EventRecord(streamId, _, eventData, _), linkEvent) =>
+      val eventNumber = linkEvent.number.value
       toDomainEventMessage(eventData) match {
         case Success(em) =>
           if (!isConsumed(eventNumber)) {
@@ -45,7 +46,7 @@ class ViewUpdater(esConn: ActorRef, val stream: String, val viewHandler: ViewHan
   }
 
 
-  private def isConsumed(eventNumber: Int) = eventNumber <= lastEventNumber
+  private def isConsumed(eventNumber: Long) = eventNumber <= lastEventNumber.getOrElse(-1L)
 
-  private def lastEventNumber = viewHandler.lastEventNumber
+  private def lastEventNumber: Option[Long] = viewHandler.lastEventNumber
 }
