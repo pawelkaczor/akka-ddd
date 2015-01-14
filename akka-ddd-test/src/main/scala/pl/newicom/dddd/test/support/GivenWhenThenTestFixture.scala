@@ -1,5 +1,7 @@
 package pl.newicom.dddd.test.support
 
+import java.util.UUID
+
 import akka.actor.Status.Failure
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
@@ -15,6 +17,10 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   def officeUnderTest: ActorRef
 
   case class WhenCommand[C <: Command](actual: C, params: Seq[Any] = Seq.empty)
+
+  val fakeWhenCommand = WhenCommand(new Command {
+    override def aggregateId: String = UUID.randomUUID().toString
+  })
 
   implicit def toWhenCommand[C <: Command](cGen: Gen[C]): WhenCommand[C] = toWhenCommand(cGen.sample.get)
   implicit def toWhenCommand[C <: Command](c: C): WhenCommand[C] = WhenCommand(c)
@@ -93,4 +99,6 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   }
 
   def whenCommand[C <: Command](c: WhenCommand[C]) = Given(() => ()).whenCommand(c)
+
+  def when(whenFun: => Unit) = When(fakeWhenCommand, () => whenFun)
 }
