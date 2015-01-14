@@ -9,6 +9,7 @@ import org.scalacheck.Gen
 import pl.newicom.dddd.aggregate.Command
 import pl.newicom.dddd.delivery.protocol.Acknowledged
 
+import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
@@ -22,7 +23,14 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     override def aggregateId: String = UUID.randomUUID().toString
   })
 
-  implicit def toWhenCommand[C <: Command](cGen: Gen[C]): WhenCommand[C] = toWhenCommand(cGen.sample.get)
+  @tailrec
+  implicit final def toWhenCommand[C <: Command](cGen: Gen[C]): WhenCommand[C] = {
+    cGen.sample match {
+      case Some(x) => toWhenCommand(x)
+      case _ => toWhenCommand[C](cGen)
+    }
+  }
+
   implicit def toWhenCommand[C <: Command](c: C): WhenCommand[C] = WhenCommand(c)
   implicit def toWhenCommandGen[C <: Command](cGen: Gen[(C, Any)]): WhenCommand[C] = {
     val (c, param1) = cGen.sample.get
