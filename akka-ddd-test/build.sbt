@@ -1,0 +1,1 @@
+scalacOptions ++= Seq("-language:implicitConversions")
