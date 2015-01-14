@@ -45,9 +45,9 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     }
   }
 
-  def givenCommand(command: Any): Given = givenCommands(List(command) :_*)
+  def givenCommand(command: Command): Given = givenCommands(List(command) :_*)
 
-  def givenCommands(commands: Any*) = {
+  def givenCommands(commands: Command*) = {
     def commandsAcknowledged: Boolean = {
       expectMsgAllOf(commands.map(_ => Acknowledged) :_*)
       true

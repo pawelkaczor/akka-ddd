@@ -13,6 +13,7 @@ import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
 import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.office.Office._
 
+import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
@@ -47,9 +48,17 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_sys
 
   def aggregateId(implicit aggregateIdGen: Gen[EntityId]): EntityId = aggregateIdGen.sample.get
 
-  def arbitraryForCurrentAR[T](implicit aggregateIdGen: Gen[EntityId], a: Arbitrary[T]): T = {
-    a.arbitrary.sample.get
+  @tailrec
+  implicit final def arbitraryToSample[T](g: Gen[T]): T = {
+    g.sample match {
+      case Some(x) => x
+      case _ => arbitraryToSample(g)
+    }
   }
+
+  def arbitrary[T](implicit g: Gen[T]): Gen[T] = g
+
+  def arbitrarySample[T](implicit g: Gen[T]): T = arbitraryToSample(g)
 
   implicit def topLevelParent(implicit system: ActorSystem): CreationSupport = {
     new CreationSupport {
