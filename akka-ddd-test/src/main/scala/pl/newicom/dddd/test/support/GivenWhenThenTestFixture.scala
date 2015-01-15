@@ -5,15 +5,20 @@ import java.util.UUID
 import akka.actor.Status.Failure
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
+import akka.util.Timeout
 import org.scalacheck.Gen
 import pl.newicom.dddd.aggregate.Command
 import pl.newicom.dddd.delivery.protocol.Acknowledged
 
 import scala.annotation.tailrec
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
 abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_system) with ImplicitSender {
+
+  type Acks = Seq[Acknowledged]
+  val noAcks = Seq.empty
 
   def officeUnderTest: ActorRef
 
@@ -37,37 +42,34 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     WhenCommand(c, List(param1))
   }
 
-  case class Given(givenFun: () => Unit, givenCompleted: () => Boolean = () => true) {
+  case class Given(givenFun: () => Acks) {
 
     def whenCommand[C <: Command](command: WhenCommand[C]): When[C] = when(command, () => {
       officeUnderTest ! command.actual
     })
 
     private def when[C <: Command](command: WhenCommand[C], whenFun: () => Unit): When[C] = {
-      givenFun()
-      if (givenCompleted()) {
-        When(command, whenFun)
-      } else {
-        throw new RuntimeException("Given failed")
-      }
+      val acks: Acks = givenFun()
+      When(command, whenFun, acks)
     }
   }
 
   def givenCommand(command: Command): Given = givenCommands(List(command) :_*)
 
   def givenCommands(commands: Command*) = {
-    def commandsAcknowledged: Boolean = {
-      expectMsgAllOf(commands.map(_ => Acknowledged) :_*)
-      true
-    }
+    import akka.pattern.ask
+    implicit val timeout = Timeout(5.seconds)
 
     Given(
-      givenFun = () => { commands.foreach { officeUnderTest ! _ }},
-      givenCompleted = () => commandsAcknowledged
+      givenFun = () => {
+        commands.map { c =>
+          Await.result((officeUnderTest ? c).mapTo[Acknowledged], timeout.duration)
+        }
+      }
     )
   }
 
-  case class When[C <: Command](command: WhenCommand[C], whenFun: () => Unit) {
+  case class When[C <: Command](command: WhenCommand[C], whenFun: () => Unit, acks: Acks) {
 
     def expectEvent[E](f: (C) => E)(implicit t: ClassTag[E]): Unit = {
       expectEvent(f(command.actual))
@@ -106,7 +108,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   }
 
-  def whenCommand[C <: Command](c: WhenCommand[C]) = Given(() => ()).whenCommand(c)
+  def whenCommand[C <: Command](c: WhenCommand[C]) = Given(() => noAcks).whenCommand(c)
 
-  def when(whenFun: => Unit) = When(fakeWhenCommand, () => whenFun)
+  def when(whenFun: => Unit) = When(fakeWhenCommand, () => whenFun, noAcks)
 }
