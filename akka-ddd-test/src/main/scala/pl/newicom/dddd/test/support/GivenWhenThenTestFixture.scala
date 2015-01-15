@@ -22,7 +22,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   def officeUnderTest: ActorRef
 
-  case class WhenCommand[C <: Command](actual: C, params: Seq[Any] = Seq.empty)
+  case class WhenCommand[C <: Command](actual: C, acks: Acks = noAcks, params: Seq[Any] = Seq.empty)
 
   val fakeWhenCommand = WhenCommand(new Command {
     override def aggregateId: String = UUID.randomUUID().toString
@@ -39,8 +39,9 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   implicit def toWhenCommand[C <: Command](c: C): WhenCommand[C] = WhenCommand(c)
   implicit def toWhenCommandGen[C <: Command](cGen: Gen[(C, Any)]): WhenCommand[C] = {
     val (c, param1) = cGen.sample.get
-    WhenCommand(c, List(param1))
+    WhenCommand(c, noAcks, List(param1))
   }
+  implicit def toCommand[C <: Command](c: WhenCommand[C]): C = c.actual
 
   case class Given(givenFun: () => Acks) {
 
@@ -49,8 +50,8 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     })
 
     private def when[C <: Command](command: WhenCommand[C], whenFun: () => Unit): When[C] = {
-      val acks: Acks = givenFun()
-      When(command, whenFun, acks)
+      val acks = givenFun()
+      When(command.copy(acks = acks), whenFun)
     }
   }
 
@@ -69,13 +70,13 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     )
   }
 
-  case class When[C <: Command](command: WhenCommand[C], whenFun: () => Unit, acks: Acks) {
+  case class When[C <: Command](command: WhenCommand[C], whenFun: () => Unit) {
 
-    def expectEvent[E](f: (C) => E)(implicit t: ClassTag[E]): Unit = {
-      expectEvent(f(command.actual))
+    def expectEvent2[E](f: (WhenCommand[C]) => E)(implicit t: ClassTag[E]): Unit = {
+      expectEvent(f(command))
     }
 
-    def expectEvent[E](f: (C, Any) => E)(implicit t: ClassTag[E]): Unit = {
+    def expectEvent3[E](f: (C, Any) => E)(implicit t: ClassTag[E]): Unit = {
       expectEvent(f(command.actual, command.params(0)))
     }
 
@@ -110,5 +111,5 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   def whenCommand[C <: Command](c: WhenCommand[C]) = Given(() => noAcks).whenCommand(c)
 
-  def when(whenFun: => Unit) = When(fakeWhenCommand, () => whenFun, noAcks)
+  def when(whenFun: => Unit) = When(fakeWhenCommand, () => whenFun)
 }
