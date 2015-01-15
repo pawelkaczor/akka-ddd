@@ -17,12 +17,17 @@ import scala.reflect.ClassTag
 
 abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_system) with ImplicitSender {
 
-  type Acks = Seq[Acknowledged]
-  val noAcks = Seq.empty
+  implicit def toAcks(acks: Seq[Acknowledged]): Acks = Acks(acks)
+
+  case class Acks(list: Seq[Acknowledged] = List.empty) {
+    private val map: Map[Class[_], Any] = list.map(a => (a.msg.getClass, a.msg)).toMap
+
+    def get[E](implicit ct: ClassTag[E]): E = map.get(ct.runtimeClass).getOrElse(null).asInstanceOf[E]
+  }
 
   def officeUnderTest: ActorRef
 
-  case class WhenCommand[C <: Command](actual: C, acks: Acks = noAcks, params: Seq[Any] = Seq.empty)
+  case class WhenCommand[C <: Command](actual: C, acks: Acks = Acks(), params: Seq[Any] = Seq.empty)
 
   val fakeWhenCommand = WhenCommand(new Command {
     override def aggregateId: String = UUID.randomUUID().toString
@@ -39,18 +44,20 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   implicit def toWhenCommand[C <: Command](c: C): WhenCommand[C] = WhenCommand(c)
   implicit def toWhenCommandGen[C <: Command](cGen: Gen[(C, Any)]): WhenCommand[C] = {
     val (c, param1) = cGen.sample.get
-    WhenCommand(c, noAcks, List(param1))
+    WhenCommand(c, Acks(), List(param1))
   }
   implicit def toCommand[C <: Command](c: WhenCommand[C]): C = c.actual
 
   case class Given(givenFun: () => Acks) {
+    val acks = givenFun()
+
+    def whenCommand[C <: Command](f: (Acks) => C): When[C] = whenCommand(f(acks))
 
     def whenCommand[C <: Command](command: WhenCommand[C]): When[C] = when(command, () => {
       officeUnderTest ! command.actual
     })
 
     private def when[C <: Command](command: WhenCommand[C], whenFun: () => Unit): When[C] = {
-      val acks = givenFun()
       When(command.copy(acks = acks), whenFun)
     }
   }
@@ -109,7 +116,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   }
 
-  def whenCommand[C <: Command](c: WhenCommand[C]) = Given(() => noAcks).whenCommand(c)
+  def whenCommand[C <: Command](c: WhenCommand[C]) = Given(() => Acks()).whenCommand(c)
 
   def when(whenFun: => Unit) = When(fakeWhenCommand, () => whenFun)
 }
