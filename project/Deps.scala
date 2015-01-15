@@ -31,7 +31,7 @@ object Deps {
   object Eventstore {
     val client = apply("eventstore-client", "1.0.1")
     // fork available here: https://github.com/pawelkaczor/EventStore.Akka.Persistence
-    val akkaJournal = apply("akka-persistence-eventstore", "1.1.1-SNAPSHOT")
+    val akkaJournal = apply("akka-persistence-eventstore", "1.1.2-SNAPSHOT")
     private def apply(moduleName: String, ver: String) = "com.geteventstore" %% moduleName % ver withSources()
   }
 
