@@ -17,50 +17,90 @@ import scala.reflect.ClassTag
 
 abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_system) with ImplicitSender {
 
-  implicit def toWhenCommandGen[C <: Command](cGen: Gen[(C, Any)]): WhenCommand[C] = {
-    val (c, param1) = cGen.sample.get
-    WhenCommand(c, Acks(), List(param1))
-  }
-
-  @tailrec
-  implicit final def toWhenCommand[C <: Command](cGen: Gen[C]): WhenCommand[C] = {
-    cGen.sample match {
-      case Some(x) => toWhenCommand(x)
-      case _ => toWhenCommand[C](cGen)
-    }
-  }
-
-  implicit def toAcks(acks: Seq[Acknowledged]): Acks = Acks(acks)
-
-  case class Acks(list: Seq[Acknowledged] = List.empty) {
-    private val map: Map[Class[_], Any] = list.map(a => (a.msg.getClass, a.msg)).toMap
-
-    def get[E](implicit ct: ClassTag[E]): E = map.get(ct.runtimeClass).getOrElse(null).asInstanceOf[E]
-  }
-
   def officeUnderTest: ActorRef
 
-  case class WhenCommand[C <: Command](actual: C, acks: Acks = Acks(), params: Seq[Any] = Seq.empty)
+  implicit def whenContextToCommand[C <: Command](wc: WhenContext[C]): C = wc.command
 
-  val fakeWhenCommand = WhenCommand(new Command {
-    override def aggregateId: String = UUID.randomUUID().toString
-  })
+  implicit def commandToWhenContext[C <: Command](c: C): WhenContext[C] = WhenContext(c)
 
-  implicit def toWhenCommand[C <: Command](c: C): WhenCommand[C] = WhenCommand(c)
-  implicit def toCommand[C <: Command](c: WhenCommand[C]): C = c.actual
+  @tailrec
+  implicit final def commandGenToWhenContext[C <: Command](cGen: Gen[C]): WhenContext[C] = {
+    cGen.sample match {
+      case Some(x) => commandToWhenContext(x)
+      case _ => commandGenToWhenContext[C](cGen)
+    }
+  }
 
-  case class Given(givenFun: () => Acks) {
-    val acks = givenFun()
+  implicit def commandGenWithParamToWhenContext[C <: Command](cGen: Gen[(C, Any)]): WhenContext[C] = {
+    val (c, param1) = cGen.sample.get
+    WhenContext(c, PastEvents(), List(param1))
+  }
 
-    def whenCommand[C <: Command](f: (Acks) => WhenCommand[C]): When[C] = whenCommand(f(acks))
+  implicit def acksToPastEvents(acks: Seq[Acknowledged]): PastEvents = PastEvents(acks)
 
-    def whenCommand[C <: Command](c: WhenCommand[C]): When[C] = when(c, () => {
-      officeUnderTest ! c.actual
+  case class PastEvents(list: Seq[Acknowledged] = List.empty) {
+    private val map: Map[Class[_], Any] = list.map(a => (a.msg.getClass, a.msg)).toMap
+
+    def get[E](implicit ct: ClassTag[E]): E = map.getOrElse(ct.runtimeClass, null).asInstanceOf[E]
+  }
+
+  case class WhenContext[C <: Command](
+    command: C,
+    pastEvents: PastEvents = PastEvents(),
+    params: Seq[Any] = Seq.empty)
+
+  case class Given(givenFun: () => PastEvents) {
+    val pastEvents = givenFun()
+
+    def whenCommand[C <: Command](f: (PastEvents) => WhenContext[C]): When[C] = whenCommand(f(pastEvents))
+
+    def whenCommand[C <: Command](wc: WhenContext[C]): When[C] = when(wc, () => {
+      officeUnderTest ! wc.command
     })
 
-    private def when[C <: Command](c: WhenCommand[C], whenFun: () => Unit): When[C] = {
-      When(c.copy(acks = acks), whenFun)
+    private def when[C <: Command](wc: WhenContext[C], whenFun: () => Unit): When[C] = {
+      When(wc.copy(pastEvents = pastEvents), whenFun)
     }
+  }
+
+  case class When[C <: Command](wc: WhenContext[C], whenFun: () => Unit) {
+
+    def expectEvent[E](e: E)(implicit t: ClassTag[E]): Unit = {
+      expectEventMatching[E](
+        matcher = {
+          case actual
+            if actual == e => e
+        },
+        hint = e.toString
+      )
+    }
+
+    def expectEvent2[E](f: (WhenContext[C]) => E)(implicit t: ClassTag[E]): Unit = {
+      expectEvent(f(wc))
+    }
+
+    def expectEvent3[E](f: (C, Any) => E)(implicit t: ClassTag[E]): Unit = {
+      expectEvent(f(wc.command, wc.params(0)))
+    }
+
+    def expectException[E <: Exception](message: String = null)(implicit t: ClassTag[E]): Unit = {
+      whenFun()
+      expectMsgPF[Boolean](3 seconds, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
+        case actual @ Failure(ex) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
+      }
+    }
+
+    def expectEventMatching2[E](f: (C) => PartialFunction[Any, E], hint: String = "")(implicit t: ClassTag[E]): E = {
+      expectEventMatching(f(wc.command))
+    }
+
+    def expectEventMatching[E](matcher: PartialFunction[Any, E], hint: String = "")(implicit t: ClassTag[E]): E = {
+      val probe = TestProbe()
+      _system.eventStream.subscribe(probe.ref, t.runtimeClass)
+      whenFun()
+      probe.expectMsgPF[E](3 seconds, hint)(matcher)
+    }
+
   }
 
   def givenCommand(c: Command): Given = givenCommands(List(c) :_*)
@@ -78,47 +118,15 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     )
   }
 
-  case class When[C <: Command](c: WhenCommand[C], whenFun: () => Unit) {
+  def whenCommand[C <: Command](wc: WhenContext[C]) = Given(() => PastEvents()).whenCommand(wc)
 
-    def expectEvent[E](e: E)(implicit t: ClassTag[E]): Unit = {
-      expectEventMatching[E](
-        matcher = {
-          case actual
-            if actual == e => e
-        },
-        hint = e.toString
-      )
-    }
+  def when(whenFun: => Unit) = {
+    val fakeWhenCommand = WhenContext(new Command {
+      override def aggregateId: String = UUID.randomUUID().toString
+    })
 
-    def expectEvent2[E](f: (WhenCommand[C]) => E)(implicit t: ClassTag[E]): Unit = {
-      expectEvent(f(c))
-    }
-
-    def expectEvent3[E](f: (C, Any) => E)(implicit t: ClassTag[E]): Unit = {
-      expectEvent(f(c.actual, c.params(0)))
-    }
-
-    def expectException[E <: Exception](message: String = null)(implicit t: ClassTag[E]): Unit = {
-      whenFun()
-      expectMsgPF[Boolean](3 seconds, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
-        case actual @ Failure(ex) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
-      }
-    }
-
-    def expectEventMatching2[E](f: (C) => PartialFunction[Any, E], hint: String = "")(implicit t: ClassTag[E]): E = {
-      expectEventMatching(f(c.actual))
-    }
-
-    def expectEventMatching[E](matcher: PartialFunction[Any, E], hint: String = "")(implicit t: ClassTag[E]): E = {
-      val probe = TestProbe()
-      _system.eventStream.subscribe(probe.ref, t.runtimeClass)
-      whenFun()
-      probe.expectMsgPF[E](3 seconds, hint)(matcher)
-    }
-
+    When(fakeWhenCommand, () => whenFun)
   }
 
-  def whenCommand[C <: Command](c: WhenCommand[C]) = Given(() => Acks()).whenCommand(c)
 
-  def when(whenFun: => Unit) = When(fakeWhenCommand, () => whenFun)
 }
