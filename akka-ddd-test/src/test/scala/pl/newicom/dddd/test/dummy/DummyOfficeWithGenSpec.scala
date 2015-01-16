@@ -58,9 +58,8 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
       givenCommand(
         arbitrary[CreateDummy]
       )
-      .whenCommand { acks =>
-        val oldName = acks.get[DummyCreated].name
-        arbitrary[ChangeDummyName] suchThat (_.name != oldName)
+      .whenCommand { implicit history =>
+        arbitrary[ChangeDummyName] suchThat (_.name != past[DummyCreated].name)
       }
       .expectEvent2 { c =>
         DummyNameChanged(dummyId, c.name)
