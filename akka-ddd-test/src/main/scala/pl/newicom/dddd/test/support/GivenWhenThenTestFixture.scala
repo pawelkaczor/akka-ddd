@@ -19,6 +19,10 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   def officeUnderTest: ActorRef
 
+  def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(new Command {
+    override def aggregateId: String = UUID.randomUUID().toString
+  }, pastEvents)
+  
   implicit def whenContextToCommand[C <: Command](wc: WhenContext[C]): C = wc.command
 
   implicit def whenContextToPastEvents[C <: Command](wc: WhenContext[C]): PastEvents = wc.pastEvents
@@ -54,7 +58,8 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   case class Given(givenFun: () => PastEvents) {
     val pastEvents = givenFun()
 
-    def whenCommand[C <: Command](f: (PastEvents) => WhenContext[C]): When[C] = whenCommand(f(pastEvents))
+    def whenCommand[C <: Command](f: (WhenContext[_]) => WhenContext[C]): When[C] =
+      whenCommand(f(fakeWhenContext(pastEvents)))
 
     def whenCommand[C <: Command](wc: WhenContext[C]): When[C] = when(wc, () => {
       officeUnderTest ! wc.command
@@ -123,13 +128,10 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   def whenCommand[C <: Command](wc: WhenContext[C]) = Given(() => PastEvents()).whenCommand(wc)
 
   def when(whenFun: => Unit) = {
-    val fakeWhenCommand = WhenContext(new Command {
-      override def aggregateId: String = UUID.randomUUID().toString
-    })
-
-    When(fakeWhenCommand, () => whenFun)
+    When(fakeWhenContext(), () => whenFun)
   }
 
-  def past[E](implicit pastEvents: PastEvents, classTag: ClassTag[E]): E = pastEvents.get[E]
+  def past[E](implicit wc: WhenContext[_], ct: ClassTag[E]): E =
+    wc.pastEvents.get[E]
 
 }

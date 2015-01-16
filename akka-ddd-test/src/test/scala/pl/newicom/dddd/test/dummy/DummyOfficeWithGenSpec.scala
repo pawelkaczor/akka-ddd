@@ -47,7 +47,7 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
       whenCommand {
         arbitrary[CreateDummy]
       }
-      .expectEvent2 { c =>
+      .expectEvent2 { ctx =>
         DummyCreated(dummyId, c.name, c.description, c.value)
       }
     }
@@ -58,7 +58,7 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
       givenCommand(
         arbitrary[CreateDummy]
       )
-      .whenCommand { implicit history =>
+      .whenCommand { implicit ctx =>
         arbitrary[ChangeDummyName] suchThat (_.name != past[DummyCreated].name)
       }
       .expectEvent2 { c =>
