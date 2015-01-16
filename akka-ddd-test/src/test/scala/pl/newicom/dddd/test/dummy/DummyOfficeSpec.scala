@@ -22,55 +22,54 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](testSystem) {
 
   def dummyOffice = officeUnderTest
 
+  def dummyId = aggregateId
+
   "Dummy office" should {
-    "handle Create command" in {
-      whenCommand(
-        CreateDummy(aggregateId)
-      )
-      .expectEvent(
-        DummyCreated(aggregateId, version = 0)
-      )
+    "create Dummy" in {
+      whenCommand {
+        CreateDummy(dummyId, "dummy name", "dummy description", "dummy value")
+      }
+      .expectEvent2 { c =>
+        DummyCreated(dummyId, c.name, c.description, c.value)
+      }
     }
   }
 
   "Dummy office" should {
-    "handle Update command" in {
-      givenCommand(
-        CreateDummy(aggregateId)
-      )
-      .whenCommand(
-        UpdateDummy(aggregateId)
-      )
-      .expectEvent(
-        DummyUpdated(aggregateId, version = 1)
-      )
+    "update Dummy's name" in {
+      givenCommand {
+        CreateDummy(dummyId, "dummy name", "dummy description", "dummy value")
+      }
+      .whenCommand {
+        ChangeDummyName(dummyId, "some other dummy name")
+      }
+      .expectEvent2 { c =>
+        DummyNameChanged(dummyId, c.name)
+      }
     }
   }
 
   "Dummy office" should {
     "handle subsequent Update command" in {
       givenCommands(
-        CreateDummy(aggregateId),
-        UpdateDummy(aggregateId)
+        CreateDummy(dummyId, "dummy name", "dummy description", "dummy value"),
+        ChangeDummyName(dummyId, "some other dummy name")
       )
-      .whenCommand(
-        UpdateDummy(aggregateId)
-      )
-      .expectEvent(
-        DummyUpdated(aggregateId, version = 2)
-      )
+      .whenCommand {
+        ChangeDummyName(dummyId, "yet another dummy name")
+      }
+      .expectEvent2 { c =>
+        DummyNameChanged(dummyId, c.name)
+      }
     }
   }
 
   "Dummy office" should {
-    "reject InvalidUpdate command" in {
-      givenCommand(
-        CreateDummy(aggregateId)
-      )
-      .whenCommand(
-        InvalidUpdateDummy(aggregateId)
-      )
-      .expectException[RuntimeException]("Update rejected")
+    "reject null value" in {
+      whenCommand {
+        CreateDummy(dummyId, "dummy name", "dummy description", value = null)
+      }
+      .expectException[RuntimeException]("null value not allowed")
     }
   }
 
