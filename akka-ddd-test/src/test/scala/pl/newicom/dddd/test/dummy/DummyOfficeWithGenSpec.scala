@@ -34,11 +34,8 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
     CreateDummy(dummyId, name, description, value)
   }
 
-  implicit def changeName: Gen[ChangeName] = for {
-    name <- Gen.alphaStr
-  } yield {
-    ChangeName(dummyId, name)
-  }
+  implicit def changeName: Gen[ChangeName] = for { name <- Gen.alphaStr } yield ChangeName(dummyId, name)
+  implicit def generateValue: Gen[GenerateValue] = aggregateIdGen.flatMap(GenerateValue(_))
 
   "Dummy office" should {
     "create Dummy" in {
@@ -82,8 +79,7 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
   "Dummy office" should {
     "confirm generated value" in {
       given(
-        a[CreateDummy],
-        GenerateValue(dummyId)
+        aListOf[CreateDummy, GenerateValue]
       )
       .when { implicit ctx =>
         ConfirmGeneratedValue(dummyId, past[ValueGenerated].confirmationToken)
