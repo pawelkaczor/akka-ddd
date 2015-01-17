@@ -100,7 +100,9 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
   "Dummy office" should {
     "reject null value" in {
       whenCommand {
-        arbitraryOf[CreateDummy](_ copy(value = null))
+        arbitrary[CreateDummy] map (_ copy(value = null))
+        // alternatively:
+        //arbitraryOf[CreateDummy](_ copy(value = null))
       }
       .expectException[RuntimeException]("null value not allowed")
     }
