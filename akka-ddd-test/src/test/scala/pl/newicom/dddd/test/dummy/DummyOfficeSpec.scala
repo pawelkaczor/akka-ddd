@@ -42,10 +42,10 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](testSystem) {
         CreateDummy(dummyId, "dummy name", "dummy description", "dummy value")
       }
       .whenCommand {
-        ChangeDummyName(dummyId, "some other dummy name")
+        ChangeName(dummyId, "some other dummy name")
       }
       .expectEvent2 { c =>
-        DummyNameChanged(dummyId, c.name)
+        NameChanged(dummyId, c.name)
       }
     }
   }
@@ -54,13 +54,13 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](testSystem) {
     "handle subsequent Update command" in {
       givenCommands(
         CreateDummy(dummyId, "dummy name", "dummy description", "dummy value"),
-        ChangeDummyName(dummyId, "some other dummy name")
+        ChangeName(dummyId, "some other dummy name")
       )
       .whenCommand {
-        ChangeDummyName(dummyId, "yet another dummy name")
+        ChangeName(dummyId, "yet another dummy name")
       }
       .expectEvent2 { c =>
-        DummyNameChanged(dummyId, c.name)
+        NameChanged(dummyId, c.name)
       }
     }
   }

@@ -5,7 +5,7 @@ import org.scalacheck.Gen
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.eventhandling.LocalPublisher
-import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{DummyNameChanged, ChangeDummyName, DummyCreated, CreateDummy}
+import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig._
 import DummyOfficeWithGenSpec._
@@ -35,11 +35,11 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
     CreateDummy(dummyId, name, description, value)
   }
 
-  implicit def changeName: Gen[ChangeDummyName] = for {
+  implicit def changeName: Gen[ChangeName] = for {
     dummyId <- implicitly[Gen[EntityId]]
     name <- Gen.alphaStr
   } yield {
-    ChangeDummyName(dummyId, name)
+    ChangeName(dummyId, name)
   }
 
   "Dummy office" should {
@@ -47,7 +47,7 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
       whenCommand {
         arbitrary[CreateDummy]
       }
-      .expectEvent2 { ctx =>
+      .expectEvent2 { c =>
         DummyCreated(dummyId, c.name, c.description, c.value)
       }
     }
@@ -59,10 +59,10 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
         arbitrary[CreateDummy]
       )
       .whenCommand { implicit ctx =>
-        arbitrary[ChangeDummyName] suchThat (_.name != past[DummyCreated].name)
+        arbitrary[ChangeName] suchThat (_.name != past[DummyCreated].name)
       }
       .expectEvent2 { c =>
-        DummyNameChanged(dummyId, c.name)
+        NameChanged(dummyId, c.name)
       }
     }
   }
@@ -71,13 +71,28 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
     "handle subsequent Update command" in {
       givenCommands(
         arbitrary[CreateDummy],
-        arbitrary[ChangeDummyName]
+        arbitrary[ChangeName]
       )
       .whenCommand {
-        arbitrary[ChangeDummyName]
+        arbitrary[ChangeName]
       }
       .expectEvent2 { c =>
-        DummyNameChanged(dummyId, c.name)
+        NameChanged(dummyId, c.name)
+      }
+    }
+  }
+
+  "Dummy office" should {
+    "confirm generated value" in {
+      givenCommands(
+        arbitrary[CreateDummy],
+        GenerateValue(dummyId)
+      )
+      .whenCommand { implicit ctx =>
+        ConfirmGeneratedValue(dummyId, past[ValueGenerated].confirmationToken)
+      }
+      .expectEvent2 { implicit ctx =>
+        ValueChanged(dummyId, past[ValueGenerated].value, dummyVersion = 2)
       }
     }
   }
