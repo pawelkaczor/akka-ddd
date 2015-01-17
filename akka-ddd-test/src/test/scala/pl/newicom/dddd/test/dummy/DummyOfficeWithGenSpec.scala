@@ -27,7 +27,6 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
   def dummyId = aggregateId
 
   implicit def create: Gen[CreateDummy] = for {
-    dummyId <- implicitly[Gen[EntityId]]
     name <- Gen.alphaStr
     description <- Gen.alphaStr
     value <- Gen.numStr
@@ -36,7 +35,6 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
   }
 
   implicit def changeName: Gen[ChangeName] = for {
-    dummyId <- implicitly[Gen[EntityId]]
     name <- Gen.alphaStr
   } yield {
     ChangeName(dummyId, name)
@@ -44,63 +42,62 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
 
   "Dummy office" should {
     "create Dummy" in {
-      whenCommand {
-        arbitrary[CreateDummy]
+      when {
+        a[CreateDummy]
       }
-      .expectEvent2 { c =>
-        DummyCreated(dummyId, c.name, c.description, c.value)
+      .expect { c =>
+        DummyCreated(c.id, c.name, c.description, c.value)
       }
     }
   }
 
   "Dummy office" should {
     "update Dummy's name" in {
-      givenCommand(
-        arbitrary[CreateDummy]
-      )
-      .whenCommand { implicit ctx =>
-        arbitrary[ChangeName] suchThat (_.name != past[DummyCreated].name)
+      given {
+        a[CreateDummy]
       }
-      .expectEvent2 { c =>
-        NameChanged(dummyId, c.name)
+      .when { implicit ctx =>
+        a[ChangeName] suchThat (_.name != past[DummyCreated].name)
+      }
+      .expect { c =>
+        NameChanged(c.id, c.name)
       }
     }
   }
 
   "Dummy office" should {
     "handle subsequent Update command" in {
-      givenCommands(
-        arbitrary[CreateDummy],
-        arbitrary[ChangeName]
+      given(
+        aListOf[CreateDummy, ChangeName]
       )
-      .whenCommand {
-        arbitrary[ChangeName]
+      .when {
+        a[ChangeName]
       }
-      .expectEvent2 { c =>
-        NameChanged(dummyId, c.name)
+      .expect { c =>
+        NameChanged(c.id, c.name)
       }
     }
   }
 
   "Dummy office" should {
     "confirm generated value" in {
-      givenCommands(
-        arbitrary[CreateDummy],
+      given(
+        a[CreateDummy],
         GenerateValue(dummyId)
       )
-      .whenCommand { implicit ctx =>
+      .when { implicit ctx =>
         ConfirmGeneratedValue(dummyId, past[ValueGenerated].confirmationToken)
       }
-      .expectEvent2 { implicit ctx =>
-        ValueChanged(dummyId, past[ValueGenerated].value, dummyVersion = 2)
+      .expect { implicit c =>
+        ValueChanged(c.id, past[ValueGenerated].value, dummyVersion = 2)
       }
     }
   }
 
   "Dummy office" should {
     "reject null value" in {
-      whenCommand {
-        arbitrary[CreateDummy] map (_ copy(value = null))
+      when {
+        a[CreateDummy] map (_ copy(value = null))
         // alternatively:
         //arbitraryOf[CreateDummy](_ copy(value = null))
       }

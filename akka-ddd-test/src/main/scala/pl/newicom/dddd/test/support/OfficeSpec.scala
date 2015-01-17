@@ -8,7 +8,7 @@ import org.scalacheck.Gen
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, WordSpecLike}
 import org.slf4j.LoggerFactory.getLogger
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
-import pl.newicom.dddd.aggregate.{BusinessEntity, EntityId}
+import pl.newicom.dddd.aggregate.{Command, BusinessEntity, EntityId}
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
 import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.office.Office._
@@ -56,10 +56,12 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_sys
     }
   }
 
-  def arbitrary[T](implicit g: Gen[T]): Gen[T] = g
+  def a[T](implicit g: Gen[T]): Gen[T] = g
+  def aListOf[T1 <: Command, T2 <: Command](implicit g1: Gen[T1], g2: Gen[T2]): List[Command] = List(g1, g2)
+
   def arbitraryOf[T](adjust: (T) => T = {x: T => x})(implicit g: Gen[T]): T = adjust((g))
 
-  def arbitrarySample[T](implicit g: Gen[T]): T = arbitraryToSample(g)
+  private def arbitrarySample[T](implicit g: Gen[T]): T = arbitraryToSample(g)
 
   implicit def topLevelParent(implicit system: ActorSystem): CreationSupport = {
     new CreationSupport {

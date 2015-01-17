@@ -19,7 +19,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   def officeUnderTest: ActorRef
 
-  def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(new Command {
+  private def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(new Command {
     override def aggregateId: String = UUID.randomUUID().toString
   }, pastEvents)
   
@@ -58,10 +58,10 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   case class Given(givenFun: () => PastEvents) {
     val pastEvents = givenFun()
 
-    def whenCommand[C <: Command](f: (WhenContext[_]) => WhenContext[C]): When[C] =
-      whenCommand(f(fakeWhenContext(pastEvents)))
+    def when[C <: Command](f: (WhenContext[_]) => WhenContext[C]): When[C] =
+      when(f(fakeWhenContext(pastEvents)))
 
-    def whenCommand[C <: Command](wc: WhenContext[C]): When[C] = when(wc, () => {
+    def when[C <: Command](wc: WhenContext[C]): When[C] = when(wc, () => {
       officeUnderTest ! wc.command
     })
 
@@ -82,11 +82,11 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
       )
     }
 
-    def expectEvent2[E](f: (WhenContext[C]) => E)(implicit t: ClassTag[E]): Unit = {
+    def expect[E](f: (WhenContext[C]) => E)(implicit t: ClassTag[E]): Unit = {
       expectEvent(f(wc))
     }
 
-    def expectEvent3[E](f: (C, Any) => E)(implicit t: ClassTag[E]): Unit = {
+    def expect2[E](f: (C, Any) => E)(implicit t: ClassTag[E]): Unit = {
       expectEvent(f(wc.command, wc.params(0)))
     }
 
@@ -110,9 +110,9 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   }
 
-  def givenCommand(c: Command): Given = givenCommands(List(c) :_*)
+  def given(cs: List[Command]): Given = given(cs :_*)
 
-  def givenCommands(c: Command*) = {
+  def given(c: Command*): Given = {
     import akka.pattern.ask
     implicit val timeout = Timeout(5.seconds)
 
@@ -125,9 +125,9 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     )
   }
 
-  def whenCommand[C <: Command](wc: WhenContext[C]) = Given(() => PastEvents()).whenCommand(wc)
+  def when[C <: Command](wc: WhenContext[C]) = Given(() => PastEvents()).when(wc)
 
-  def when(whenFun: => Unit) = {
+  def whenF(whenFun: => Unit) = {
     When(fakeWhenContext(), () => whenFun)
   }
 

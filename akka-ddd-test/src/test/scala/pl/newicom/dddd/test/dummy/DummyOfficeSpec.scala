@@ -27,47 +27,47 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](testSystem) {
 
   "Dummy office" should {
     "create Dummy" in {
-      whenCommand {
+      when {
         CreateDummy(dummyId, "dummy name", "dummy description", "dummy value")
       }
-      .expectEvent2 { c =>
-        DummyCreated(dummyId, c.name, c.description, c.value)
+      .expect { c =>
+        DummyCreated(c.id, c.name, c.description, c.value)
       }
     }
   }
 
   "Dummy office" should {
     "update Dummy's name" in {
-      givenCommand {
+      given {
         CreateDummy(dummyId, "dummy name", "dummy description", "dummy value")
       }
-      .whenCommand {
+      .when {
         ChangeName(dummyId, "some other dummy name")
       }
-      .expectEvent2 { c =>
-        NameChanged(dummyId, c.name)
+      .expect { c =>
+        NameChanged(c.id, c.name)
       }
     }
   }
 
   "Dummy office" should {
     "handle subsequent Update command" in {
-      givenCommands(
+      given(
         CreateDummy(dummyId, "dummy name", "dummy description", "dummy value"),
         ChangeName(dummyId, "some other dummy name")
       )
-      .whenCommand {
+      .when {
         ChangeName(dummyId, "yet another dummy name")
       }
-      .expectEvent2 { c =>
-        NameChanged(dummyId, c.name)
+      .expect { c =>
+        NameChanged(c.id, c.name)
       }
     }
   }
 
   "Dummy office" should {
     "reject null value" in {
-      whenCommand {
+      when {
         CreateDummy(dummyId, "dummy name", "dummy description", value = null)
       }
       .expectException[RuntimeException]("null value not allowed")
