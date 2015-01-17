@@ -26,6 +26,9 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
 
   def dummyId = aggregateId
 
+  //
+  // Command generators
+  //
   implicit def create: Gen[CreateDummy] = for {
     name <- Gen.alphaStr
     description <- Gen.alphaStr
@@ -33,14 +36,21 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
   } yield {
     CreateDummy(dummyId, name, description, value)
   }
-
   implicit def changeName: Gen[ChangeName] = for { name <- Gen.alphaStr } yield ChangeName(dummyId, name)
   implicit def generateValue: Gen[GenerateValue] = aggregateIdGen.flatMap(GenerateValue(_))
 
+  /**
+   * Commands are generated (see generators above).
+   * The command under test (created inside When clause)
+   * is accessible from inside Then/expect clause.
+   *
+   * No need to define val members for name, description, ...
+   * No need to define concrete values for name, description, ...
+   */
   "Dummy office" should {
     "create Dummy" in {
       when {
-        a[CreateDummy]
+        a [CreateDummy]
       }
       .expect { c =>
         DummyCreated(c.id, c.name, c.description, c.value)
@@ -48,13 +58,17 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
     }
   }
 
+  /**
+   * Events triggered by Given command(s) are accessible from inside When clause.
+   * Gen.suchThat can be used to configure command generator inside test body.
+   */
   "Dummy office" should {
     "update Dummy's name" in {
       given {
-        a[CreateDummy]
+        a [CreateDummy]
       }
-      .when { implicit ctx =>
-        a[ChangeName] suchThat (_.name != past[DummyCreated].name)
+      .when { implicit hist =>
+        a [ChangeName] suchThat (_.name != past[DummyCreated].name)
       }
       .expect { c =>
         NameChanged(c.id, c.name)
@@ -62,13 +76,16 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
     }
   }
 
+  /**
+   * No problem with two or more commands inside Given clause.
+   */
   "Dummy office" should {
     "handle subsequent Update command" in {
       given(
-        aListOf[CreateDummy, ChangeName]
+        a_list_of [CreateDummy, ChangeName]
       )
       .when {
-        a[ChangeName]
+        a [ChangeName]
       }
       .expect { c =>
         NameChanged(c.id, c.name)
@@ -76,12 +93,15 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
     }
   }
 
+  /**
+   * Events triggered by Given command(s) are accessible from inside Then/expect clause.
+   */
   "Dummy office" should {
     "confirm generated value" in {
       given(
-        aListOf[CreateDummy, GenerateValue]
+        a_list_of [CreateDummy, GenerateValue]
       )
-      .when { implicit ctx =>
+      .when { implicit hist =>
         ConfirmGeneratedValue(dummyId, past[ValueGenerated].confirmationToken)
       }
       .expect { implicit c =>
@@ -90,10 +110,13 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](testSystem) 
     }
   }
 
+  /**
+   * Gen.map can be used to modify generated command.
+   */
   "Dummy office" should {
     "reject null value" in {
       when {
-        a[CreateDummy] map (_ copy(value = null))
+        a [CreateDummy] map (_ copy(value = null))
         // alternatively:
         //arbitraryOf[CreateDummy](_ copy(value = null))
       }
