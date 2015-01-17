@@ -57,6 +57,7 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_sys
   }
 
   def arbitrary[T](implicit g: Gen[T]): Gen[T] = g
+  def arbitraryOf[T](adjust: (T) => T = {x: T => x})(implicit g: Gen[T]): T = adjust((g))
 
   def arbitrarySample[T](implicit g: Gen[T]): T = arbitraryToSample(g)
 
