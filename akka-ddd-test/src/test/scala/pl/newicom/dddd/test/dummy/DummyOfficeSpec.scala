@@ -19,7 +19,7 @@ object DummyOfficeSpec {
     }
 }
 
-class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](testSystem) {
+class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot] {
 
   def dummyOffice = officeUnderTest
 

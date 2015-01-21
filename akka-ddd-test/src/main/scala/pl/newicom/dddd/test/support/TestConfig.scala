@@ -11,7 +11,7 @@ object TestConfig {
       |akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """.stripMargin)
 
-  def testSystem: ActorSystem = testSystem(TestConfig.config)
+  implicit def testSystem: ActorSystem = testSystem(TestConfig.config)
 
   def testSystem(config: Config) = {
     ActorSystem("Tests", config)
