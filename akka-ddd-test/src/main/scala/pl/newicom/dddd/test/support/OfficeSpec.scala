@@ -17,7 +17,7 @@ import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_system: ActorSystem)(implicit arClassTag: ClassTag[A])
+abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](implicit _system: ActorSystem, arClassTag: ClassTag[A])
   extends GivenWhenThenTestFixture(_system) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
 
   val logger = getLogger(getClass)
@@ -76,17 +76,9 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_sys
 
   implicit def defaultCaseIdResolution[AA]: AggregateIdResolution[AA] = new AggregateIdResolution[AA]
 
-  def ensureOfficeTerminated(): Unit = {
-    if (_officeUnderTest != null) {
-      ensureActorTerminated(_officeUnderTest)
-    }
-    _officeUnderTest = null
-  }
-
-  def ensureActorTerminated(actor: ActorRef) = {
+  def ensureActorUnderTestTerminated(actor: ActorRef) = {
     watch(actor)
     actor ! PoisonPill
-    // wait until reservation office is terminated
     fishForMessage(1.seconds) {
       case Terminated(_) =>
         unwatch(actor)
@@ -96,5 +88,11 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_sys
 
   }
 
+  override def ensureOfficeTerminated(): Unit = {
+    if (_officeUnderTest != null) {
+      ensureActorUnderTestTerminated(_officeUnderTest)
+    }
+    _officeUnderTest = null
+  }
 
 }

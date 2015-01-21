@@ -19,6 +19,8 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   def officeUnderTest: ActorRef
 
+  def ensureOfficeTerminated(): Unit
+
   private def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(new Command {
     override def aggregateId: String = UUID.randomUUID().toString
   }, pastEvents)
@@ -57,6 +59,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   case class Given(givenFun: () => PastEvents) {
     val pastEvents = givenFun()
+    ensureOfficeTerminated()
 
     def when[C <: Command](f: (WhenContext[_]) => WhenContext[C]): When[C] =
       when(f(fakeWhenContext(pastEvents)))
