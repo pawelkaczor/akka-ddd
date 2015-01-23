@@ -3,14 +3,14 @@ package pl.newicom.dddd.writefront
 import akka.actor._
 import akka.contrib.pattern.ClusterClient
 
+import scala.collection.mutable
+
 trait GlobalOfficeClientSupport {
   this: Actor =>
 
   def contactPoints: Seq[String]
 
-  def office(officeName: String): ActorRef = {
-    system.actorOf(Props(new OfficeClient(officeName)))
-  }
+  private lazy val officeClientMap: mutable.Map[String, ActorRef] = mutable.Map.empty
 
   private lazy val clusterClient: ActorRef = {
     val initialContacts = contactPoints.map {
@@ -18,6 +18,9 @@ trait GlobalOfficeClientSupport {
     }
     system.actorOf(ClusterClient.props(initialContacts.toSet), "clusterClient")
   }
+
+  def office(officeName: String) =
+    officeClientMap.getOrElseUpdate(officeName, system.actorOf(Props(new OfficeClient(officeName))))
 
   class OfficeClient(officeName: String) extends Actor {
     override def receive: Receive = {
