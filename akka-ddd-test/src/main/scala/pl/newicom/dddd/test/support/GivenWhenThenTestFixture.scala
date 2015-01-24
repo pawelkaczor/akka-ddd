@@ -44,12 +44,14 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     WhenContext(c, PastEvents(), List(param1))
   }
 
-  implicit def acksToPastEvents(acks: Seq[Acknowledged]): PastEvents = PastEvents(acks)
+  implicit def acksToPastEvents(acks: Seq[Acknowledged]): PastEvents = PastEvents(acks.toList)
 
-  case class PastEvents(list: Seq[Acknowledged] = List.empty) {
-    private val map: Map[Class[_], Any] = list.map(a => (a.msg.getClass, a.msg)).toMap
+  case class PastEvents(list: List[Acknowledged] = List.empty) {
+    private val map: Map[Class[_], List[Any]] =
+      list.groupBy(_.msg.getClass).mapValues(ackSeq => ackSeq.map(_.msg))
 
-    def get[E](implicit ct: ClassTag[E]): E = map.getOrElse(ct.runtimeClass, null).asInstanceOf[E]
+    def first[E](implicit ct: ClassTag[E]): E = map.get(ct.runtimeClass).map(_(0)).orNull.asInstanceOf[E]
+    def last[E](implicit ct: ClassTag[E]): E = map.get(ct.runtimeClass).map(_.last).orNull.asInstanceOf[E]
   }
 
   case class WhenContext[C <: Command](
@@ -115,13 +117,13 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   def given(cs: List[Command]): Given = given(cs :_*)
 
-  def given(c: Command*): Given = {
+  def given(cs: Command*): Given = {
     import akka.pattern.ask
     implicit val timeout = Timeout(5.seconds)
 
     Given(
       givenFun = () => {
-        c.map { c =>
+        cs.map { c =>
           Await.result((officeUnderTest ? c).mapTo[Acknowledged], timeout.duration)
         }
       }
@@ -135,6 +137,8 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   }
 
   def past[E](implicit wc: WhenContext[_], ct: ClassTag[E]): E =
-    wc.pastEvents.get[E]
+    wc.pastEvents.last[E]
 
+  def first[E](implicit wc: WhenContext[_], ct: ClassTag[E]): E =
+    wc.pastEvents.first[E]
 }

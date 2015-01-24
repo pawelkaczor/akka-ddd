@@ -57,8 +57,8 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](impl
   }
 
   def a[T](implicit g: Gen[T]): Gen[T] = g
-  def aListOf[T1 <: Command, T2 <: Command, T3 <: Command, T4 <: Command](implicit g1: Gen[T1], g2: Gen[T2], g3: Gen[T3], g4: Gen[T4]): List[Command] = List(g1, g2, g3, g4)
-  def aListOf[T1 <: Command, T2 <: Command, T3 <: Command](implicit g1: Gen[T1], g2: Gen[T2], g3: Gen[T3]): List[Command] = List(g1, g2, g3)
+  def a_list_of[T1 <: Command, T2 <: Command, T3 <: Command, T4 <: Command](implicit g1: Gen[T1], g2: Gen[T2], g3: Gen[T3], g4: Gen[T4]): List[Command] = List(g1, g2, g3, g4)
+  def a_list_of[T1 <: Command, T2 <: Command, T3 <: Command](implicit g1: Gen[T1], g2: Gen[T2], g3: Gen[T3]): List[Command] = List(g1, g2, g3)
   def a_list_of[T1 <: Command, T2 <: Command](implicit g1: Gen[T1], g2: Gen[T2]): List[Command] = List(g1, g2)
 
   def arbitraryOf[T](adjust: (T) => T = {x: T => x})(implicit g: Gen[T]): T = adjust((g))
