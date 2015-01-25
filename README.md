@@ -33,5 +33,3 @@ Sql (defult is Postgresql) specific implementation of view-update artifacts.
 
 ##### eventstore-akka-persistence
 Customized EventStore serializer (extends serializer provided by [EventStore journal](https://github.com/pawelkaczor/EventStore.Akka.Persistence) aware of event definition from akka-ddd-messaging. 
-
-*Note: Currently PersistentRepr (Envelop for event messages used in Akka Persistence) is not serialized using json format thus creating [user projections](http://codeofrob.com/entries/basic-projections-in-the-eventstore.html) is inpossible. Please vote on (or implement :) ) this issue: [EventStoreSerializer implementation for PersistentRepr](https://github.com/EventStore/EventStore.Akka.Persistence/issues/9)*  
