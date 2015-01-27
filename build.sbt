@@ -48,8 +48,8 @@ lazy val `akka-ddd-write-front` = project
     licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
     startYear := Some(2014),
     publishArtifact in Test := true,
-    libraryDependencies ++= Json.`4s` ++ Seq(
-      Akka.http, Akka.contrib
+    libraryDependencies ++= Json.`4s` ++ Akka.http ++ Seq(
+      Akka.contrib
     ))
   .dependsOn(`akka-ddd-messaging`)
 

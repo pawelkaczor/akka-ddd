@@ -4,10 +4,13 @@ import Keys._
 object Deps {
 
   val AkkaVersion = "2.3.8"
+  val AkkaHttpVersion = "1.0-M2"
 
   object Akka {
     val actor = apply("actor")
-    val http  = "com.typesafe.akka" %% "akka-http-experimental" % "1.0-M2"
+    val httpCore  = "com.typesafe.akka" %% "akka-http-experimental" % AkkaHttpVersion
+    val httpTestKit  = "com.typesafe.akka" %% "akka-http-testkit-experimental" % AkkaHttpVersion % "test"
+    val http  = Seq(httpCore, httpTestKit)
     val slf4j = apply("slf4j")
     val persistence = apply("persistence-experimental")
     val contrib = apply("contrib")
