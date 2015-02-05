@@ -4,14 +4,13 @@ import java.util.UUID
 
 import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate.DomainEvent
-import pl.newicom.dddd.messaging.EntityMessage
 
 case class DomainEventMessage(
     snapshotId: AggregateSnapshotId,
     override val event: DomainEvent,
     override val identifier: String = UUID.randomUUID().toString,
     override val timestamp: DateTime = new DateTime)
-  extends EventMessage(event, identifier, timestamp) with EntityMessage {
+  extends EventMessage(event, identifier, timestamp) {
 
   override def entityId = aggregateId
 
@@ -20,7 +19,5 @@ case class DomainEventMessage(
   def aggregateId = snapshotId.aggregateId
 
   def sequenceNr = snapshotId.sequenceNr
-
-  override def payload: Any = event
 
 }
