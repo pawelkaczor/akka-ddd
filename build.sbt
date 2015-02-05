@@ -8,7 +8,7 @@ version in ThisBuild := "1.0.0-SNAPSHOT"
 
 organization in ThisBuild := "pl.newicom.dddd"
 
-scalaVersion in ThisBuild := "2.11.4"
+scalaVersion in ThisBuild := "2.11.5"
 
 scalacOptions in ThisBuild := Seq("-encoding", "utf8", "-feature", "-language:postfixOps")
 

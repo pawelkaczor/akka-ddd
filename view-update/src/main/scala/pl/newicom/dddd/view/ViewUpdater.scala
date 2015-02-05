@@ -2,7 +2,6 @@ package pl.newicom.dddd.view
 
 import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import eventstore.EsError.NotAuthenticated
 import eventstore.EventNumber.Exact
 import eventstore.EventStream.System
 import eventstore._
@@ -27,7 +26,7 @@ class ViewUpdater(esConn: ActorRef, val stream: String, val viewHandler: ViewHan
     StreamSubscriptionActor.props(esConn, self, System(s"ce-$stream"), lastEventNr, resolveLinkTos = true)
 
   override def receive: Receive = {
-    case Failure(EsException(NotAuthenticated, _)) =>
+    case Failure(NotAuthenticated) =>
       log.error("Invalid credentials")
       throw new RuntimeException("Invalid credentials")
 
