@@ -42,6 +42,7 @@ class LocalOffice[A <: BusinessEntity](inactivityTimeout: Duration = 1.minutes)(
     case msg: EntityMessage =>
       val clerkProps = clerkFactory.props(PassivationConfig(Passivate(PoisonPill), clerkFactory.inactivityTimeout))
       val clerk = assignClerk(clerkProps, resolveCaseId(msg))
+      log.debug(s"Forwarding EntityMessage to ${clerk.path}")
       clerk forward msg
   }
 
@@ -50,7 +51,7 @@ class LocalOffice[A <: BusinessEntity](inactivityTimeout: Duration = 1.minutes)(
   def assignClerk(caseProps: Props, caseId: String): ActorRef = getOrCreateChild(caseProps, caseId)
 
   def dismiss(clerk: ActorRef, stopMessage: Any) {
-    log.info(s"Passivating $sender")
+    log.info(s"Passivating $sender()")
     clerk ! stopMessage
   }
 }
