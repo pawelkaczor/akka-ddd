@@ -1,6 +1,6 @@
 package pl.newicom.dddd.messaging
 
-class MetaData(var metadata: Map[String, Any] = Map.empty) {
+class MetaData(var metadata: Map[String, Any] = Map.empty) extends Serializable {
 
   def withMetaData(metadata: Option[MetaData]): MetaData = {
     if (metadata.isDefined) withMetaData(metadata.get.metadata) else this
