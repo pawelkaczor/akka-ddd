@@ -3,10 +3,12 @@ package pl.newicom.eventstore
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
 
+import akka.actor.ExtendedActorSystem
 import akka.persistence.SnapshotMetadata
 import akka.persistence.eventstore.EventStoreSerializer
 import akka.persistence.eventstore.snapshot.EventStoreSnapshotStore.SnapshotEvent
 import akka.persistence.eventstore.snapshot.EventStoreSnapshotStore.SnapshotEvent.Snapshot
+import akka.serialization.SerializationExtension
 import akka.util.ByteString
 import eventstore.{Content, ContentType, Event, EventData}
 import org.joda.time.DateTime
@@ -21,12 +23,11 @@ import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.eventstore.Json4sEsSerializer._
 
-class Json4sEsSerializer extends EventStoreSerializer {
+class Json4sEsSerializer(system: ExtendedActorSystem) extends EventStoreSerializer {
 
   def identifier = Identifier
 
-  val defaultFormats: Formats = DefaultFormats +
-    SnapshotSerializer ++ JodaTimeSerializers.all + UUIDSerializer + new ShortTypeHints(List(classOf[MetaData]))
+  val defaultFormats: Formats = DefaultFormats + new SnapshotSerializer(system) ++ JodaTimeSerializers.all + UUIDSerializer + new ShortTypeHints(List(classOf[MetaData]))
 
   implicit val formats: Formats = defaultFormats
 
@@ -65,7 +66,7 @@ class Json4sEsSerializer extends EventStoreSerializer {
   override def toEvent(x: AnyRef) = x match {
     case x: SnapshotEvent => EventData(
       eventType = x.getClass.getName,
-      data = Content(ByteString(toBinary(x)), ContentType.Json))
+      data = Content(ByteString(toBinary(x)), ContentType.Binary))
 
     case _ => sys.error(s"Cannot serialize $x, SnapshotEvent expected")
   }
@@ -76,6 +77,7 @@ class Json4sEsSerializer extends EventStoreSerializer {
     if (manifest.isInstance(result)) result
     else sys.error(s"Cannot deserialize event as $manifest, event: $event")
   }
+
   def contentType = ContentType.Json
 }
 
@@ -83,8 +85,11 @@ object Json4sEsSerializer {
   val UTF8 = Charset.forName("UTF-8")
   val Identifier: Int = ByteBuffer.wrap("json4s".getBytes(UTF8)).getInt
 
-  object SnapshotSerializer extends Serializer[Snapshot] {
+  case class SnapshotSerializer(sys: ExtendedActorSystem) extends Serializer[Snapshot] {
     val Clazz = classOf[Snapshot]
+
+    import akka.serialization.{Serialization => SysSerialization}
+    lazy val serialization: SysSerialization = SerializationExtension(sys)
 
     def deserialize(implicit format: Formats) = {
       case (TypeInfo(Clazz, _), JObject(List(
@@ -92,8 +97,20 @@ object Json4sEsSerializer {
       JField("metadata", metadata)))) => Snapshot(x, metadata.extract[SnapshotMetadata])
     }
 
+    def serializeAnyRef(data: AnyRef)(implicit format: Formats): String = {
+      import Base64._
+      serialization.serialize(data).get.toBase64
+    }
+
     def serialize(implicit format: Formats) = {
-      case Snapshot(data, metadata) => JObject("data" -> JString(data.toString), "metadata" -> decompose(metadata))
+      case Snapshot(data, metadata) =>
+        val dataSerialized: String = data match {
+          case data: AnyRef => serializeAnyRef(data)
+          case _ => data.toString
+        }
+
+        JObject("data" -> JString(dataSerialized), "metadata" -> decompose(metadata))
     }
   }
+
 }

@@ -4,7 +4,7 @@ import sbtrelease.ReleasePlugin._
 
 name := "akka-ddd"
 
-version in ThisBuild := "1.0.0-SNAPSHOT"
+version in ThisBuild := "1.0.1-SNAPSHOT"
 
 organization in ThisBuild := "pl.newicom.dddd"
 
