@@ -4,7 +4,7 @@ import sbtrelease.ReleasePlugin._
 
 name := "akka-ddd"
 
-version in ThisBuild := "1.0.1-SNAPSHOT"
+version in ThisBuild := "1.0.2-SNAPSHOT"
 
 organization in ThisBuild := "pl.newicom.dddd"
 
@@ -78,7 +78,7 @@ lazy val `akka-ddd-test` = project
       Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j,
       Akka.testkit, Akka.multiNodeTestkit,
       "org.scalacheck" %% "scalacheck" % "1.11.6",
-      "org.scalatest" %% "scalatest" % "2.2.2",
+      "org.scalatest" %% "scalatest" % "2.2.4",
       "commons-io" % "commons-io" % "2.4"
     ),
     startYear := Some(2014))
