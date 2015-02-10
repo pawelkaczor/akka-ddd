@@ -33,12 +33,18 @@ class Json4sEsSerializer(system: ExtendedActorSystem) extends EventStoreSerializ
 
   def includeManifest = true
 
-  override def fromBinary(bytes: Array[Byte], manifestOpt: Option[Class[_]]) = {
+  override def fromBinary(bytes: Array[Byte], manifestOpt: Option[Class[_]]): AnyRef = {
     implicit val manifest = manifestOpt match {
-      case Some(x) => Manifest.classType[AnyRef](x)
+      case Some(x) => Manifest.classType(x)
       case None    => Manifest.AnyRef
     }
-    read(new String(bytes, UTF8))
+    try {
+      read(new String(bytes, UTF8))
+    } catch {
+      case th: Throwable =>
+        th.printStackTrace()
+        throw th;
+    }
   }
 
   override def toBinary(o: AnyRef) = {
@@ -66,7 +72,7 @@ class Json4sEsSerializer(system: ExtendedActorSystem) extends EventStoreSerializ
   override def toEvent(x: AnyRef) = x match {
     case x: SnapshotEvent => EventData(
       eventType = x.getClass.getName,
-      data = Content(ByteString(toBinary(x)), ContentType.Binary))
+      data = Content(ByteString(toBinary(x)), ContentType.Json))
 
     case _ => sys.error(s"Cannot serialize $x, SnapshotEvent expected")
   }
@@ -92,9 +98,11 @@ object Json4sEsSerializer {
     lazy val serialization: SysSerialization = SerializationExtension(sys)
 
     def deserialize(implicit format: Formats) = {
-      case (TypeInfo(Clazz, _), JObject(List(
-      JField("data", JString(x)),
-      JField("metadata", metadata)))) => Snapshot(x, metadata.extract[SnapshotMetadata])
+      case (TypeInfo(Clazz, _), JObject(List(JField("dataClass", JString(dataClass)), JField("data", JString(x)), JField("metadata", metadata)))) =>
+        import Base64._
+        val data = serialization.deserialize(x.toByteArray, Class.forName(dataClass)).get
+        val metaData = metadata.extract[SnapshotMetadata]
+        Snapshot(data, metaData)
     }
 
     def serializeAnyRef(data: AnyRef)(implicit format: Formats): String = {
@@ -108,8 +116,7 @@ object Json4sEsSerializer {
           case data: AnyRef => serializeAnyRef(data)
           case _ => data.toString
         }
-
-        JObject("data" -> JString(dataSerialized), "metadata" -> decompose(metadata))
+        JObject("jsonClass" -> JString(Clazz.getName), "dataClass" -> JString(data.getClass.getName), "data" -> JString(dataSerialized), "metadata" -> decompose(metadata))
     }
   }
 
