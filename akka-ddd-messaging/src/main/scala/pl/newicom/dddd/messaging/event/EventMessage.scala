@@ -4,20 +4,18 @@ import java.util.UUID
 
 import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate.DomainEvent
-import pl.newicom.dddd.messaging.event.EventMessage.CorrelationId
+import pl.newicom.dddd.messaging.MetaData.CorrelationId
 import pl.newicom.dddd.messaging.{EntityMessage, Message}
 
 object EventMessage {
-  val CorrelationId: String = "correlationId"
-
   def unapply(em: EventMessage): Option[(String, DomainEvent)] = {
-    Some(em.identifier, em.event)
+    Some(em.id, em.event)
   }
 }
 
 class EventMessage(
     val event: DomainEvent,
-    val identifier: String = UUID.randomUUID().toString,
+    val id: String = UUID.randomUUID().toString,
     val timestamp: DateTime = new DateTime)
   extends Message with EntityMessage {
 
@@ -26,6 +24,6 @@ class EventMessage(
 
   override def toString: String = {
     val msgClass = getClass.getSimpleName
-    s"$msgClass(event = $event, identifier = $identifier, timestamp = $timestamp, metaData = $metadata)"
+    s"$msgClass(event = $event, identifier = $id, timestamp = $timestamp, metaData = $metadata)"
   }
 }

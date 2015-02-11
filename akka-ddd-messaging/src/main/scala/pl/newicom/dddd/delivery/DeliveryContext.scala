@@ -2,8 +2,9 @@ package pl.newicom.dddd.delivery
 
 import akka.actor.{ActorRef, ActorSystem}
 import pl.newicom.dddd.aggregate.Command
-import pl.newicom.dddd.delivery.protocol.{Receipt, Confirm}
+import pl.newicom.dddd.delivery.protocol.{Confirm, Receipt}
 import pl.newicom.dddd.messaging.Message
+import pl.newicom.dddd.messaging.MetaData.DeliveryId
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.serialization.SerializationSupport
 
@@ -16,13 +17,11 @@ object DeliveryContext {
 
   type ReceiptRequested = (Class[_], Array[Byte])
 
-  case object DeliveryId
-
   object Adjust {
 
-    implicit def toCommandMessage(command: Command)(implicit system: ActorSystem) = new Confirmable(CommandMessage(command))
+    implicit def toCommandMessage(command: Command)(implicit system: ActorSystem): Confirmable = new Confirmable(CommandMessage(command))
 
-    implicit def toConfirmable(message: Message)(implicit system: ActorSystem) = {
+    implicit def toConfirmable(message: Message)(implicit system: ActorSystem): Confirmable = {
       new Confirmable(message)
     }
 
@@ -48,7 +47,7 @@ object DeliveryContext {
 
   }
 
-  implicit def toReadonlyConfirmable(message: Message)(implicit system: ActorSystem) = {
+  implicit def toReadonlyConfirmable(message: Message)(implicit system: ActorSystem): ReadonlyConfirmable = {
     new ReadonlyConfirmable(message)
   }
 

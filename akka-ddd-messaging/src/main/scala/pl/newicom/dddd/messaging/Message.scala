@@ -1,5 +1,11 @@
 package pl.newicom.dddd.messaging
 
+object MetaData {
+  val DeliveryId = "deliveryId"
+  val EventPosition = "eventPosition"
+  val CorrelationId: String = "correlationId"
+}
+
 class MetaData(var metadata: Map[String, Any] = Map.empty) extends Serializable {
 
   def withMetaData(metadata: Option[MetaData]): MetaData = {
@@ -24,6 +30,8 @@ class MetaData(var metadata: Map[String, Any] = Map.empty) extends Serializable 
 
 abstract class Message(var metadata: Option[MetaData] = None) extends Serializable {
 
+  def id: String
+
   def withMetaData[T <: Message](metadata: Option[MetaData]): T = {
     if (metadata.isDefined) withMetaData(metadata.get.metadata) else this.asInstanceOf[T]
   }
@@ -40,4 +48,5 @@ abstract class Message(var metadata: Option[MetaData] = None) extends Serializab
   def getMetaAttribute[B](attrName: Any) = tryGetMetaAttribute[B](attrName).get
 
   def tryGetMetaAttribute[B](attrName: Any): Option[B] = if (metadata.isDefined) metadata.get.tryGet[B](attrName.toString) else None
+
 }

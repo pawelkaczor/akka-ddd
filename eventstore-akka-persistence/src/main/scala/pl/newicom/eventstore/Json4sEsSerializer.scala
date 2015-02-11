@@ -54,7 +54,7 @@ class Json4sEsSerializer(system: ExtendedActorSystem) extends EventStoreSerializ
 
   override def toPayloadAndMetadata(e: AnyRef) = e match {
     case em: EventMessage => (em.event,
-      em.withMetaData[EventMessage](Map("id" -> em.identifier, "timestamp" -> em.timestamp)).metadata)
+      em.withMetaData[EventMessage](Map("id" -> em.id, "timestamp" -> em.timestamp)).metadata)
     case _ => super.toPayloadAndMetadata(e)
   }
 
