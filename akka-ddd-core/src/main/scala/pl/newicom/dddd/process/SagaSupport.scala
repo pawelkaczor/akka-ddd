@@ -9,17 +9,17 @@ import pl.newicom.dddd.office.{Office, OfficeFactory}
 object SagaSupport {
   type ExchangeName = String
 
-  type ExchangeSubscriptions[A <: Saga[_]] = Map[ExchangeName, Array[Class[_ <: DomainEvent]]]
+  type ExchangeSubscriptions[A <: Saga] = Map[ExchangeName, Array[Class[_ <: DomainEvent]]]
 
-  implicit def defaultCaseIdResolution[A <: Saga[_]]() = new EntityIdResolution[A]
+  implicit def defaultCaseIdResolution[A <: Saga]() = new EntityIdResolution[A]
 
-  def registerSaga[A <: Saga[_] : ExchangeSubscriptions : EntityIdResolution : OfficeFactory : BusinessEntityActorFactory](implicit system: ActorSystem, creator: CreationSupport): ActorRef = {
+  def registerSaga[A <: Saga : ExchangeSubscriptions : EntityIdResolution : OfficeFactory : BusinessEntityActorFactory](implicit system: ActorSystem, creator: CreationSupport): ActorRef = {
     val sagaOffice = Office.office[A]
     registerEventListeners(sagaOffice)
     sagaOffice
   }
 
-  private def registerEventListeners[A <: Saga[_]](sagaOffice: ActorRef)(implicit es: ExchangeSubscriptions[_], creator: CreationSupport) {
+  private def registerEventListeners[A <: Saga](sagaOffice: ActorRef)(implicit es: ExchangeSubscriptions[_], creator: CreationSupport) {
     for ((exchangeName, events) <- es) {
       // TODO implement
       //ForwardingConsumer(exchangeName, sagaOffice)

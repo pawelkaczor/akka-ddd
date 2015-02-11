@@ -1,73 +1,80 @@
 package pl.newicom.dddd.process
 
-import akka.actor.{ActorLogging, ActorRef, Props}
+import akka.actor.{ActorLogging, Props}
 import akka.persistence.PersistentActor
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
-import pl.newicom.dddd.aggregate.{DomainEvent, BusinessEntity}
-import pl.newicom.dddd.delivery.protocol.Acknowledged
+import pl.newicom.dddd.aggregate.{BusinessEntity, DomainEvent}
+import pl.newicom.dddd.delivery.protocol.ConfirmEvent
+import pl.newicom.dddd.messaging.MetaData.{DeliveryId, EventPosition}
 import pl.newicom.dddd.messaging.event.EventMessage
-import pl.newicom.dddd.process.Saga.SagaState
+import pl.newicom.dddd.messaging.{Deduplication, Message}
 
-object Saga {
-  trait SagaState {
-    type StateMachine = PartialFunction[DomainEvent, SagaState]
+abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A] {
+  import scala.concurrent.duration._
 
-    def apply: StateMachine
-  }
+  def props(pc: PassivationConfig): Props
+  def inactivityTimeout: Duration = 1.minute
 }
 
-trait Saga[S <: SagaState] extends BusinessEntity
-  with GracefulPassivation with PersistentActor with ActorLogging {
-
-  def initialState: S
-
-  val state = initialState
+trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor with Deduplication with ActorLogging {
 
   def sagaId = self.path.name
 
   override def id = sagaId
 
-  private var _lastEventMessage: Option[EventMessage] = None
-
-  def receiveEvent: Receive
-
   override def persistenceId: String = sagaId
 
-  override def receiveCommand: Receive = {
-    case em: EventMessage =>
-      _lastEventMessage = Some(em)
-      receiveEvent.applyOrElse(em.event, unhandledEvent)
+  override def aroundReceive(receive: Receive, msg: Any): Unit = {
+    super.aroundReceive(receiveDuplicate(acknowledge).orElse(receive), msg)
   }
 
-  def unhandledEvent(em: DomainEvent): Unit = {
-    acknowledge(sender())
-  }
+  override def receiveCommand: Receive = receiveEvent.orElse(receiveUnexpected)
+
+  /**
+   * Defines business process logic (state transitions).
+   * State transition happens when raise(event) is called.
+   * No state transition indicates the current event message could have been received out-of-order.
+   */
+  def receiveEvent: Receive
 
   override def receiveRecover: Receive = {
     case em: EventMessage =>
-      state.apply(em.event)
+      updateState(em)
   }
 
-  def raiseEvent(event: DomainEvent)(action: => Unit) {
-    val eventSender = sender()
-    persist(new EventMessage(event)) {
-      acknowledge(eventSender)
-      persisted =>
-        {
-          state.apply(event)
-          action
-        }
+  /**
+   * Triggers state transition
+   */
+  def raise(em: EventMessage): Unit =
+    persist(em) { persisted =>
+      log.debug("Event message persisted: {}", persisted)
+      updateState(persisted)
+      acknowledge(persisted)
     }
+
+  /**
+   * Event handler called on state transition
+   */
+  def updateState(e: DomainEvent)
+
+  private def updateState(em: EventMessage) {
+    eventProcessed(em)
+    updateState(em.event)
   }
 
-  def acknowledge(sender: ActorRef) {
-    sender ! Acknowledged(_lastEventMessage.get)
+  private def acknowledge(m: Message) {
+    val confirmation = ConfirmEvent(m.getMetaAttribute(DeliveryId), m.getMetaAttribute(EventPosition))
+    sender() ! confirmation
+    log.debug(s"Confirmation $confirmation sent")
   }
+
+  def receiveUnexpected: Receive = {
+    case em: EventMessage => handleUnexpectedEvent(em)
+  }
+
+  def handleUnexpectedEvent(em: EventMessage): Unit = {
+    log.warning(s"Unhandled: $em") // unhandled event should be redelivered by SagaManager
+  }
+
 }
 
-abstract class SagaActorFactory[A <: Saga[_]] extends BusinessEntityActorFactory[A] {
-  import scala.concurrent.duration._
-
-  def props(passivationConfig: PassivationConfig): Props
-  def inactivityTimeout: Duration = 1.minute
-}
