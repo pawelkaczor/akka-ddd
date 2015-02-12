@@ -1,8 +1,7 @@
 package pl.newicom.eventstore
 
-import akka.actor.{ActorRef, ActorLogging}
 import akka.actor.Status.Failure
-import akka.persistence.PersistentActor
+import akka.actor.{Actor, ActorLogging, ActorRef}
 import eventstore.EventNumber._
 import eventstore.EventStream._
 import eventstore._
@@ -10,8 +9,9 @@ import org.json4s.ext.{JodaTimeSerializers, UUIDSerializer}
 import org.json4s.native.Serialization._
 import org.json4s.{DefaultFormats, Formats}
 import pl.newicom.dddd.aggregate._
+import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.MetaData._
-import pl.newicom.dddd.messaging.event.{DurableEventstreamSubscriber, EventMessage}
+import pl.newicom.dddd.messaging.event.{EventStreamSubscriber, EventMessage}
 
 import scala.collection.immutable.Map
 
@@ -30,27 +30,26 @@ trait EventMessageUnmarshaller {
   }
 }
 
-trait EventstoreDurableSubscriber extends DurableEventstreamSubscriber with PersistentActor with EventMessageUnmarshaller with ActorLogging {
+trait EventstoreSubscriber extends EventStreamSubscriber with EventMessageUnmarshaller with ActorLogging {
+  this: Actor =>
 
-  def subscribe: ActorRef = {
-    val position = nextSubscribePosition
-    log.debug(s"Subscribing to $streamName from position $position (exclusive)")
+  def subscribe(streamName: String, fromPositionExclusive: Option[Long]): ActorRef = {
+    log.debug(s"Subscribing to $streamName from position $fromPositionExclusive (exclusive)")
 
     context.actorOf(
       StreamSubscriptionActor.props(
         EventStoreExtension(context.system).actor,
         self,
         Plain(streamName),
-        position.map(l => Exact(l.toInt)),
+        fromPositionExclusive.map(l => Exact(l.toInt)),
         resolveLinkTos = false),
       s"subscription-$streamName")
   }
 
-  def receiveEvent: Receive = {
+  def receiveEvent(metaDataProvider: EventMessage => Option[MetaData]): Receive = {
     case er: EventRecord =>
       val em = unmarshallEventMessage(er)
-      log.debug(s"Event received: $em")
-      persist(em.withMetaData[EventMessage](customMetadata(em)))(updateState)
+      eventReceived(em.withMetaData[EventMessage](metaDataProvider(em)))
 
     case Failure(NotAuthenticated) =>
       log.error("Invalid credentials")
@@ -58,7 +57,6 @@ trait EventstoreDurableSubscriber extends DurableEventstreamSubscriber with Pers
 
     case LiveProcessingStarted =>
       log.debug("Live processing started")
-
   }
 
 }

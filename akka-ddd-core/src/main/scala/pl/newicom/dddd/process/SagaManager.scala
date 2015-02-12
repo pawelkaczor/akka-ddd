@@ -7,7 +7,7 @@ import pl.newicom.dddd.aggregate.{DomainEvent, EntityId}
 import pl.newicom.dddd.delivery.protocol.ConfirmEvent
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.MetaData._
-import pl.newicom.dddd.messaging.event.{DurableEventstreamSubscriber, EventMessage}
+import pl.newicom.dddd.messaging.event.{EventStreamSubscriber, EventMessage}
 
 import scala.collection.immutable.SortedMap
 import scala.concurrent.duration._
@@ -42,13 +42,12 @@ case class SagaManagerState(
 case class SagaManagerSnapshot(state: SagaManagerState, alodSnapshot: AtLeastOnceDeliverySnapshot)
 
 trait SagaManager extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
-  this: DurableEventstreamSubscriber =>
+  this: EventStreamSubscriber =>
 
   private var state = SagaManagerState()
 
   def sagaOffice: ActorPath
   def bpsName: String
-  def streamName = bpsName
   def correlationIdResolver: DomainEvent => EntityId
 
   override def persistenceId: String = s"SagaManager-$bpsName"
@@ -56,16 +55,18 @@ trait SagaManager extends PersistentActor with AtLeastOnceDelivery with ActorLog
   override def redeliverInterval = 30.seconds
   override def warnAfterNumberOfUnconfirmedAttempts = 15
 
-  override def nextSubscribePosition = state.nextSubscribePosition
-
-  override def customMetadata(em: EventMessage) = Some(new MetaData(Map(
+  def metaDataProvider(em: EventMessage) = Some(new MetaData(Map(
     CorrelationId -> correlationIdResolver(em.event)
   )))
+
+  override def eventReceived(em: EventMessage): Unit = {
+    persist(em)(updateState)
+  }
 
   override def receiveRecover: Receive = {
     case RecoveryCompleted  =>
       log.debug("Recovery completed")
-      subscribe
+      subscribe(bpsName, state.nextSubscribePosition)
 
     case SnapshotOffer(metadata, SagaManagerSnapshot(smState, alodSnapshot)) =>
       setDeliverySnapshot(alodSnapshot)
@@ -76,7 +77,7 @@ trait SagaManager extends PersistentActor with AtLeastOnceDelivery with ActorLog
       updateState(msg)
   }
 
-  override def receiveCommand: Receive = receiveEvent.orElse {
+  override def receiveCommand: Receive = receiveEvent(metaDataProvider).orElse {
     case ConfirmEvent(deliveryId, eventPosition) =>
       persist(EventConfirmed(deliveryId, eventPosition))(updateState)
 
