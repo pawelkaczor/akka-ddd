@@ -102,7 +102,7 @@ trait SagaManager extends PersistentActor with AtLeastOnceDelivery with ActorLog
       deliver(sagaOffice, deliveryId => {
         log.debug(s"[DELIVERY-ID: ${(deliveryId, pos)}] Delivering: $em")
         state = state.withEventSent(deliveryId, pos)
-        em.withMetaAttribute[EventMessage](DeliveryId, deliveryId)
+        em.withMetaAttribute(DeliveryId, deliveryId)
       })
 
     case EventConfirmed(deliveryId, eventPosition) =>

@@ -32,7 +32,7 @@ trait EventstoreSerializationSupport {
     val id: EntityId = metadata.get("id")
     val aggrSnapId = new AggregateSnapshotId(pr.persistenceId, pr.sequenceNr)
     val event: AnyRef = pr.payload.asInstanceOf[AnyRef]
-    new DomainEventMessage(aggrSnapId, event, id).withMetaData[DomainEventMessage](Some(metadata))
+    new DomainEventMessage(aggrSnapId, event, id).withMetaData(Some(metadata)).asInstanceOf[DomainEventMessage]
   }
 
 }

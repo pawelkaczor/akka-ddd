@@ -26,7 +26,7 @@ trait EventMessageUnmarshaller {
     val metadata = read[Map[String, Any]](eventData.metadata.value.utf8String) ++ Map(
       EventPosition -> er.number.value.asInstanceOf[Long]
     )
-    new EventMessage(event).withMetaData[EventMessage](metadata)
+    new EventMessage(event).withMetaData(metadata)
   }
 }
 
@@ -49,7 +49,7 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventMessageUnmars
   def receiveEvent(metaDataProvider: EventMessage => Option[MetaData]): Receive = {
     case er: EventRecord =>
       val em = unmarshallEventMessage(er)
-      eventReceived(em.withMetaData[EventMessage](metaDataProvider(em)))
+      eventReceived(em.withMetaData(metaDataProvider(em)))
 
     case Failure(NotAuthenticated) =>
       log.error("Invalid credentials")

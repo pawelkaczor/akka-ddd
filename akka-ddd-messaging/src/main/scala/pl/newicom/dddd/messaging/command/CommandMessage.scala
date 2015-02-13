@@ -11,6 +11,8 @@ case class CommandMessage(
     timestamp: Date = new Date)
   extends Message with EntityMessage {
 
+  type MessageImpl = CommandMessage
+
   override def entityId: EntityId = command.aggregateId
 
   override def payload: Any = command

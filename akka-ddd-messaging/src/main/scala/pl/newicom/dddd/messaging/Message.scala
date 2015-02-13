@@ -32,16 +32,23 @@ abstract class Message(var metadata: Option[MetaData] = None) extends Serializab
 
   def id: String
 
-  def withMetaData[T <: Message](metadata: Option[MetaData]): T = {
-    if (metadata.isDefined) withMetaData(metadata.get.metadata) else this.asInstanceOf[T]
+  type MessageImpl <: Message
+
+  def withMetaData(metadata: Option[MetaData]): MessageImpl = {
+    if (metadata.isDefined) withMetaData(metadata.get.metadata) else this.asInstanceOf[MessageImpl]
   }
 
-  def withMetaData[T <: Message](metadata: Map[String, Any], clearExisting: Boolean = false): T = {
+  def withMetaData(metadata: Map[String, Any], clearExisting: Boolean = false): MessageImpl = {
     this.metadata = Some(this.metadata.getOrElse(new MetaData()).withMetaData(metadata))
-    this.asInstanceOf[T]
+    this.asInstanceOf[MessageImpl]
   }
 
-  def withMetaAttribute[T <: Message](attrName: Any, value: Any): T = withMetaData(Map(attrName.toString -> value))
+  def withMetaData2(metadata: Map[String, Any], clearExisting: Boolean = false): MessageImpl = {
+    this.metadata = Some(this.metadata.getOrElse(new MetaData()).withMetaData(metadata))
+    this.asInstanceOf[MessageImpl]
+  }
+
+  def withMetaAttribute(attrName: Any, value: Any): MessageImpl = withMetaData(Map(attrName.toString -> value))
 
   def hasMetaAttribute(attrName: Any) = if (metadata.isDefined) metadata.get.contains(attrName.toString) else false
 

@@ -4,10 +4,10 @@ import akka.actor._
 import akka.persistence.AtLeastOnceDelivery.{UnconfirmedDelivery, UnconfirmedWarning}
 import akka.persistence._
 import pl.newicom.dddd.aggregate.AggregateRoot
-import pl.newicom.dddd.delivery.DeliveryContext
 import pl.newicom.dddd.delivery.protocol.Confirm
 import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.eventhandling.reliable.ReliablePublisher.Confirmed
+import pl.newicom.dddd.messaging.MetaData.DeliveryId
 import pl.newicom.dddd.messaging.event.{DomainEventMessage, EventMessage}
 
 import scala.collection.immutable.Seq
@@ -20,7 +20,7 @@ object ReliablePublisher {
 trait ReliablePublisher extends PersistentActor with EventPublisher with AtLeastOnceDelivery {
   this: AggregateRoot[_] =>
 
-  implicit def system = context.system
+  implicit def system: ActorSystem = context.system
 
   def target: ActorPath
 
@@ -28,8 +28,7 @@ trait ReliablePublisher extends PersistentActor with EventPublisher with AtLeast
   override def warnAfterNumberOfUnconfirmedAttempts = 15
 
   override def publish(em: DomainEventMessage) {
-    import DeliveryContext.Adjust._
-    deliver(target, deliveryId => em.requestConfirmation(deliveryId))
+    deliver(target, deliveryId => em.withMetaAttribute(DeliveryId, deliveryId))
   }
 
   abstract override def receiveRecover: Receive = {
