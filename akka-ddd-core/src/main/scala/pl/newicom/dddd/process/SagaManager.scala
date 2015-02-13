@@ -3,11 +3,10 @@ package pl.newicom.dddd.process
 import akka.actor.{ActorLogging, ActorPath}
 import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
 import akka.persistence._
-import pl.newicom.dddd.aggregate.{DomainEvent, EntityId}
 import pl.newicom.dddd.delivery.protocol.ConfirmEvent
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.MetaData._
-import pl.newicom.dddd.messaging.event.{EventStreamSubscriber, EventMessage}
+import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
 
 import scala.collection.immutable.SortedMap
 import scala.concurrent.duration._
@@ -41,14 +40,13 @@ case class SagaManagerState(
 // Snapshot
 case class SagaManagerSnapshot(state: SagaManagerState, alodSnapshot: AtLeastOnceDeliverySnapshot)
 
-trait SagaManager extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
+class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
   this: EventStreamSubscriber =>
 
   private var state = SagaManagerState()
 
-  def sagaOffice: ActorPath
-  def bpsName: String
-  def correlationIdResolver: DomainEvent => EntityId
+  def bpsName = sagaConfig.bpsName
+  def correlationIdResolver = sagaConfig.correlationIdResolver
 
   override def persistenceId: String = s"SagaManager-$bpsName"
 

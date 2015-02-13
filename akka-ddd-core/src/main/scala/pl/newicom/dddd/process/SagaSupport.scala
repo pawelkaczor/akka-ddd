@@ -1,28 +1,31 @@
 package pl.newicom.dddd.process
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ActorPath, ActorRef, Props}
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
-import pl.newicom.dddd.aggregate.DomainEvent
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.office.{Office, OfficeFactory}
 
 object SagaSupport {
-  type ExchangeName = String
 
-  type ExchangeSubscriptions[A <: Saga] = Map[ExchangeName, Array[Class[_ <: DomainEvent]]]
+  type SagaManagerFactory = (SagaConfig[_], ActorPath) => SagaManager
 
-  implicit def defaultCaseIdResolution[A <: Saga]() = new EntityIdResolution[A]
+  implicit def defaultCaseIdResolution[A <: Saga](): EntityIdResolution[A] = new EntityIdResolution[A]
 
-  def registerSaga[A <: Saga : ExchangeSubscriptions : EntityIdResolution : OfficeFactory : BusinessEntityActorFactory](implicit system: ActorSystem, creator: CreationSupport): ActorRef = {
+  def registerSaga[A <: Saga : SagaConfig](sagaOffice: ActorRef)(implicit cs: CreationSupport, smf: SagaManagerFactory): ActorRef = {
+    val sagaOfficePath = sagaOffice.path
+    val sagaConfig: SagaConfig[A] = implicitly[SagaConfig[A]]
+
+    val sagaManagerProps = Props[SagaManager](smf(sagaConfig, sagaOfficePath))
+    val sagaManager = cs.createChild(sagaManagerProps, s"SagaManager-${sagaConfig.bpsName}")
+
+    sagaManager
+  }
+
+  def registerSaga[A <: Saga : SagaConfig : EntityIdResolution : OfficeFactory : BusinessEntityActorFactory]
+    (implicit cs: CreationSupport, smf: SagaManagerFactory): (ActorRef, ActorRef) = {
+    
     val sagaOffice = Office.office[A]
-    registerEventListeners(sagaOffice)
-    sagaOffice
+    (sagaOffice, registerSaga[A](sagaOffice))
   }
 
-  private def registerEventListeners[A <: Saga](sagaOffice: ActorRef)(implicit es: ExchangeSubscriptions[_], creator: CreationSupport) {
-    for ((exchangeName, events) <- es) {
-      // TODO implement
-      //ForwardingConsumer(exchangeName, sagaOffice)
-    }
-  }
 }

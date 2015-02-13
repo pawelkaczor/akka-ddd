@@ -3,7 +3,7 @@ package pl.newicom.dddd.process
 import akka.actor.{ActorPath, ActorLogging, Props}
 import akka.persistence.{RecoveryCompleted, AtLeastOnceDelivery, PersistentActor}
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
-import pl.newicom.dddd.aggregate.{Command, BusinessEntity, DomainEvent}
+import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.{Confirm, Confirmed, ConfirmEvent}
 import pl.newicom.dddd.messaging.MetaData.{DeliveryId, EventPosition}
 import pl.newicom.dddd.messaging.command.CommandMessage
@@ -15,6 +15,11 @@ abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A]
 
   def props(pc: PassivationConfig): Props
   def inactivityTimeout: Duration = 1.minute
+}
+
+trait SagaConfig[A <: Saga] {
+  def bpsName: String
+  def correlationIdResolver: DomainEvent => EntityId
 }
 
 trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
