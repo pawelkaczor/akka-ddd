@@ -75,7 +75,7 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
 
   private def _updateState(msg: Any): Unit = msg match {
     case em: EventMessage =>
-      eventProcessed(em)
+      messageProcessed(em)
       updateState(em.event)
     case Confirmed(deliveryId) =>
       confirmDelivery(deliveryId)

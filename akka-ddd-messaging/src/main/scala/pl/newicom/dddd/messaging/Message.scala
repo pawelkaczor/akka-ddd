@@ -1,8 +1,8 @@
 package pl.newicom.dddd.messaging
 
 object MetaData {
-  val DeliveryId = "deliveryId"
-  val EventPosition = "eventPosition"
+  val DeliveryId = "_deliveryId"
+  val EventPosition = "_eventPosition"
   val CorrelationId: String = "correlationId"
 }
 
@@ -25,6 +25,11 @@ class MetaData(var metadata: Map[String, Any] = Map.empty) extends Serializable 
 
   def tryGet[B](attrName: String): Option[B] = metadata.get(attrName).asInstanceOf[Option[B]]
 
+  def exceptDeliveryAttributes: Option[MetaData] = {
+    val resultMap = this.metadata.filterKeys(a => a.startsWith("_"))
+    if (resultMap.isEmpty) None else Some(new MetaData(resultMap))
+  }
+
   override def toString: String = metadata.toString()
 }
 
@@ -34,16 +39,15 @@ abstract class Message(var metadata: Option[MetaData] = None) extends Serializab
 
   type MessageImpl <: Message
 
+  def metadataExceptDeliveryAttributes: Option[MetaData] = {
+    metadata.flatMap(_.exceptDeliveryAttributes)
+  }
+
   def withMetaData(metadata: Option[MetaData]): MessageImpl = {
     if (metadata.isDefined) withMetaData(metadata.get.metadata) else this.asInstanceOf[MessageImpl]
   }
 
   def withMetaData(metadata: Map[String, Any], clearExisting: Boolean = false): MessageImpl = {
-    this.metadata = Some(this.metadata.getOrElse(new MetaData()).withMetaData(metadata))
-    this.asInstanceOf[MessageImpl]
-  }
-
-  def withMetaData2(metadata: Map[String, Any], clearExisting: Boolean = false): MessageImpl = {
     this.metadata = Some(this.metadata.getOrElse(new MetaData()).withMetaData(metadata))
     this.asInstanceOf[MessageImpl]
   }

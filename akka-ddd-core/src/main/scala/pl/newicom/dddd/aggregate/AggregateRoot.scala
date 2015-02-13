@@ -5,10 +5,12 @@ import akka.actor._
 import akka.persistence._
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
-import pl.newicom.dddd.delivery.protocol.Acknowledged
+import pl.newicom.dddd.delivery.protocol.{Acknowledged, Confirm}
 import pl.newicom.dddd.eventhandling.EventHandler
+import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{AggregateSnapshotId, DomainEventMessage, EventMessage}
+import pl.newicom.dddd.messaging.{Deduplication, Message}
 
 import scala.concurrent.duration.{Duration, _}
 
@@ -23,7 +25,8 @@ abstract class AggregateRootActorFactory[A <: AggregateRoot[_]] extends Business
 }
 
 trait AggregateRoot[S <: AggregateState]
-  extends BusinessEntity with GracefulPassivation with PersistentActor with EventHandler with ActorLogging {
+  extends BusinessEntity with GracefulPassivation with PersistentActor
+  with EventHandler with Deduplication with ActorLogging {
 
   type AggregateRootFactory = PartialFunction[DomainEvent, S]
   private var stateOpt: Option[S] = None
@@ -32,6 +35,10 @@ trait AggregateRoot[S <: AggregateState]
 
   override def persistenceId: String = id
   override def id = self.path.name
+
+  override def aroundReceive(receive: Receive, msg: Any): Unit = {
+    super.aroundReceive(receiveDuplicate(acknowledgeCommandProcessed).orElse(receive), msg)
+  }
 
   override def receiveCommand: Receive = {
     case cm: CommandMessage =>
@@ -42,7 +49,7 @@ trait AggregateRoot[S <: AggregateState]
 
   override def receiveRecover: Receive = {
     case event: EventMessage =>
-      updateState(event.event)
+      updateState(event)
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
@@ -54,17 +61,19 @@ trait AggregateRoot[S <: AggregateState]
 
   def handleCommand: Receive
 
-  def updateState(event: DomainEvent) {
+  def updateState(em: EventMessage) {
+    val event = em.event
     val nextState = if (initialized) state.apply(event) else factory.apply(event)
     stateOpt = Option(nextState.asInstanceOf[S])
+    messageProcessed(em)
   }
 
   def raise(event: DomainEvent) {
-    persist(new EventMessage(event = event).withMetaData(commandMessage.metadata)) {
+    persist(new EventMessage(event = event).withMetaData(commandMessage.metadataExceptDeliveryAttributes)) {
       persisted =>
         {
           log.info("Event persisted: {}", event)
-          updateState(event)
+          updateState(persisted)
           handle(toDomainEventMessage(persisted))
         }
     }

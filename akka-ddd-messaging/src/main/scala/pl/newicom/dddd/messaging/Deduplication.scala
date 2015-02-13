@@ -6,18 +6,18 @@ import scala.collection.mutable
 
 trait Deduplication {
 
-  private val processedEvents: mutable.Set[String] = mutable.Set.empty
+  private val processedMessages: mutable.Set[String] = mutable.Set.empty
 
   def receiveDuplicate(handleDuplicate: Message => Unit): Receive = {
     case m: Message if wasProcessed(m) =>
       handleDuplicate(m)
   }
 
-  def eventProcessed(m: Message): Unit = {
-    processedEvents += m.id
+  def messageProcessed(m: Message): Unit = {
+    processedMessages += m.id
   }
 
   def wasProcessed(m: Message): Boolean =
-    processedEvents.contains(m.id)
+    processedMessages.contains(m.id)
 
 }
