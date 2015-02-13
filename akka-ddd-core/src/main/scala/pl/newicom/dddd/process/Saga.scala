@@ -1,11 +1,12 @@
 package pl.newicom.dddd.process
 
-import akka.actor.{ActorLogging, Props}
-import akka.persistence.PersistentActor
+import akka.actor.{ActorPath, ActorLogging, Props}
+import akka.persistence.{RecoveryCompleted, AtLeastOnceDelivery, PersistentActor}
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
-import pl.newicom.dddd.aggregate.{BusinessEntity, DomainEvent}
-import pl.newicom.dddd.delivery.protocol.ConfirmEvent
+import pl.newicom.dddd.aggregate.{Command, BusinessEntity, DomainEvent}
+import pl.newicom.dddd.delivery.protocol.{Confirm, Confirmed, ConfirmEvent}
 import pl.newicom.dddd.messaging.MetaData.{DeliveryId, EventPosition}
+import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
 
@@ -16,7 +17,8 @@ abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A]
   def inactivityTimeout: Duration = 1.minute
 }
 
-trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor with Deduplication with ActorLogging {
+trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
+  with Deduplication with AtLeastOnceDelivery with ActorLogging {
 
   def sagaId = self.path.name
 
@@ -25,10 +27,21 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor 
   override def persistenceId: String = sagaId
 
   override def aroundReceive(receive: Receive, msg: Any): Unit = {
-    super.aroundReceive(receiveDuplicate(acknowledge).orElse(receive), msg)
+    super.aroundReceive(receiveDuplicate(acknowledgeEvent).orElse(receive), msg)
   }
 
-  override def receiveCommand: Receive = receiveEvent.orElse(receiveUnexpected)
+  override def receiveCommand: Receive = receiveCommandDeliveryReceipt orElse receiveEvent orElse receiveUnexpected
+
+  def deliverCommand(office: ActorPath, command: Command): Unit = {
+    deliver(office, deliveryId => {
+      CommandMessage(command).withMetaAttribute(DeliveryId, deliveryId)
+    })
+  }
+
+  def receiveCommandDeliveryReceipt: Receive = {
+    case Confirm(deliveryId) =>
+      persist(Confirmed(deliveryId))(_updateState)
+  }
 
   /**
    * Defines business process logic (state transitions).
@@ -38,8 +51,11 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor 
   def receiveEvent: Receive
 
   override def receiveRecover: Receive = {
-    case em: EventMessage =>
-      updateState(em)
+    case rc: RecoveryCompleted =>
+      // do nothing
+    case msg: Any =>
+      _updateState(msg)
+
   }
 
   /**
@@ -48,8 +64,8 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor 
   def raise(em: EventMessage): Unit =
     persist(em) { persisted =>
       log.debug("Event message persisted: {}", persisted)
-      updateState(persisted)
-      acknowledge(persisted)
+      _updateState(persisted)
+      acknowledgeEvent(persisted)
     }
 
   /**
@@ -57,15 +73,19 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor 
    */
   def updateState(e: DomainEvent)
 
-  private def updateState(em: EventMessage) {
-    eventProcessed(em)
-    updateState(em.event)
+  private def _updateState(msg: Any): Unit = msg match {
+    case em: EventMessage =>
+      eventProcessed(em)
+      updateState(em.event)
+    case Confirmed(deliveryId) =>
+      confirmDelivery(deliveryId)
+      log.debug(s"Delivery of command confirmed (deliveryId: $deliveryId)")
   }
 
-  private def acknowledge(m: Message) {
-    val confirmation = ConfirmEvent(m.getMetaAttribute(DeliveryId), m.getMetaAttribute(EventPosition))
-    sender() ! confirmation
-    log.debug(s"Confirmation $confirmation sent")
+  private def acknowledgeEvent(em: Message) {
+    val deliveryReceipt = ConfirmEvent(em.getMetaAttribute(DeliveryId), em.getMetaAttribute(EventPosition))
+    sender() ! deliveryReceipt
+    log.debug(s"Delivery receipt (for received event) sent ($deliveryReceipt)")
   }
 
   def receiveUnexpected: Receive = {

@@ -4,18 +4,13 @@ import akka.actor._
 import akka.persistence.AtLeastOnceDelivery.{UnconfirmedDelivery, UnconfirmedWarning}
 import akka.persistence._
 import pl.newicom.dddd.aggregate.AggregateRoot
-import pl.newicom.dddd.delivery.protocol.Confirm
+import pl.newicom.dddd.delivery.protocol.{Confirmed, Confirm}
 import pl.newicom.dddd.eventhandling.EventPublisher
-import pl.newicom.dddd.eventhandling.reliable.ReliablePublisher.Confirmed
 import pl.newicom.dddd.messaging.MetaData.DeliveryId
 import pl.newicom.dddd.messaging.event.{DomainEventMessage, EventMessage}
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
-
-object ReliablePublisher {
-  case class Confirmed(deliveryId: Long)
-}
 
 trait ReliablePublisher extends PersistentActor with EventPublisher with AtLeastOnceDelivery {
   this: AggregateRoot[_] =>
