@@ -7,6 +7,9 @@ import pl.newicom.dddd.office.{Office, OfficeFactory}
 
 object SagaSupport {
 
+  /**
+   * Responsible of creating [[SagaManager]] using provided [[SagaConfig]] and path to saga office
+   */
   type SagaManagerFactory = (SagaConfig[_], ActorPath) => SagaManager
 
   implicit def defaultCaseIdResolution[A <: Saga](): EntityIdResolution[A] = new EntityIdResolution[A]

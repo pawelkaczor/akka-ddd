@@ -18,7 +18,15 @@ abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A]
 }
 
 trait SagaConfig[A <: Saga] {
+  /**
+   * Name of Business Process Stream (bps)
+   */
   def bpsName: String
+
+  /**
+   * Correlation ID identifies process instance. It is used to route [[pl.newicom.dddd.messaging.event.EventMessage]]
+   * messages created by [[SagaManager]] to [[Saga]] instance,
+   */
   def correlationIdResolver: DomainEvent => EntityId
 
   /**
