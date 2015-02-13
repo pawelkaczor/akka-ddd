@@ -20,6 +20,11 @@ abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A]
 trait SagaConfig[A <: Saga] {
   def bpsName: String
   def correlationIdResolver: DomainEvent => EntityId
+
+  /**
+   * Might be used for events deserialization purposes
+   */
+  def interest: Option[List[Class[_]]] = None
 }
 
 trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
