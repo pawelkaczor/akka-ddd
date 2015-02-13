@@ -48,8 +48,8 @@ trait AggregateRoot[S <: AggregateState]
   }
 
   override def receiveRecover: Receive = {
-    case event: EventMessage =>
-      updateState(event)
+    case em: EventMessage =>
+      updateState(em)
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
@@ -84,11 +84,21 @@ trait AggregateRoot[S <: AggregateState]
       .withMetaData(persisted.metadata).asInstanceOf[DomainEventMessage]
 
   override def handle(event: DomainEventMessage) {
-    sender ! Acknowledged
+    acknowledgeCommandProcessed(event)
   }
 
   def initialized = stateOpt.isDefined
 
   def state = if (initialized) stateOpt.get else throw new AggregateRootNotInitializedException
+
+  private def acknowledgeCommandProcessed(msg: Message) {
+    if (msg.hasMetaAttribute(DeliveryId)) {
+      val deliveryReceipt = Confirm(msg.getMetaAttribute(DeliveryId))
+      sender() ! deliveryReceipt
+      log.debug(s"Delivery receipt (for received command) sent ($deliveryReceipt)")
+    } else {
+      sender() ! Acknowledged
+    }
+  }
 
 }
