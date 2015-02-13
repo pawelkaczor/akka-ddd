@@ -14,10 +14,10 @@ Contains base types for commands and events and their envelopes ( command/event 
 This module should be used on both write and read side of the application. 
 
 ##### akka-ddd-core
-Contains core artifacts used on write side  of the application:
+Contains core artifacts used on write side of the application:
 - [AggregateRoot](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/aggregate/AggregateRoot.scala) trait - abstract persistent, event sourced actor responsible for processing commands received from the office. Implementation of AggregateRoot trait represents concrete business entity (i.e Reservation, Product, etc) See example AR: [DummyAggregateRoot](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyAggregateRoot.scala)   
 - [Office](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/office/Office.scala) - an actor that is used by the client to talk to Aggregate Roots of particular class. See [Don't call me, call my office](http://pkaczor.blogspot.com/2014/04/reactive-ddd-with-akka-lesson-2.html) for explanation. There are two office implementations: ["local"](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/main/scala/pl/newicom/dddd/office/LocalOffice.scala) (used for testing) and ["global"](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/cluster/ShardingSupport.scala) (uses [Akka Sharding](http://doc.akka.io/docs/akka/snapshot/contrib/cluster-sharding.html)
-- [Saga support](https://github.com/pawelkaczor/akka-ddd/tree/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/process) - not finished 
+- [Saga](https://github.com/pawelkaczor/akka-ddd/tree/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/process) 
 
 ##### akka-ddd-test
 Allows easy creation of test of Aggregate Root implementations. Supports both "local" and "global" offices. See [DummyOfficeSpec](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyOfficeSpec.scala).
