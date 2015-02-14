@@ -1,11 +1,10 @@
 package pl.newicom.dddd.aggregate
 
-import akka.actor.Status.Failure
 import akka.actor._
 import akka.persistence._
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
-import pl.newicom.dddd.delivery.protocol.{Acknowledged, Confirm}
+import pl.newicom.dddd.delivery.protocol.{Processed, alod}
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.command.CommandMessage
@@ -13,6 +12,7 @@ import pl.newicom.dddd.messaging.event.{AggregateSnapshotId, DomainEventMessage,
 import pl.newicom.dddd.messaging.{Deduplication, Message}
 
 import scala.concurrent.duration.{Duration, _}
+import scala.util.{Failure, Success, Try}
 
 trait AggregateState {
   type StateMachine = PartialFunction[DomainEvent, AggregateState]
@@ -37,7 +37,7 @@ trait AggregateRoot[S <: AggregateState]
   override def id = self.path.name
 
   override def aroundReceive(receive: Receive, msg: Any): Unit = {
-    super.aroundReceive(receiveDuplicate(acknowledgeCommandProcessed).orElse(receive), msg)
+    super.aroundReceive(receiveDuplicate(commandDuplicated).orElse(receive), msg)
   }
 
   override def receiveCommand: Receive = {
@@ -52,11 +52,16 @@ trait AggregateRoot[S <: AggregateState]
       updateState(em)
   }
 
-  override def preRestart(reason: Throwable, message: Option[Any]) {
-    sender() ! Failure(reason)
-    super.preRestart(reason, message)
+  override def preRestart(reason: Throwable, msg: Option[Any]) {
+    val deliveryId = msg.flatMap(_.asInstanceOf[CommandMessage].tryGetMetaAttribute(DeliveryId))
+    val result = Failure(reason)
+    acknowledgeCommandProcessed(deliveryId, result)
+    super.preRestart(reason, msg)
   }
 
+  /**
+   * Command message being processed. Not available during recovery
+   */
   def commandMessage = _lastCommandMessage.get
 
   def handleCommand: Receive
@@ -83,22 +88,23 @@ trait AggregateRoot[S <: AggregateState]
     new DomainEventMessage(persisted, AggregateSnapshotId(id, lastSequenceNr))
       .withMetaData(persisted.metadata).asInstanceOf[DomainEventMessage]
 
+  /**
+   * Event handler, not invoked during recovery.
+   */
   override def handle(event: DomainEventMessage) {
-    acknowledgeCommandProcessed(event)
+    acknowledgeCommandProcessed(commandMessage.tryGetMetaAttribute(DeliveryId))
   }
 
   def initialized = stateOpt.isDefined
 
   def state = if (initialized) stateOpt.get else throw new AggregateRootNotInitializedException
 
-  private def acknowledgeCommandProcessed(msg: Message) {
-    if (msg.hasMetaAttribute(DeliveryId)) {
-      val deliveryReceipt = Confirm(msg.getMetaAttribute(DeliveryId))
-      sender() ! deliveryReceipt
-      log.debug(s"Delivery receipt (for received command) sent ($deliveryReceipt)")
-    } else {
-      sender() ! Acknowledged
-    }
+  private def commandDuplicated(msg: Message) = acknowledgeCommandProcessed(msg.tryGetMetaAttribute(DeliveryId))
+
+  private def acknowledgeCommandProcessed(deliveryId: Option[Long], result: Try[Any] = Success("OK")) {
+    val deliveryReceipt = if (deliveryId.isDefined) alod.Processed(deliveryId.get, result) else Processed()
+    sender() ! deliveryReceipt
+    log.debug(s"Delivery receipt (for received command) sent ($deliveryReceipt)")
   }
 
 }

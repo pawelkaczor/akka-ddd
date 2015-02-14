@@ -8,7 +8,7 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import org.scalacheck.Gen
 import pl.newicom.dddd.aggregate.Command
-import pl.newicom.dddd.delivery.protocol.Acknowledged
+import pl.newicom.dddd.delivery.protocol.Processed
 
 import scala.annotation.tailrec
 import scala.concurrent.Await
@@ -44,11 +44,11 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     WhenContext(c, PastEvents(), List(param1))
   }
 
-  implicit def acksToPastEvents(acks: Seq[Acknowledged]): PastEvents = PastEvents(acks.toList)
+  implicit def acksToPastEvents(acks: Seq[Processed]): PastEvents = PastEvents(acks.toList)
 
-  case class PastEvents(list: List[Acknowledged] = List.empty) {
+  case class PastEvents(list: List[Processed] = List.empty) {
     private val map: Map[Class[_], List[Any]] =
-      list.groupBy(_.msg.getClass).mapValues(ackSeq => ackSeq.map(_.msg))
+      list.groupBy(_.result.get.getClass).mapValues(ackSeq => ackSeq.map(_.result.get))
 
     def first[E](implicit ct: ClassTag[E]): E = map.get(ct.runtimeClass).map(_(0)).orNull.asInstanceOf[E]
     def last[E](implicit ct: ClassTag[E]): E = map.get(ct.runtimeClass).map(_.last).orNull.asInstanceOf[E]
@@ -124,7 +124,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     Given(
       givenFun = () => {
         cs.map { c =>
-          Await.result((officeUnderTest ? c).mapTo[Acknowledged], timeout.duration)
+          Await.result((officeUnderTest ? c).mapTo[Processed], timeout.duration)
         }
       }
     )

@@ -4,11 +4,12 @@ import akka.actor.{ActorPath, ActorLogging, Props}
 import akka.persistence.{RecoveryCompleted, AtLeastOnceDelivery, PersistentActor}
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.delivery.protocol.{Confirm, Confirmed, ConfirmEvent}
+import pl.newicom.dddd.delivery.protocol.alod._
 import pl.newicom.dddd.messaging.MetaData.{DeliveryId, EventPosition}
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
+import pl.newicom.dddd.process.SagaManager.EventDelivered
 
 abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A] {
   import scala.concurrent.duration._
@@ -24,7 +25,7 @@ trait SagaConfig[A <: Saga] {
   def bpsName: String
 
   /**
-   * Correlation ID identifies process instance. It is used to route [[pl.newicom.dddd.messaging.event.EventMessage]]
+   * Correlation ID identifies process instance. It is used to route EventMessage
    * messages created by [[SagaManager]] to [[Saga]] instance,
    */
   def correlationIdResolver: DomainEvent => EntityId
@@ -57,8 +58,8 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
   }
 
   def receiveCommandDeliveryReceipt: Receive = {
-    case Confirm(deliveryId) =>
-      persist(Confirmed(deliveryId))(_updateState)
+    case receipt: Delivered =>
+      persist(receipt)(_updateState)
   }
 
   /**
@@ -95,13 +96,14 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
     case em: EventMessage =>
       messageProcessed(em)
       updateState(em.event)
-    case Confirmed(deliveryId) =>
-      confirmDelivery(deliveryId)
-      log.debug(s"Delivery of command confirmed (deliveryId: $deliveryId)")
+    case receipt: Delivered =>
+      confirmDelivery(receipt.deliveryId)
+      log.debug(s"Delivery of command confirmed (receipt: $receipt)")
+      // TODO allow Saga to react on command failure?
   }
 
   private def acknowledgeEvent(em: Message) {
-    val deliveryReceipt = ConfirmEvent(em.getMetaAttribute(DeliveryId), em.getMetaAttribute(EventPosition))
+    val deliveryReceipt = EventDelivered(em.getMetaAttribute(DeliveryId), em.getMetaAttribute(EventPosition))
     sender() ! deliveryReceipt
     log.debug(s"Delivery receipt (for received event) sent ($deliveryReceipt)")
   }

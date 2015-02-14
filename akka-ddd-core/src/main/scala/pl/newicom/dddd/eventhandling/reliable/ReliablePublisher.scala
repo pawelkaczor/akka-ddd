@@ -4,7 +4,7 @@ import akka.actor._
 import akka.persistence.AtLeastOnceDelivery.{UnconfirmedDelivery, UnconfirmedWarning}
 import akka.persistence._
 import pl.newicom.dddd.aggregate.AggregateRoot
-import pl.newicom.dddd.delivery.protocol.{Confirmed, Confirm}
+import pl.newicom.dddd.delivery.protocol.alod.Processed
 import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.messaging.MetaData.DeliveryId
 import pl.newicom.dddd.messaging.event.{DomainEventMessage, EventMessage}
@@ -31,13 +31,13 @@ trait ReliablePublisher extends PersistentActor with EventPublisher with AtLeast
       super.receiveRecover(event)
       publish(toDomainEventMessage(event))
 
-    case Confirmed(deliveryId) =>
+    case Processed(deliveryId, _) =>
       confirmDelivery(deliveryId)
   }
 
   abstract override def receiveCommand: Receive = {
-    case Confirm(deliveryId) =>
-      persist(Confirmed(deliveryId)) {
+    case receipt @ Processed(deliveryId, _) =>
+      persist(receipt) {
         _ => confirmDelivery(deliveryId)
       }
     case UnconfirmedWarning(unconfirmedDeliveries) =>

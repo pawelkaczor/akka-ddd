@@ -2,16 +2,14 @@ package pl.newicom.dddd.process
 
 import akka.actor.{ActorLogging, ActorPath}
 import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
-import akka.persistence._
-import pl.newicom.dddd.delivery.protocol.ConfirmEvent
+import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
+import pl.newicom.dddd.process.SagaManager.EventDelivered
 
 import scala.collection.immutable.SortedMap
 import scala.concurrent.duration._
-
-case class EventConfirmed(deliveryId: Long, eventPosition: Long)
 
 // State
 case class SagaManagerState(
@@ -21,7 +19,7 @@ case class SagaManagerState(
   def withEventSent(deliveryId: Long, eventPosition: Long) =
     SagaManagerState(lastConfirmedPosition, unconfirmedPositionsByDeliveryId.updated(deliveryId, eventPosition))
 
-  def withEventConfirmed(deliveryId: Long, eventPosition: Long) =
+  def withEventDelivered(deliveryId: Long, eventPosition: Long) =
     SagaManagerState(Some(eventPosition), unconfirmedPositionsByDeliveryId - deliveryId)
 
   def nextSubscribePosition: Option[Long] = firstUnconfirmedEventPosition.orElse(lastConfirmedPosition)
@@ -39,6 +37,12 @@ case class SagaManagerState(
 
 // Snapshot
 case class SagaManagerSnapshot(state: SagaManagerState, alodSnapshot: AtLeastOnceDeliverySnapshot)
+
+object SagaManager {
+  case class EventDelivered(deliveryId: Long, eventPosition: Long) extends Delivered
+}
+
+import akka.persistence._
 
 class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
   this: EventStreamSubscriber =>
@@ -76,8 +80,8 @@ class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Pers
   }
 
   override def receiveCommand: Receive = receiveEvent(metaDataProvider).orElse {
-    case ConfirmEvent(deliveryId, eventPosition) =>
-      persist(EventConfirmed(deliveryId, eventPosition))(updateState)
+    case receipt: EventDelivered =>
+      persist(receipt)(updateState)
 
     case "snap" =>
       val snapshot = new SagaManagerSnapshot(state, getDeliverySnapshot)
@@ -103,10 +107,10 @@ class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Pers
         em.withMetaAttribute(DeliveryId, deliveryId)
       })
 
-    case EventConfirmed(deliveryId, eventPosition) =>
+    case EventDelivered(deliveryId, eventPosition) =>
       log.debug(s"[DELIVERY-ID: ${(deliveryId, eventPosition)}] - Delivery confirmed")
       if (confirmDelivery(deliveryId)) {
-        state = state.withEventConfirmed(deliveryId, eventPosition)
+        state = state.withEventDelivered(deliveryId, eventPosition)
       }
 
   }
