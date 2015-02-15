@@ -1,15 +1,14 @@
 package pl.newicom.dddd.process
 
-import akka.actor.{ActorPath, ActorLogging, Props}
-import akka.persistence.{RecoveryCompleted, AtLeastOnceDelivery, PersistentActor}
+import akka.actor.{ActorLogging, ActorPath, Props}
+import akka.persistence.{AtLeastOnceDelivery, PersistentActor, RecoveryCompleted}
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.alod._
-import pl.newicom.dddd.messaging.MetaData.{DeliveryId, EventPosition}
+import pl.newicom.dddd.messaging.MetaData.DeliveryId
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
-import pl.newicom.dddd.process.SagaManager.EventDelivered
 
 abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A] {
   import scala.concurrent.duration._
@@ -103,7 +102,7 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
   }
 
   private def acknowledgeEvent(em: Message) {
-    val deliveryReceipt = EventDelivered(em.getMetaAttribute(DeliveryId), em.getMetaAttribute(EventPosition))
+    val deliveryReceipt = Processed(em.getMetaAttribute(DeliveryId))
     sender() ! deliveryReceipt
     log.debug(s"Delivery receipt (for received event) sent ($deliveryReceipt)")
   }

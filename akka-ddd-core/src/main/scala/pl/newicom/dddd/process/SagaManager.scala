@@ -6,41 +6,33 @@ import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
-import pl.newicom.dddd.process.SagaManager.EventDelivered
 
 import scala.collection.immutable.SortedMap
 import scala.concurrent.duration._
+import scala.util.Try
 
 // State
 case class SagaManagerState(
     lastConfirmedPosition: Option[Long] = None,
-    unconfirmedPositionsByDeliveryId: SortedMap[Long, Long] = SortedMap.empty[Long, Long]) {
+    // position -> internal deliveryID
+    unconfirmedPositions: SortedMap[Long, Long] = SortedMap.empty[Long, Long]) {
 
-  def withEventSent(deliveryId: Long, eventPosition: Long) =
-    SagaManagerState(lastConfirmedPosition, unconfirmedPositionsByDeliveryId.updated(deliveryId, eventPosition))
+  def internalDeliveryId(position: Long) = unconfirmedPositions.get(position)
+  
+  def withEventSent(internalDeliveryId: Long, pos: Long) =
+    SagaManagerState(lastConfirmedPosition, unconfirmedPositions.updated(pos, internalDeliveryId))
 
-  def withEventDelivered(deliveryId: Long, eventPosition: Long) =
-    SagaManagerState(Some(eventPosition), unconfirmedPositionsByDeliveryId - deliveryId)
+  def withEventDelivered(pos: Long) =
+    SagaManagerState(Some(pos), unconfirmedPositions - pos)
 
-  def nextSubscribePosition: Option[Long] = firstUnconfirmedEventPosition.orElse(lastConfirmedPosition)
+  def nextSubscribePosition: Option[Long] = firstUnconfirmedPosition.orElse(lastConfirmedPosition)
 
-  private def firstUnconfirmedEventPosition: Option[Long] = {
-    if (unconfirmedPositionsByDeliveryId.isEmpty) {
-      None
-    } else {
-      val deliveryId = unconfirmedPositionsByDeliveryId.lastKey
-      unconfirmedPositionsByDeliveryId.get(deliveryId)
-    }
-  }
+  private def firstUnconfirmedPosition: Option[Long] = Try(unconfirmedPositions.lastKey).toOption
 
 }
 
 // Snapshot
 case class SagaManagerSnapshot(state: SagaManagerState, alodSnapshot: AtLeastOnceDeliverySnapshot)
-
-object SagaManager {
-  case class EventDelivered(deliveryId: Long, eventPosition: Long) extends Delivered
-}
 
 import akka.persistence._
 
@@ -73,14 +65,14 @@ class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Pers
     case SnapshotOffer(metadata, SagaManagerSnapshot(smState, alodSnapshot)) =>
       setDeliverySnapshot(alodSnapshot)
       state = smState
-      log.debug(s"Snapshot restored: ${state.unconfirmedPositionsByDeliveryId}")
+      log.debug(s"Snapshot restored: ${state.unconfirmedPositions}")
 
     case msg =>
       updateState(msg)
   }
 
   override def receiveCommand: Receive = receiveEvent(metaDataProvider).orElse {
-    case receipt: EventDelivered =>
+    case receipt: Delivered =>
       persist(receipt)(updateState)
 
     case "snap" =>
@@ -101,16 +93,19 @@ class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Pers
   def updateState(msg: Any): Unit = msg match {
     case em: EventMessage =>
       val pos = eventPosition(em)
-      deliver(sagaOffice, deliveryId => {
-        log.debug(s"[DELIVERY-ID: ${(deliveryId, pos)}] Delivering: $em")
-        state = state.withEventSent(deliveryId, pos)
-        em.withMetaAttribute(DeliveryId, deliveryId)
+      deliver(sagaOffice, internalDeliveryId => {
+        log.debug(s"[DELIVERY-ID: $pos] Delivering: $em")
+        state = state.withEventSent(internalDeliveryId, pos)
+        em.withMetaAttribute(DeliveryId, pos)
       })
 
-    case EventDelivered(deliveryId, eventPosition) =>
-      log.debug(s"[DELIVERY-ID: ${(deliveryId, eventPosition)}] - Delivery confirmed")
-      if (confirmDelivery(deliveryId)) {
-        state = state.withEventDelivered(deliveryId, eventPosition)
+    case receipt: Delivered =>
+      val pos = receipt.deliveryId
+      state.internalDeliveryId(pos).foreach { internalDeliveryId =>
+        log.debug(s"[DELIVERY-ID: $pos] - Delivery confirmed")
+        if (confirmDelivery(internalDeliveryId)) {
+          state = state.withEventDelivered(pos)
+        }
       }
 
   }
