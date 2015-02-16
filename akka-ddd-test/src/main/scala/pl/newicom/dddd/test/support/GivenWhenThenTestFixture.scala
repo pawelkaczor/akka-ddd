@@ -98,7 +98,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     def expectException[E <: Exception](message: String = null)(implicit t: ClassTag[E]): Unit = {
       whenFun()
       expectMsgPF[Boolean](3 seconds, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
-        case actual @ Failure(ex) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
+        case Processed(scala.util.Failure(ex)) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
       }
     }
 
