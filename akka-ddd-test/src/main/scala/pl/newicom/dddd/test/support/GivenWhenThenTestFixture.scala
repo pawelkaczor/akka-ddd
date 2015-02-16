@@ -2,13 +2,14 @@ package pl.newicom.dddd.test.support
 
 import java.util.UUID
 
-import akka.actor.Status.Failure
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import org.scalacheck.Gen
 import pl.newicom.dddd.aggregate.Command
 import pl.newicom.dddd.delivery.protocol.Processed
+import pl.newicom.dddd.messaging.MetaData
+import pl.newicom.dddd.messaging.command.CommandMessage
 
 import scala.annotation.tailrec
 import scala.concurrent.Await
@@ -67,7 +68,9 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
       when(f(fakeWhenContext(pastEvents)))
 
     def when[C <: Command](wc: WhenContext[C]): When[C] = when(wc, () => {
-      officeUnderTest ! wc.command
+      val command: C = wc.command
+      val cm = CommandMessage(command).withMetaData(commandMetaDataProvider(command))
+      officeUnderTest ! cm
     })
 
     private def when[C <: Command](wc: WhenContext[C], whenFun: () => Unit): When[C] = {
@@ -124,7 +127,8 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     Given(
       givenFun = () => {
         cs.map { c =>
-          Await.result((officeUnderTest ? c).mapTo[Processed], timeout.duration)
+          val cm = CommandMessage(c).withMetaData(commandMetaDataProvider(c))
+          Await.result((officeUnderTest ? cm).mapTo[Processed], timeout.duration)
         }
       }
     )
@@ -141,4 +145,6 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   def first[E](implicit wc: WhenContext[_], ct: ClassTag[E]): E =
     wc.pastEvents.first[E]
+
+  def commandMetaDataProvider(c: Command): Option[MetaData] = None
 }
