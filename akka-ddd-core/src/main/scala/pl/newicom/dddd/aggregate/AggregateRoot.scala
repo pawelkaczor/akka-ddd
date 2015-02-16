@@ -31,19 +31,20 @@ trait AggregateRoot[S <: AggregateState]
   type AggregateRootFactory = PartialFunction[DomainEvent, S]
   private var stateOpt: Option[S] = None
   private var _lastCommandMessage: Option[CommandMessage] = None
+  private var _sender: ActorRef = null
   val factory: AggregateRootFactory
 
   override def persistenceId: String = id
   override def id = self.path.name
 
-  override def aroundReceive(receive: Receive, msg: Any): Unit = {
-    super.aroundReceive(receiveDuplicate(commandDuplicated).orElse(receive), msg)
-  }
+
+  override def receive: Receive = receiveDuplicate(commandDuplicated).orElse(receiveCommand)
 
   override def receiveCommand: Receive = {
     case cm: CommandMessage =>
       log.debug(s"Received: $cm")
       _lastCommandMessage = Some(cm)
+      _sender = sender()
       handleCommand.applyOrElse(cm.command, unhandled)
   }
 
@@ -79,7 +80,7 @@ trait AggregateRoot[S <: AggregateState]
         {
           log.info("Event persisted: {}", event)
           updateState(persisted)
-          handle(toDomainEventMessage(persisted))
+          handle(_sender, toDomainEventMessage(persisted))
         }
     }
   }
@@ -91,7 +92,7 @@ trait AggregateRoot[S <: AggregateState]
   /**
    * Event handler, not invoked during recovery.
    */
-  override def handle(event: DomainEventMessage) {
+  override def handle(senderRef: ActorRef, event: DomainEventMessage) {
     acknowledgeCommandProcessed(commandMessage.tryGetMetaAttribute(DeliveryId))
   }
 
@@ -102,8 +103,8 @@ trait AggregateRoot[S <: AggregateState]
   private def commandDuplicated(msg: Message) = acknowledgeCommandProcessed(msg.tryGetMetaAttribute(DeliveryId))
 
   private def acknowledgeCommandProcessed(deliveryId: Option[Long], result: Try[Any] = Success("OK")) {
-    val deliveryReceipt = if (deliveryId.isDefined) alod.Processed(deliveryId.get, result) else Processed()
-    sender() ! deliveryReceipt
+    val deliveryReceipt = if (deliveryId.isDefined) alod.Processed(deliveryId.get, result) else Processed(result)
+    _sender ! deliveryReceipt
     log.debug(s"Delivery receipt (for received command) sent ($deliveryReceipt)")
   }
 

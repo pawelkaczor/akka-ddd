@@ -1,6 +1,6 @@
 package pl.newicom.dddd.eventhandling
 
-import akka.actor.Actor
+import akka.actor.{ActorRef, Actor}
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.messaging.event.DomainEventMessage
 
@@ -9,9 +9,9 @@ import scala.util.Success
 trait LocalPublisher extends EventPublisher {
   this: Actor =>
 
-  override abstract def handle(event: DomainEventMessage): Unit = {
+  override abstract def handle(senderRef: ActorRef, event: DomainEventMessage): Unit = {
     publish(event)
-    sender ! Processed(Success(event.payload))
+    senderRef ! Processed(Success(event.payload))
   }
 
   override def publish(em: DomainEventMessage) {
