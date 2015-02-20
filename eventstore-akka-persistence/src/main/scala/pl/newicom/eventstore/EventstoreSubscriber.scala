@@ -10,8 +10,7 @@ import org.json4s.native.Serialization._
 import org.json4s.{DefaultFormats, Formats}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.MetaData
-import pl.newicom.dddd.messaging.MetaData._
-import pl.newicom.dddd.messaging.event.{EventStreamSubscriber, EventMessage}
+import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
 
 import scala.collection.immutable.Map
 
@@ -20,13 +19,12 @@ trait EventMessageUnmarshaller {
   val defaultFormats: Formats = DefaultFormats ++ JodaTimeSerializers.all + UUIDSerializer
   implicit val formats: Formats = defaultFormats
 
-  protected def unmarshallEventMessage(er: EventRecord): EventMessage = {
+  def unmarshallEventMessage(er: EventRecord): (EventMessage, Long) = {
     val eventData = er.data
     val event = read[DomainEvent](eventData.data.value.utf8String)
-    val metadata = read[Map[String, Any]](eventData.metadata.value.utf8String) ++ Map(
-      EventPosition -> er.number.value.asInstanceOf[Long]
-    )
-    new EventMessage(event).withMetaData(metadata)
+    val metadata = read[Map[String, Any]](eventData.metadata.value.utf8String)
+    val position = er.number.value.asInstanceOf[Long]
+    (new EventMessage(event).withMetaData(metadata), position)
   }
 }
 
@@ -48,8 +46,8 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventMessageUnmars
 
   def receiveEvent(metaDataProvider: EventMessage => Option[MetaData]): Receive = {
     case er: EventRecord =>
-      val em = unmarshallEventMessage(er)
-      eventReceived(em.withMetaData(metaDataProvider(em)))
+      val (em, pos) = unmarshallEventMessage(er)
+      eventReceived(em.withMetaData(metaDataProvider(em)), pos)
 
     case Failure(NotAuthenticated) =>
       log.error("Invalid credentials")

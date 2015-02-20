@@ -2,7 +2,6 @@ package pl.newicom.dddd.messaging.event
 
 import akka.actor.{Actor, ActorRef}
 import pl.newicom.dddd.messaging.MetaData
-import pl.newicom.dddd.messaging.MetaData._
 
 trait EventStreamSubscriber {
   this: Actor =>
@@ -24,11 +23,6 @@ trait EventStreamSubscriber {
   /**
    * Called whenever event has been received from the stream.
    */
-  def eventReceived(em: EventMessage): Unit
-
-  /**
-   * Helper method for obtaining event's position in the stream.
-   */
-  def eventPosition(em: EventMessage) = em.getMetaAttribute[Long](EventPosition)
+  def eventReceived(em: EventMessage, position: Long): Unit
 
 }

@@ -2,8 +2,8 @@ package pl.newicom.dddd.messaging
 
 object MetaData {
   val DeliveryId = "_deliveryId"
-  val EventPosition = "_eventPosition"
   val CorrelationId: String = "correlationId"
+  val SessionId: String = "sessionId"
 }
 
 class MetaData(var metadata: Map[String, Any] = Map.empty) extends Serializable {
