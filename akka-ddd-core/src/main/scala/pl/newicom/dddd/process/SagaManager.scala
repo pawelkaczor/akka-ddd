@@ -18,7 +18,7 @@ class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Pers
   private var alodState = AtLeastOnceDeliveryState()
 
   def bpsName = sagaConfig.bpsName
-  def correlationIdResolver = sagaConfig.correlationIdResolver
+  def correlationIdResolver = sagaConfig.correlationIdResolver.lift
 
   override def persistenceId: String = s"SagaManager-$bpsName"
 
@@ -27,9 +27,9 @@ class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Pers
 
   def nextSubscribePosition = alodState.oldestUnconfirmed.orElse(alodState.recentlyConfirmed)
   
-  def metaDataProvider(em: EventMessage) = Some(new MetaData(Map(
-    CorrelationId -> correlationIdResolver(em.event)
-  )))
+  def metaDataProvider(em: EventMessage) = correlationIdResolver(em.event).map {
+    correlationId => new MetaData(Map(CorrelationId -> correlationId))
+  }
 
   override def eventReceived(em: EventMessage, position: Long): Unit = {
     persist(em.withMetaAttribute(DeliveryId, position))(updateState)
@@ -70,12 +70,16 @@ class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Pers
 
   def updateState(msg: Any): Unit = msg match {
     case em: EventMessage =>
-      deliver(sagaOffice, internalDeliveryId => {
-        val deliveryId = em.getMetaAttribute[Long](DeliveryId)
-        log.debug(s"[DELIVERY-ID: $deliveryId] Delivering: $em")
-        alodState = alodState.withSent(internalDeliveryId, deliveryId)
-        em
-      })
+      if (em.entityId == null) {
+        log.warning(s"No correlationId. Skipping $em")
+      } else {
+        deliver(sagaOffice, internalDeliveryId => {
+          val deliveryId = em.getMetaAttribute[Long](DeliveryId)
+          log.debug(s"[DELIVERY-ID: $deliveryId] Delivering: $em")
+          alodState = alodState.withSent(internalDeliveryId, deliveryId)
+          em
+        })
+      }
 
     case receipt: Delivered =>
       val deliveryId = receipt.deliveryId

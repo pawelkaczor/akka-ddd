@@ -27,7 +27,7 @@ trait SagaConfig[A <: Saga] {
    * Correlation ID identifies process instance. It is used to route EventMessage
    * messages created by [[SagaManager]] to [[Saga]] instance,
    */
-  def correlationIdResolver: DomainEvent => EntityId
+  def correlationIdResolver: PartialFunction[DomainEvent, EntityId]
 
   /**
    * Might be used for events deserialization purposes
