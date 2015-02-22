@@ -1,5 +1,10 @@
 package pl.newicom.dddd.messaging
 
+import pl.newicom.dddd.delivery.protocol.{Receipt, Processed, alod}
+import pl.newicom.dddd.messaging.MetaData.DeliveryId
+
+import scala.util.{Success, Try}
+
 object MetaData {
   val DeliveryId = "_deliveryId"
   val CorrelationId: String = "correlationId"
@@ -59,5 +64,10 @@ abstract class Message(var metadata: Option[MetaData] = None) extends Serializab
   def getMetaAttribute[B](attrName: Any) = tryGetMetaAttribute[B](attrName).get
 
   def tryGetMetaAttribute[B](attrName: Any): Option[B] = if (metadata.isDefined) metadata.get.tryGet[B](attrName.toString) else None
+
+  def deliveryReceipt(result: Try[Any] = Success("OK")): Receipt = {
+    val deliveryId: Option[Long] = tryGetMetaAttribute(DeliveryId)
+    if (deliveryId.isDefined) alod.Processed(deliveryId.get, result) else Processed(result)
+  }
 
 }

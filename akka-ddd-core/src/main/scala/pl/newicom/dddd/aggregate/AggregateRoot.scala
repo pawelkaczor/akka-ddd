@@ -4,9 +4,7 @@ import akka.actor._
 import akka.persistence._
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
-import pl.newicom.dddd.delivery.protocol.{Processed, alod}
 import pl.newicom.dddd.eventhandling.EventHandler
-import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{AggregateSnapshotId, DomainEventMessage, EventMessage}
 import pl.newicom.dddd.messaging.{Deduplication, Message}
@@ -53,11 +51,11 @@ trait AggregateRoot[S <: AggregateState]
       updateState(em)
   }
 
-  override def preRestart(reason: Throwable, msg: Option[Any]) {
-    val deliveryId = msg.flatMap(_.asInstanceOf[CommandMessage].tryGetMetaAttribute(DeliveryId))
-    val result = Failure(reason)
-    acknowledgeCommandProcessed(deliveryId, result)
-    super.preRestart(reason, msg)
+  override def preRestart(reason: Throwable, msgOpt: Option[Any]) {
+    msgOpt.foreach { msg =>
+      acknowledgeCommandProcessed(msg.asInstanceOf[CommandMessage], Failure(reason))
+    }
+    super.preRestart(reason, msgOpt)
   }
 
   /**
@@ -93,17 +91,17 @@ trait AggregateRoot[S <: AggregateState]
    * Event handler, not invoked during recovery.
    */
   override def handle(senderRef: ActorRef, event: DomainEventMessage) {
-    acknowledgeCommandProcessed(commandMessage.tryGetMetaAttribute(DeliveryId))
+    acknowledgeCommandProcessed(commandMessage)
   }
 
   def initialized = stateOpt.isDefined
 
   def state = if (initialized) stateOpt.get else throw new AggregateRootNotInitializedException
 
-  private def commandDuplicated(msg: Message) = acknowledgeCommandProcessed(msg.tryGetMetaAttribute(DeliveryId))
+  private def commandDuplicated(msg: Message) = acknowledgeCommandProcessed(msg)
 
-  private def acknowledgeCommandProcessed(deliveryId: Option[Long], result: Try[Any] = Success("OK")) {
-    val deliveryReceipt = if (deliveryId.isDefined) alod.Processed(deliveryId.get, result) else Processed(result)
+  private def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("OK")) {
+    val deliveryReceipt = msg.deliveryReceipt(result)
     _sender ! deliveryReceipt
     log.debug(s"Delivery receipt (for received command) sent ($deliveryReceipt)")
   }
