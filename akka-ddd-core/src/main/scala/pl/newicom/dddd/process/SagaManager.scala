@@ -74,10 +74,7 @@ class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Pers
         log.warning(s"No correlationId. Skipping $em")
       } else {
         deliver(sagaOffice, internalDeliveryId => {
-          val deliveryId = em.getMetaAttribute[Any](DeliveryId) match {
-            case bigInt: BigInt => bigInt.toLong
-            case l => l.asInstanceOf[Long]
-          }
+          val deliveryId = em.deliveryId.get
           log.debug(s"[DELIVERY-ID: $deliveryId] Delivering: $em")
           alodState = alodState.withSent(internalDeliveryId, deliveryId)
           em

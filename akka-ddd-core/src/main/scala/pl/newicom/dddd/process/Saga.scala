@@ -101,12 +101,12 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
       updateState(em.event)
     case receipt: Delivered =>
       confirmDelivery(receipt.deliveryId)
-      log.debug(s"Delivery of command confirmed (receipt: $receipt)")
+      log.debug(s"Delivery of message confirmed (receipt: $receipt)")
       // TODO allow Saga to react on command failure?
   }
 
   private def acknowledgeEvent(em: Message) {
-    val deliveryReceipt = Processed(em.getMetaAttribute(DeliveryId))
+    val deliveryReceipt = em.deliveryReceipt()
     sender() ! deliveryReceipt
     log.debug(s"Delivery receipt (for received event) sent ($deliveryReceipt)")
   }

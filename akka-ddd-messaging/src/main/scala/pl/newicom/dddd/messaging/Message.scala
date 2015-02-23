@@ -66,8 +66,12 @@ abstract class Message(var metadata: Option[MetaData] = None) extends Serializab
   def tryGetMetaAttribute[B](attrName: Any): Option[B] = if (metadata.isDefined) metadata.get.tryGet[B](attrName.toString) else None
 
   def deliveryReceipt(result: Try[Any] = Success("OK")): Receipt = {
-    val deliveryId: Option[Long] = tryGetMetaAttribute(DeliveryId)
     if (deliveryId.isDefined) alod.Processed(deliveryId.get, result) else Processed(result)
+  }
+
+  def deliveryId: Option[Long] = tryGetMetaAttribute[Any](DeliveryId).map {
+    case bigInt: scala.math.BigInt => bigInt.toLong
+    case l: Long => l
   }
 
 }
