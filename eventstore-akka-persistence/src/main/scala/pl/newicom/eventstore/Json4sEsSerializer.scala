@@ -19,15 +19,19 @@ import org.json4s.ext.{JodaTimeSerializers, UUIDSerializer}
 import org.json4s.native.Serialization.{read, write}
 import org.json4s.reflect.TypeInfo
 import pl.newicom.dddd.aggregate.EntityId
+import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.eventstore.Json4sEsSerializer._
+
+import scala.util.Success
 
 class Json4sEsSerializer(system: ExtendedActorSystem) extends EventStoreSerializer {
 
   def identifier = Identifier
 
-  val defaultFormats: Formats = DefaultFormats + new SnapshotSerializer(system) ++ JodaTimeSerializers.all + UUIDSerializer + new ShortTypeHints(List(classOf[MetaData]))
+  val defaultFormats: Formats = DefaultFormats + new SnapshotSerializer(system) ++ JodaTimeSerializers.all + UUIDSerializer +
+    new FullTypeHints(List(classOf[MetaData], classOf[Processed], classOf[pl.newicom.dddd.delivery.protocol.alod.Processed], classOf[Success[_]]))
 
   implicit val formats: Formats = defaultFormats
 

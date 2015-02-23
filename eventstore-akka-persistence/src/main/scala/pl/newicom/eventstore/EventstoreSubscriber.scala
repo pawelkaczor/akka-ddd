@@ -7,16 +7,18 @@ import eventstore.EventStream._
 import eventstore._
 import org.json4s.ext.{JodaTimeSerializers, UUIDSerializer}
 import org.json4s.native.Serialization._
-import org.json4s.{DefaultFormats, Formats}
+import org.json4s.{FullTypeHints, DefaultFormats, Formats}
 import pl.newicom.dddd.aggregate._
+import pl.newicom.dddd.delivery.protocol.alod.Processed
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
 
 import scala.collection.immutable.Map
+import scala.util.Success
 
 trait EventMessageUnmarshaller {
 
-  val defaultFormats: Formats = DefaultFormats ++ JodaTimeSerializers.all + UUIDSerializer
+  val defaultFormats: Formats = DefaultFormats ++ JodaTimeSerializers.all + UUIDSerializer + FullTypeHints(List(classOf[Processed], classOf[Success[_]]))
   implicit val formats: Formats = defaultFormats
 
   def unmarshallEventMessage(er: EventRecord): (EventMessage, Long) = {
