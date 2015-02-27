@@ -52,9 +52,7 @@ trait AggregateRoot[S <: AggregateState]
   }
 
   override def preRestart(reason: Throwable, msgOpt: Option[Any]) {
-    msgOpt.foreach { msg =>
-      acknowledgeCommandProcessed(msg.asInstanceOf[CommandMessage], Failure(reason))
-    }
+    acknowledgeCommandProcessed(commandMessage, Failure(reason))
     super.preRestart(reason, msgOpt)
   }
 
