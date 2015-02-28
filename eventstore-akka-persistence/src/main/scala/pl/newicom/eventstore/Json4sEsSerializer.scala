@@ -3,12 +3,12 @@ package pl.newicom.eventstore
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
 
-import akka.actor.ExtendedActorSystem
-import akka.persistence.SnapshotMetadata
+import akka.actor.{ActorRef, ExtendedActorSystem}
 import akka.persistence.eventstore.EventStoreSerializer
 import akka.persistence.eventstore.snapshot.EventStoreSnapshotStore.SnapshotEvent
 import akka.persistence.eventstore.snapshot.EventStoreSnapshotStore.SnapshotEvent.Snapshot
-import akka.serialization.SerializationExtension
+import akka.persistence.{PersistentRepr, SnapshotMetadata}
+import akka.serialization.{Serialization, SerializationExtension}
 import akka.util.ByteString
 import eventstore.{Content, ContentType, Event, EventData}
 import org.joda.time.DateTime
@@ -20,18 +20,21 @@ import org.json4s.native.Serialization.{read, write}
 import org.json4s.reflect.TypeInfo
 import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.delivery.protocol.Processed
+import pl.newicom.dddd.delivery.protocol.alod.{Processed => AlodProcessed}
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.eventstore.Json4sEsSerializer._
-
-import scala.util.Success
 
 class Json4sEsSerializer(system: ExtendedActorSystem) extends EventStoreSerializer {
 
   def identifier = Identifier
 
-  val defaultFormats: Formats = DefaultFormats + new SnapshotSerializer(system) ++ JodaTimeSerializers.all + UUIDSerializer +
-    new FullTypeHints(List(classOf[MetaData], classOf[Processed], classOf[pl.newicom.dddd.delivery.protocol.alod.Processed], classOf[Success[_]]))
+  val defaultFormats: Formats = DefaultFormats + ActorRefSerializer + new SnapshotSerializer(system) ++ JodaTimeSerializers.all + UUIDSerializer +
+    new FullTypeHints(List(
+      classOf[MetaData],
+      classOf[Processed],
+      classOf[AlodProcessed],
+      classOf[PersistentRepr]))
 
   implicit val formats: Formats = defaultFormats
 
@@ -89,6 +92,16 @@ class Json4sEsSerializer(system: ExtendedActorSystem) extends EventStoreSerializ
   }
 
   def contentType = ContentType.Json
+
+  object ActorRefSerializer extends CustomSerializer[ActorRef](format => (
+    {
+      case JString(s) => system.provider.resolveActorRef(s)
+    },
+    {
+      case x: ActorRef => JString(Serialization.serializedActorPath(x))
+    }
+    ))
+
 }
 
 object Json4sEsSerializer {
