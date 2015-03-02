@@ -12,6 +12,8 @@ scalaVersion in ThisBuild := "2.11.5"
 
 scalacOptions in ThisBuild := Seq("-encoding", "utf8", "-feature", "-language:postfixOps")
 
+resolvers in ThisBuild += "Akka Snapshot Repository" at "http://repo.akka.io/snapshots/"
+
 publishMavenStyle in ThisBuild := true
 
 lazy val root = (project in file("."))

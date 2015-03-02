@@ -37,7 +37,9 @@ object ShardingSupport {
           typeName = entityClass.getSimpleName,
           entryProps = Some(entityProps),
           idExtractor = sr.idExtractor,
-          shardResolver = sr.shardResolver)
+          shardResolver = sr.shardResolver,
+          roleOverride = None,
+          rememberEntries = false)
 
         ClusterReceptionistExtension(system).registerService(region.get)
 

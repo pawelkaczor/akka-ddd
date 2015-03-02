@@ -3,7 +3,7 @@ import Keys._
 
 object Deps {
 
-  val AkkaVersion = "2.3.9"
+  val AkkaVersion = "2.4-SNAPSHOT"
   val AkkaHttpVersion = "1.0-M3"
 
   object Akka {
@@ -32,7 +32,7 @@ object Deps {
   }
 
   object Eventstore {
-    val client = "com.geteventstore" %% "eventstore-client" % "2.0.0" withSources()
+    val client = "pl.newicom.dddd" %% "eventstore-client" % "2.0.2-SNAPSHOT" withSources()
     val akkaJournal = "pl.newicom.dddd" %% "akka-persistence-eventstore" % "2.0.2-SNAPSHOT" withSources()
   }
 
