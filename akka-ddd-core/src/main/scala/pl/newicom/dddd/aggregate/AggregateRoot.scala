@@ -98,7 +98,7 @@ trait AggregateRoot[S <: AggregateState]
 
   private def commandDuplicated(msg: Message) = acknowledgeCommandProcessed(msg)
 
-  private def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("OK")) {
+  protected def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("OK")) {
     val deliveryReceipt = msg.deliveryReceipt(result)
     _sender ! deliveryReceipt
     log.debug(s"Delivery receipt (for received command) sent ($deliveryReceipt)")
