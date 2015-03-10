@@ -102,7 +102,7 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
     case receipt: Delivered =>
       confirmDelivery(receipt.deliveryId)
       log.debug(s"Delivery of message confirmed (receipt: $receipt)")
-      // TODO allow Saga to react on command failure?
+      updateState(receipt)
   }
 
   private def acknowledgeEvent(em: Message) {
