@@ -9,6 +9,7 @@ import pl.newicom.dddd.messaging.MetaData.DeliveryId
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
+import pl.newicom.dddd.serialization.JsonSerializationHints
 
 abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A] {
   import scala.concurrent.duration._
@@ -17,7 +18,7 @@ abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A]
   def inactivityTimeout: Duration = 1.minute
 }
 
-trait SagaConfig[A <: Saga] {
+abstract class SagaConfig[A <: Saga : JsonSerializationHints] {
   /**
    * Name of Business Process Stream (bps)
    */
@@ -29,10 +30,8 @@ trait SagaConfig[A <: Saga] {
    */
   def correlationIdResolver: PartialFunction[DomainEvent, EntityId]
 
-  /**
-   * Might be used for events deserialization purposes
-   */
-  def interest: Option[List[Class[_]]] = None
+  def serializationHints: JsonSerializationHints[A] = implicitly[JsonSerializationHints[A]]
+
 }
 
 trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
