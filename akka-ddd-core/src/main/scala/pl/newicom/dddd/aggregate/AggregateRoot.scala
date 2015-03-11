@@ -96,12 +96,15 @@ trait AggregateRoot[S <: AggregateState]
 
   def state = if (initialized) stateOpt.get else throw new AggregateRootNotInitializedException
 
-  private def commandDuplicated(msg: Message) = acknowledgeCommandProcessed(msg)
+  def acknowledgeCommand(result: Any) = acknowledgeCommandProcessed(commandMessage, Success(result))
 
-  protected def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("OK")) {
+  def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("OK")) {
     val deliveryReceipt = msg.deliveryReceipt(result)
     _sender ! deliveryReceipt
     log.debug(s"Delivery receipt (for received command) sent ($deliveryReceipt)")
   }
+
+  private def commandDuplicated(msg: Message) = acknowledgeCommandProcessed(msg)
+
 
 }
