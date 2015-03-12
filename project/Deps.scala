@@ -37,7 +37,7 @@ object Deps {
   }
 
   object SqlDb {
-    val `slick-for-pg` = "com.github.tminglei" %% "slick-pg" % "0.7.0"
+    val `slick-for-pg` = "com.github.tminglei" %% "slick-pg" % "0.8.2"
     val testDriver = "com.h2database" % "h2" % "1.3.170" % "test"
 
     def prod = `slick-for-pg`

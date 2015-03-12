@@ -73,9 +73,14 @@ lazy val `view-update-sql` = project
   .dependsOn(`view-update`)
 
 lazy val `akka-ddd-test` = project
+  .configs(IntegrationTest)
   .settings(`Pub&RelSettings`: _*)
+  .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
   .settings(
     licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
+    testOptions       in Test            := Seq(Tests.Filter(specFilter)),
+    testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
+    parallelExecution in IntegrationTest := false,
     libraryDependencies ++= Seq(
       Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j,
       Akka.testkit, Akka.multiNodeTestkit,
@@ -84,7 +89,7 @@ lazy val `akka-ddd-test` = project
       "commons-io" % "commons-io" % "2.4"
     ),
     startYear := Some(2014))
-  .dependsOn(`akka-ddd-core`)
+  .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence` % "test->compile")
 
 lazy val `eventstore-akka-persistence` = project
   .settings(`Pub&RelSettings`: _*)
@@ -107,5 +112,8 @@ lazy val `http-support` = project
     startYear := Some(2014)
   )
 
+lazy val IntegrationTest = config("it") extend Test
 lazy val `Pub&RelSettings`: Seq[Def.Setting[_]] = Publish.settings ++ releaseSettings
 
+def integrationFilter(name: String): Boolean = name endsWith "IntegrationSpec"
+def specFilter(name: String): Boolean = (name endsWith "Spec") && !integrationFilter(name)
