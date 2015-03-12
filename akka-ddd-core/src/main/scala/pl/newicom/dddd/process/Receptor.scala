@@ -1,14 +1,12 @@
 package pl.newicom.dddd.process
 
 import akka.actor.ActorPath
-import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.AtLeastOnceDeliverySupport
 import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
 import pl.newicom.dddd.messaging.{Message, MetaData}
 import pl.newicom.dddd.serialization.JsonSerializationHints
 
-abstract class ReceptorConfig[A <: BusinessEntity : JsonSerializationHints] {
-  def stimuliSource: String
+class ReceptorConfig[A : JsonSerializationHints](val stimuliSource: String) {
   def serializationHints: JsonSerializationHints[A] = implicitly[JsonSerializationHints[A]]
 }
 

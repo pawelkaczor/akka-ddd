@@ -18,14 +18,11 @@ abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A]
   def inactivityTimeout: Duration = 1.minute
 }
 
-abstract class SagaConfig[A <: Saga : JsonSerializationHints] extends ReceptorConfig[A] {
-
-  def stimuliSource = bpsName
-
-  /**
-   * Name of Business Process Stream (bps)
-   */
-  def bpsName: String
+/**
+ *
+ * @param bpsName name of Business Process Stream (bps)
+ */
+abstract class SagaConfig[A <: Saga : JsonSerializationHints](val bpsName: String) extends ReceptorConfig[A](bpsName) {
 
   /**
    * Correlation ID identifies process instance. It is used to route EventMessage

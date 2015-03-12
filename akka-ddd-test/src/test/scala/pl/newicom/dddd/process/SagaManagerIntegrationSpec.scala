@@ -36,9 +36,7 @@ class SagaManagerIntegrationSpec extends TestKit(sys) with WordSpecLike with Imp
   val dummyBpsName =  s"dummy-$uuid8"
   val processId = uuid8
 
-  implicit val testSagaConfig = new DummySagaConfig {
-    override def bpsName = dummyBpsName
-  }
+  implicit val testSagaConfig = new DummySagaConfig(dummyBpsName)
 
   after {
     sys.terminate()

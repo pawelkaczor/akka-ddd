@@ -33,7 +33,7 @@ object DummySaga {
   
 }
 
-abstract class DummySagaConfig extends SagaConfig[DummySaga] {
+class DummySagaConfig(bpsName: String) extends SagaConfig[DummySaga](bpsName) {
 
   def correlationIdResolver = {
     case DummyEvent(pId, _) => pId
