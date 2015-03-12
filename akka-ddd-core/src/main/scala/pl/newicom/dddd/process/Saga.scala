@@ -18,7 +18,10 @@ abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A]
   def inactivityTimeout: Duration = 1.minute
 }
 
-abstract class SagaConfig[A <: Saga : JsonSerializationHints] {
+abstract class SagaConfig[A <: Saga : JsonSerializationHints] extends ReceptorConfig[A] {
+
+  def stimuliSource = bpsName
+
   /**
    * Name of Business Process Stream (bps)
    */
@@ -29,8 +32,6 @@ abstract class SagaConfig[A <: Saga : JsonSerializationHints] {
    * messages created by [[SagaManager]] to [[Saga]] instance,
    */
   def correlationIdResolver: PartialFunction[DomainEvent, EntityId]
-
-  def serializationHints: JsonSerializationHints[A] = implicitly[JsonSerializationHints[A]]
 
 }
 
