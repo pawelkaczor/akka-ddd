@@ -18,7 +18,7 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
   
   def lastSentDeliveryId: Option[Long] = deliveryState.lastSentOpt
 
-  def persist(msg: Message, deliveryId: Long): Unit =
+  def deliver(msg: Message, deliveryId: Long): Unit =
     persist(msg.withDeliveryId(deliveryId))(updateState)
 
   def deliveryIdToMessage(msg: Message): Long ⇒ Any = { internalDeliveryId => {

@@ -3,11 +3,9 @@ package pl.newicom.dddd.process
 import akka.actor.ActorPath
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.AtLeastOnceDeliverySupport
-import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
+import pl.newicom.dddd.messaging.{Message, MetaData}
 import pl.newicom.dddd.serialization.JsonSerializationHints
-
-import scala.concurrent.duration._
 
 abstract class ReceptorConfig[A <: BusinessEntity : JsonSerializationHints] {
   def stimuliSource: String
@@ -19,8 +17,8 @@ abstract class Receptor(config: ReceptorConfig[_], receiver: ActorPath) extends 
 
   override val destination = receiver
   override def persistenceId: String = s"Receptor-${config.stimuliSource}"
-  override def redeliverInterval = 30.seconds
-  override def warnAfterNumberOfUnconfirmedAttempts = 15
+
+  def outgoingMessage: PartialFunction[EventMessage, Message]
 
   override def recoveryCompleted(): Unit =
     subscribe(config.stimuliSource, lastSentDeliveryId)
@@ -32,8 +30,10 @@ abstract class Receptor(config: ReceptorConfig[_], receiver: ActorPath) extends 
     }
 
   override def eventReceived(em: EventMessage, position: Long): Unit =
-    persist(em, deliveryId = position)
+    outgoingMessage.lift(em).foreach { msg =>
+      deliver(msg, deliveryId = position)
+    }
 
-  protected def metaDataProvider(em: EventMessage): Option[MetaData] = None
+  def metaDataProvider(em: EventMessage): Option[MetaData] = None
 
 }
