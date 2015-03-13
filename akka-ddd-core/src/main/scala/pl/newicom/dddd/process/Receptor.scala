@@ -26,15 +26,11 @@ trait ReceptorGrammar {
   def propagateTo(receiver: ActorPath):              ReceptorConfig
 }
 
-object ReceptorBuilder {
-  def apply(): ReceptorBuilder = ReceptorBuilder(null, null, null, null)
-}
-
 case class ReceptorBuilder(
-  stimuliSource: String,
-  transduction: Transduction,
-  receiver: ActorPath,
-  serializationHints: JsonSerializationHints) extends ReceptorGrammar {
+  stimuliSource: String = null,
+  transduction: Transduction = {case em => em},
+  receiver: ActorPath = null,
+  serializationHints: JsonSerializationHints = null) extends ReceptorGrammar {
 
   def reactTo[A : StimuliSource] = {
     val source: StimuliSource[_] = implicitly[StimuliSource[_]]
@@ -44,17 +40,19 @@ case class ReceptorBuilder(
   def applyTransduction(transduction: Transduction) =
     copy(transduction = transduction)
 
-  def propagateTo(receiver: ActorPath) =
+  def propagateTo(_receiver: ActorPath) =
     new ReceptorConfig() {
       override def stimuliSource: String = ReceptorBuilder.this.stimuliSource
       override def transduction: Transduction = ReceptorBuilder.this.transduction
       override def serializationHints = ReceptorBuilder.this.serializationHints
-      override def receiver: ActorPath = ReceptorBuilder.this.receiver
+      override def receiver: ActorPath = _receiver
     }
 }
 
-abstract class Receptor(val config: ReceptorConfig) extends AtLeastOnceDeliverySupport {
+abstract class Receptor extends AtLeastOnceDeliverySupport {
   this: EventStreamSubscriber =>
+
+  def config: ReceptorConfig
 
   override val destination = config.receiver
 

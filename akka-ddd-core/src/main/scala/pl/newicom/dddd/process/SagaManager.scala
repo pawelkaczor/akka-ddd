@@ -4,12 +4,29 @@ import akka.actor.ActorPath
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
-
+import pl.newicom.dddd.office.OfficeInfo
+import SagaManager._
 import scala.concurrent.duration._
 
-class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Receptor(sagaConfig.receptorConfig(sagaOffice)) {
+class BusinessProcess[A : OfficeInfo]
+
+object SagaManager {
+  implicit def businessProcessInfo(implicit sagaConfig: SagaConfig[_]): OfficeInfo[BusinessProcess[_]] = {
+    new OfficeInfo[BusinessProcess[_]] {
+      def name: String = sagaConfig.name
+      def serializationHints = sagaConfig.serializationHints
+    }
+  }  
+}
+
+class SagaManager(implicit sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Receptor {
   this: EventStreamSubscriber =>
 
+  lazy val config: ReceptorConfig =
+    ReceptorBuilder().
+      reactTo[BusinessProcess[_]].
+      propagateTo(sagaOffice)
+  
   override def redeliverInterval = 30.seconds
   override def warnAfterNumberOfUnconfirmedAttempts = 15
 
