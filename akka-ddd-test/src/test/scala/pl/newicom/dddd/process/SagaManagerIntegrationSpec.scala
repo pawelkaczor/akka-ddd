@@ -11,8 +11,8 @@ import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
 import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, registerSaga}
-import pl.newicom.dddd.test.dummy.{DummySagaConfig, DummySaga}
-import DummySaga.DummyEvent
+import pl.newicom.dddd.test.dummy.DummySaga
+import pl.newicom.dddd.test.dummy.DummySaga.{DummyEvent, DummySagaConfig}
 import pl.newicom.eventstore.EventstoreSubscriber
 
 import scala.concurrent.Await
@@ -96,7 +96,7 @@ class SagaManagerIntegrationSpec extends TestKit(sys) with WordSpecLike with Imp
 
   implicit val sagaManagerFactory: SagaManagerFactory = (sagaConfig, sagaOffice) => {
     new SagaManager(sagaConfig, sagaOffice) with EventstoreSubscriber {
-      override implicit val formats: Formats = sagaConfig.serializationHints ++ defaultFormats
+      override implicit val formats: Formats = config.serializationHints ++ defaultFormats
       override def redeliverInterval = 1.seconds
       override def receiveCommand: Receive = myReceive.orElse(super.receiveCommand)
       def myReceive: Receive = {

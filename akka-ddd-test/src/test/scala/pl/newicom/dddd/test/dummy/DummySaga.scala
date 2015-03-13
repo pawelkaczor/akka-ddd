@@ -6,7 +6,7 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.messaging.event.EventMessage
-import pl.newicom.dddd.process.{SagaConfig, Saga, SagaActorFactory}
+import pl.newicom.dddd.process.{Saga, SagaActorFactory, SagaConfig}
 import pl.newicom.dddd.serialization.JsonSerializationHints
 import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyEvent}
 
@@ -22,24 +22,22 @@ object DummySaga {
     }
   }
 
-  implicit object SerializationHints extends JsonSerializationHints[DummySaga] {
-    def typeHints: TypeHints = FullTypeHints(List(classOf[DummyEvent]))
-    def serializers: List[Serializer[_]] = List()
+  class DummySagaConfig(bpsName: String) extends SagaConfig[DummySaga](bpsName) {
+    def serializationHints: JsonSerializationHints = new JsonSerializationHints {
+      def typeHints: TypeHints = FullTypeHints(List(classOf[DummyEvent]))
+      def serializers: List[Serializer[_]] = List()
+    }
+
+    def correlationIdResolver = {
+      case DummyEvent(pId, _) => pId
+      case _ => throw new scala.RuntimeException("unknown event")
+    }
   }
 
   case class DummyCommand(processId: EntityId, value: Int) extends Command {
     override def aggregateId: String = processId
   }
   
-}
-
-class DummySagaConfig(bpsName: String) extends SagaConfig[DummySaga](bpsName) {
-
-  def correlationIdResolver = {
-    case DummyEvent(pId, _) => pId
-    case _ => throw new scala.RuntimeException("unknown event")
-  }
-
 }
 
 /**
@@ -77,5 +75,4 @@ class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPat
         }
       }
     */
-
 }

@@ -9,7 +9,8 @@ import pl.newicom.dddd.messaging.MetaData.DeliveryId
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
-import pl.newicom.dddd.serialization.JsonSerializationHints
+import pl.newicom.dddd.office.OfficeInfo
+import pl.newicom.dddd.process.ReceptorConfig.Transduction
 
 abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A] {
   import scala.concurrent.duration._
@@ -22,7 +23,9 @@ abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A]
  *
  * @param bpsName name of Business Process Stream (bps)
  */
-abstract class SagaConfig[A <: Saga : JsonSerializationHints](val bpsName: String) extends ReceptorConfig[A](bpsName) {
+abstract class SagaConfig[A <: Saga](val bpsName: String) extends OfficeInfo[A] {
+
+  def name = bpsName
 
   /**
    * Correlation ID identifies process instance. It is used to route EventMessage
@@ -30,6 +33,14 @@ abstract class SagaConfig[A <: Saga : JsonSerializationHints](val bpsName: Strin
    */
   def correlationIdResolver: PartialFunction[DomainEvent, EntityId]
 
+  def receptorConfig(sagaOffice: ActorPath): ReceptorConfig = new ReceptorConfig {
+    override def transduction: Transduction = {
+      case em => em
+    }
+    override def receiver: ActorPath = sagaOffice
+    override def stimuliSource: String = streamName
+    override def serializationHints = SagaConfig.this.serializationHints
+  }
 }
 
 trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
