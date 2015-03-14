@@ -48,13 +48,14 @@ class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPat
 
   var counter: Int = 0
 
-  def updateState(e: DomainEvent): Unit = {
-    val de = e.asInstanceOf[DummyEvent]
-    counter = de.value
-    context.system.eventStream.publish(e)
-    if (dummyOffice.isDefined) {
-      deliverCommand(dummyOffice.get, DummyCommand(de.processId, de.value))
-    }
+  def applyEvent = {
+    case e =>
+      val de = e.asInstanceOf[DummyEvent]
+      counter = de.value
+      context.system.eventStream.publish(e)
+      if (dummyOffice.isDefined) {
+        deliverCommand(dummyOffice.get, DummyCommand(de.processId, de.value))
+      }
   }
 
   // see alternative implementation below
