@@ -5,13 +5,14 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import eventstore.EventNumber.Exact
 import eventstore.EventStream.System
 import eventstore._
+import pl.newicom.dddd.office.OfficeInfo
 import pl.newicom.eventstore.EventstoreSerializationSupport
 
 import scala.util.Success
 
 object ViewUpdater {
-  def props(esConn: ActorRef, stream: String, viewHandler: ViewHandler): Props =
-    Props(new ViewUpdater(esConn, stream, viewHandler))
+  def props(esConn: ActorRef, officeInfo: OfficeInfo[_], viewHandler: ViewHandler): Props =
+    Props(new ViewUpdater(esConn, officeInfo.name, viewHandler))
 }
 
 class ViewUpdater(esConn: ActorRef, val stream: String, val viewHandler: ViewHandler)

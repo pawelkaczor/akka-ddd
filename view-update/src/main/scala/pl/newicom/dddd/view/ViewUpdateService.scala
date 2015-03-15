@@ -49,7 +49,7 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
     case Start(esConn) =>
       onUpdateStart()
       configuration.foreach {
-        config => context.actorOf(ViewUpdater.props(esConn, config.streamName, viewHandler(config)))
+        config => context.actorOf(ViewUpdater.props(esConn, config.officeInfo, viewHandler(config)))
       }
     case EnsureViewStoreAvailable =>
       import akka.pattern.pipe

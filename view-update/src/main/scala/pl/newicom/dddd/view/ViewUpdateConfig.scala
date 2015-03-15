@@ -1,6 +1,8 @@
 package pl.newicom.dddd.view
 
-trait ViewUpdateConfig {
+import pl.newicom.dddd.office.OfficeInfo
+
+abstract class ViewUpdateConfig {
   def viewName: String
-  def streamName: String
+  def officeInfo: OfficeInfo[_]
 }

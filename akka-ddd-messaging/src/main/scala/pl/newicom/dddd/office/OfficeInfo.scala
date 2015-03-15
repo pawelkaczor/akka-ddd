@@ -8,6 +8,14 @@ object OfficeInfo {
       def serializationHints = _serializationHints
       def name = _name
     }
+
+  def apply[A](_name: String, _streamName: String, _serializationHints: JsonSerializationHints): OfficeInfo[A] =
+    new OfficeInfo[A] {
+      def serializationHints = _serializationHints
+      override def streamName = _streamName
+      def name = _name
+    }
+
 }
 
 trait OfficeInfo[A] {
