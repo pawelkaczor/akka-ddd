@@ -9,7 +9,7 @@ import pl.newicom.dddd.office.OfficeFactory
 
 import scala.reflect.ClassTag
 
-object ShardingSupport {
+trait ShardingSupport {
 
   implicit def globalOfficeFactory[A <: BusinessEntity : ShardResolution : BusinessEntityActorFactory : ClassTag](implicit system: ActorSystem): OfficeFactory[A] = {
     new OfficeFactory[A] {
