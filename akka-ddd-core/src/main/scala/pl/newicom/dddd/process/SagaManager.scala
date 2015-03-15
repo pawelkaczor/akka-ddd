@@ -16,11 +16,14 @@ object SagaManager {
       def name: String = sagaConfig.name
       def serializationHints = sagaConfig.serializationHints
     }
-  }  
+  }
+
 }
 
-class SagaManager(implicit sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Receptor {
+class SagaManager(sagaConfig: SagaConfig[_], sagaOffice: ActorPath) extends Receptor {
   this: EventStreamSubscriber =>
+
+  implicit val sc: SagaConfig[_] = sagaConfig
 
   lazy val config: ReceptorConfig =
     ReceptorBuilder().
