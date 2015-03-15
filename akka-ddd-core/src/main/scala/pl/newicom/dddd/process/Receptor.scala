@@ -54,7 +54,7 @@ abstract class Receptor extends AtLeastOnceDeliverySupport {
 
   def config: ReceptorConfig
 
-  override val destination = config.receiver
+  override lazy val destination = config.receiver
 
   override def persistenceId: String = s"Receptor-${config.stimuliSource}"
 
