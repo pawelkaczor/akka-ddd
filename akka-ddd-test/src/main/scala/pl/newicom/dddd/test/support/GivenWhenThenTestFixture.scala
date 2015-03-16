@@ -1,7 +1,5 @@
 package pl.newicom.dddd.test.support
 
-import java.util.UUID
-
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
@@ -10,6 +8,7 @@ import pl.newicom.dddd.aggregate.Command
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.command.CommandMessage
+import pl.newicom.dddd.utils.UUIDSupport._
 
 import scala.annotation.tailrec
 import scala.concurrent.Await
@@ -23,7 +22,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   def ensureOfficeTerminated(): Unit
 
   private def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(new Command {
-    override def aggregateId: String = UUID.randomUUID().toString
+    override def aggregateId: String = uuid
   }, pastEvents)
   
   implicit def whenContextToCommand[C <: Command](wc: WhenContext[C]): C = wc.command
@@ -51,7 +50,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     private val map: Map[Class[_], List[Any]] =
       list.groupBy(_.result.get.getClass).mapValues(ackSeq => ackSeq.map(_.result.get))
 
-    def first[E](implicit ct: ClassTag[E]): E = map.get(ct.runtimeClass).map(_(0)).orNull.asInstanceOf[E]
+    def first[E](implicit ct: ClassTag[E]): E = map.get(ct.runtimeClass).map(_.head).orNull.asInstanceOf[E]
     def last[E](implicit ct: ClassTag[E]): E = map.get(ct.runtimeClass).map(_.last).orNull.asInstanceOf[E]
   }
 
@@ -95,7 +94,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     }
 
     def expect2[E](f: (C, Any) => E)(implicit t: ClassTag[E]): Unit = {
-      expectEvent(f(wc.command, wc.params(0)))
+      expectEvent(f(wc.command, wc.params.head))
     }
 
     def expectException[E <: Exception](message: String = null)(implicit t: ClassTag[E]): Unit = {

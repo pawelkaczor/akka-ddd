@@ -1,7 +1,5 @@
 package pl.newicom.dddd.process
 
-import java.util.UUID
-
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.json4s.{Formats, FullTypeHints}
@@ -13,6 +11,7 @@ import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
 import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, registerSaga}
 import pl.newicom.dddd.test.dummy.DummySaga
 import pl.newicom.dddd.test.dummy.DummySaga.{DummyEvent, DummySagaConfig}
+import pl.newicom.dddd.utils.UUIDSupport.uuid7
 import pl.newicom.eventstore.EventstoreSubscriber
 
 import scala.concurrent.Await
@@ -24,8 +23,6 @@ object SagaManagerIntegrationSpec {
 
   implicit def toEventMessage(te: DummyEvent): EventMessage = new EventMessage(te)
 
-  def uuid8 = UUID.randomUUID().toString.substring(0, 7)
-
 }
 
 class SagaManagerIntegrationSpec extends TestKit(sys) with WordSpecLike with ImplicitSender
@@ -33,8 +30,8 @@ class SagaManagerIntegrationSpec extends TestKit(sys) with WordSpecLike with Imp
 
   override implicit val formats: Formats = defaultFormats + FullTypeHints(List(classOf[DummyEvent]))
 
-  val dummyBpsName =  s"dummy-$uuid8"
-  val processId = uuid8
+  val dummyBpsName =  s"dummy-$uuid7"
+  val processId = uuid7
 
   implicit val testSagaConfig = new DummySagaConfig(dummyBpsName)
 

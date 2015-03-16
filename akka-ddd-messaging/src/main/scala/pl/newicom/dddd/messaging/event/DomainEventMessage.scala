@@ -1,14 +1,13 @@
 package pl.newicom.dddd.messaging.event
 
-import java.util.UUID
-
 import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate.DomainEvent
+import pl.newicom.dddd.utils.UUIDSupport._
 
 case class DomainEventMessage(
     snapshotId: AggregateSnapshotId,
     override val event: DomainEvent,
-    override val id: String = UUID.randomUUID().toString,
+    override val id: String = uuid,
     override val timestamp: DateTime = new DateTime)
   extends EventMessage(event, id, timestamp) {
 

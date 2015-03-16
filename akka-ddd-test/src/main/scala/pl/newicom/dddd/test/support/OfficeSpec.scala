@@ -1,7 +1,5 @@
 package pl.newicom.dddd.test.support
 
-import java.util.UUID.randomUUID
-
 import akka.actor._
 import akka.testkit.TestKit
 import org.scalacheck.Gen
@@ -12,6 +10,7 @@ import pl.newicom.dddd.aggregate.{Command, BusinessEntity, EntityId}
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
 import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.office.Office._
+import pl.newicom.dddd.utils.UUIDSupport._
 
 import scala.annotation.tailrec
 import scala.concurrent.duration._
@@ -34,7 +33,7 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](impl
   implicit var aggregateIdGen: Gen[EntityId] = null
 
   before {
-    aggregateIdGen = Gen.const[EntityId](domain + "-" + randomUUID().toString.subSequence(0, 6))
+    aggregateIdGen = Gen.const[EntityId](domain + "-" + uuid7)
   }
 
   after {
@@ -43,7 +42,6 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](impl
 
   override def afterAll() {
     TestKit.shutdownActorSystem(system)
-    system.awaitTermination()
   }
 
   def aggregateId(implicit aggregateIdGen: Gen[EntityId]): EntityId = aggregateIdGen.sample.get
@@ -61,7 +59,7 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](impl
   def a_list_of[T1 <: Command, T2 <: Command, T3 <: Command](implicit g1: Gen[T1], g2: Gen[T2], g3: Gen[T3]): List[Command] = List(g1, g2, g3)
   def a_list_of[T1 <: Command, T2 <: Command](implicit g1: Gen[T1], g2: Gen[T2]): List[Command] = List(g1, g2)
 
-  def arbitraryOf[T](adjust: (T) => T = {x: T => x})(implicit g: Gen[T]): T = adjust((g))
+  def arbitraryOf[T](adjust: (T) => T = {x: T => x})(implicit g: Gen[T]): T = adjust(g)
 
   private def arbitrarySample[T](implicit g: Gen[T]): T = arbitraryToSample(g)
 

@@ -7,6 +7,7 @@ import pl.newicom.dddd.aggregate
 import pl.newicom.dddd.aggregate.{AggregateRoot, AggregateState, EntityId}
 import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
+import pl.newicom.dddd.utils.UUIDSupport._
 
 object DummyAggregateRoot {
 
@@ -101,7 +102,7 @@ class DummyAggregateRoot extends AggregateRoot[DummyState] {
 
     case GenerateValue(id) =>
       if (initialized) {
-        raise(ValueGenerated(id, value = UUID.randomUUID().toString, confirmationToken = UUID.randomUUID()))
+        raise(ValueGenerated(id, value = uuid, confirmationToken = uuidObj))
       } else {
         throw new RuntimeException("Unknown Dummy")
       }

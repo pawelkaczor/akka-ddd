@@ -1,11 +1,10 @@
 package pl.newicom.dddd.messaging.event
 
-import java.util.UUID
-
 import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate.DomainEvent
 import pl.newicom.dddd.messaging.MetaData.CorrelationId
 import pl.newicom.dddd.messaging.{EntityMessage, Message}
+import pl.newicom.dddd.utils.UUIDSupport._
 
 object EventMessage {
   def unapply(em: EventMessage): Option[(String, DomainEvent)] = {
@@ -15,7 +14,7 @@ object EventMessage {
 
 class EventMessage(
     val event: DomainEvent,
-    val id: String = UUID.randomUUID().toString,
+    val id: String = uuid,
     val timestamp: DateTime = new DateTime)
   extends Message with EntityMessage {
 

@@ -1,13 +1,14 @@
 package pl.newicom.dddd.messaging.command
 
-import java.util.{Date, UUID}
+import java.util.Date
 
-import pl.newicom.dddd.aggregate.{EntityId, Command}
+import pl.newicom.dddd.aggregate.{Command, EntityId}
 import pl.newicom.dddd.messaging.{EntityMessage, Message}
+import pl.newicom.dddd.utils.UUIDSupport.uuid
 
 case class CommandMessage(
     command: Command,
-    id: String = UUID.randomUUID().toString,
+    id: String = uuid,
     timestamp: Date = new Date)
   extends Message with EntityMessage {
 

@@ -1,7 +1,5 @@
 package pl.newicom.dddd.process
 
-import java.util.UUID
-
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, WordSpecLike}
@@ -13,14 +11,14 @@ import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.office.Office._
 import pl.newicom.dddd.process.SagaSpec._
 import pl.newicom.dddd.test.dummy.DummySaga
-import DummySaga.DummyEvent
+import pl.newicom.dddd.test.dummy.DummySaga.DummyEvent
+import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 import scala.concurrent.duration._
 
 
 object SagaSpec {
   implicit val sys: ActorSystem = ActorSystem("SagaSpec")
-  def uuid8 = UUID.randomUUID().toString.substring(0, 7)
 }
 
 class SagaSpec extends TestKit(sys) with WordSpecLike with ImplicitSender with BeforeAndAfterAll with BeforeAndAfter  {
@@ -36,7 +34,7 @@ class SagaSpec extends TestKit(sys) with WordSpecLike with ImplicitSender with B
     }
   }
 
-  def processId = uuid8
+  def processId = uuid7
   val sagaOffice = office[DummySaga]
 
   after {
