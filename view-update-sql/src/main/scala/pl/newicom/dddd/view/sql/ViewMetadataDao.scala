@@ -33,12 +33,8 @@ class ViewMetadataDao(implicit val profile: JdbcProfile) {
   def drop(implicit s: Session) = viewMetadata.ddl.drop
 
   def insertOrUpdate(viewId: String, lastEventNr: Long)(implicit session: Session) {
-    val oldOpt = byViewId(viewId)
-    if (oldOpt.isDefined) {
-      viewMetadata.update(oldOpt.get.copy(lastEventNr = lastEventNr))
-    } else {
-      viewMetadata.insert(ViewMetadataRecord(-1, viewId, lastEventNr))
-    }
+    by_view_id(viewId).delete
+    viewMetadata.insert(ViewMetadataRecord(-1, viewId, lastEventNr))
   }
 
   def lastEventNr(viewId: String)(implicit session: Session): Option[Long] = {
