@@ -31,6 +31,10 @@ class ViewUpdater(esConn: ActorRef, val stream: String, val viewHandler: ViewHan
       log.error("Invalid credentials")
       throw new RuntimeException("Invalid credentials")
 
+    case Failure(cause) =>
+      log.error(s"Failure: $cause")
+      throw cause
+
     case ResolvedEvent(EventRecord(streamId, _, eventData, _), linkEvent) =>
       val eventNumber = linkEvent.number.value
       toDomainEventMessage(eventData) match {
