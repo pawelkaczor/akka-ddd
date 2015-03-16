@@ -7,6 +7,7 @@ import pl.newicom.dddd.messaging.{Message, MetaData}
 import pl.newicom.dddd.office.OfficeInfo
 import pl.newicom.dddd.process.ReceptorConfig.{StimuliSource, Transduction}
 import pl.newicom.dddd.serialization.JsonSerializationHints
+import pl.newicom.dddd.utils.UUIDSupport
 
 object ReceptorConfig {
   type Transduction = PartialFunction[EventMessage, Message]
@@ -42,21 +43,21 @@ case class ReceptorBuilder(
 
   def propagateTo(_receiver: ActorPath) =
     new ReceptorConfig() {
-      override def stimuliSource: String = ReceptorBuilder.this.stimuliSource
-      override def transduction: Transduction = ReceptorBuilder.this.transduction
-      override def serializationHints = ReceptorBuilder.this.serializationHints
-      override def receiver: ActorPath = _receiver
+      def stimuliSource = ReceptorBuilder.this.stimuliSource
+      def transduction = ReceptorBuilder.this.transduction
+      def serializationHints = ReceptorBuilder.this.serializationHints
+      def receiver = _receiver
     }
 }
 
-abstract class Receptor extends AtLeastOnceDeliverySupport {
+abstract class Receptor extends AtLeastOnceDeliverySupport with UUIDSupport {
   this: EventStreamSubscriber =>
 
   def config: ReceptorConfig
 
   override lazy val destination = config.receiver
 
-  override def persistenceId: String = s"Receptor-${config.stimuliSource}"
+  override lazy val persistenceId: String = s"Receptor-${config.stimuliSource}-$uuid7"
 
   override def recoveryCompleted(): Unit =
     subscribe(config.stimuliSource, lastSentDeliveryId)
