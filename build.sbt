@@ -13,7 +13,7 @@ scalaVersion in ThisBuild := "2.11.5"
 
 scalacOptions in ThisBuild := Seq("-encoding", "utf8", "-feature", "-language:postfixOps")
 
-resolvers in ThisBuild += "Akka Snapshot Repository" at "http://repo.akka.io/snapshots/"
+resolvers in ThisBuild ++= Seq("Akka Snapshot Repository" at "http://repo.akka.io/snapshots/", "Sonatype Snapshots Nexus" at "https://oss.sonatype.org/content/repositories/snapshots")
 
 publishMavenStyle in ThisBuild := true
 
