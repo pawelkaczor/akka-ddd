@@ -68,7 +68,8 @@ lazy val `view-update-sql` = project
   .settings(
     licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
     libraryDependencies ++= Seq(
-      SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.slf4j
+      SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.slf4j,
+      "ch.qos.logback" % "logback-classic" % "1.1.2" % "test"
     ),
     startYear := Some(2014))
   .dependsOn(`view-update`)
