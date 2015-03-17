@@ -3,10 +3,10 @@ package pl.newicom.dddd.view.sql
 import scala.slick.driver.JdbcProfile
 import scala.slick.jdbc.meta.MTable
 
+case class ViewMetadataRecord(id: Long, viewId: String, lastEventNr: Long)
+
 class ViewMetadataDao(implicit val profile: JdbcProfile) {
   import profile.simple._
-
-  case class ViewMetadataRecord(id: Long, viewId: String, lastEventNr: Long)
 
   object ViewMetadata {
     val TableName = "view_metadata"
@@ -40,4 +40,14 @@ class ViewMetadataDao(implicit val profile: JdbcProfile) {
   def lastEventNr(viewId: String)(implicit session: Session): Option[Long] = {
     byViewId(viewId).map(record => record.lastEventNr)
   }
+
+  def dropSchema(implicit s: Session) =
+    viewMetadata.ddl.drop
+
+  def createSchema(implicit s: Session) = {
+    if (MTable.getTables(ViewMetadata.TableName).list.isEmpty) {
+      viewMetadata.ddl.create
+    }
+  }
+
 }

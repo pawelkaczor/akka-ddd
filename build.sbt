@@ -1,4 +1,5 @@
 import Deps._
+import Deps.TestFrameworks._
 import sbt.Keys._
 import sbtrelease.ReleasePlugin._
 
@@ -67,7 +68,7 @@ lazy val `view-update-sql` = project
   .settings(
     licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
     libraryDependencies ++= Seq(
-      SqlDb.prod
+      SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.slf4j
     ),
     startYear := Some(2014))
   .dependsOn(`view-update`)
@@ -84,8 +85,7 @@ lazy val `akka-ddd-test` = project
     libraryDependencies ++= Seq(
       Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j,
       Akka.testkit, Akka.multiNodeTestkit,
-      "org.scalacheck" %% "scalacheck" % "1.11.6",
-      "org.scalatest" %% "scalatest" % "2.2.4",
+      scalaCheck, scalaTest,
       "commons-io" % "commons-io" % "2.4"
     ),
     startYear := Some(2014))
