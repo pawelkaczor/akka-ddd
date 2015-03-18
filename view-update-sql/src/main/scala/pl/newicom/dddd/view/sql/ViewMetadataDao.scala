@@ -2,6 +2,7 @@ package pl.newicom.dddd.view.sql
 
 import scala.slick.driver.JdbcProfile
 import scala.slick.jdbc.meta.MTable
+import scala.slick.lifted.AppliedCompiledFunction
 
 case class ViewMetadataRecord(id: Long, viewId: String, lastEventNr: Long)
 
@@ -33,8 +34,13 @@ class ViewMetadataDao(implicit val profile: JdbcProfile) {
   def drop(implicit s: Session) = viewMetadata.ddl.drop
 
   def insertOrUpdate(viewId: String, lastEventNr: Long)(implicit session: Session) {
-    by_view_id(viewId).delete
-    viewMetadata.insert(ViewMetadataRecord(-1, viewId, lastEventNr))
+    val query = by_view_id(viewId)
+    val oldOpt = query.run.headOption
+    if (oldOpt.isDefined) {
+      query.update(oldOpt.get.copy(lastEventNr = lastEventNr))
+    } else {
+      viewMetadata.insert(ViewMetadataRecord(-1, viewId, lastEventNr))
+    }
   }
 
   def lastEventNr(viewId: String)(implicit session: Session): Option[Long] = {
