@@ -2,7 +2,6 @@ package pl.newicom.dddd.view.sql
 
 import scala.slick.driver.JdbcProfile
 import scala.slick.jdbc.meta.MTable
-import scala.slick.lifted.AppliedCompiledFunction
 
 case class ViewMetadataRecord(id: Long, viewId: String, lastEventNr: Long)
 
