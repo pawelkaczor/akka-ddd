@@ -53,7 +53,7 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
             }
           }))
         }
-      )) ! ViewUpdateService.Start(esExtension.actor)
+      ))
 
       // When
       when {

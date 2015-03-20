@@ -20,7 +20,9 @@ class ViewUpdater(esConn: ActorRef, val stream: String, val viewHandler: ViewHan
 
   @scala.throws[Exception](classOf[Exception])
   override def preStart(): Unit = {
-    context.actorOf(streamSubscription(stream, lastEventNumber.map(l => Exact(l.toInt))), s"$stream-subscription")
+    val lastEvNum: Option[Exact] = lastEventNumber.map(l => Exact(l.toInt))
+    context.actorOf(streamSubscription(stream, lastEvNum), s"$stream-subscription")
+    log.debug(s"Subscribed to $stream, lastEventNumber = $lastEvNum")
   }
 
   def streamSubscription(stream: String, lastEventNr: Option[EventNumber]) =
@@ -32,7 +34,6 @@ class ViewUpdater(esConn: ActorRef, val stream: String, val viewHandler: ViewHan
       throw new RuntimeException("Invalid credentials")
 
     case Failure(cause) =>
-      log.error(s"Failure: $cause")
       throw cause
 
     case ResolvedEvent(EventRecord(streamId, _, eventData, _), linkEvent) =>

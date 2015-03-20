@@ -11,4 +11,5 @@
     </root>
     <logger name="scala.slick" level="INFO"/>
     <logger name="scala.slick.jdbc.JdbcBackend.statement" level="DEBUG"/>
+    <logger name="eventstore.tcp.ConnectionActor" level="INFO" />
 </configuration>
