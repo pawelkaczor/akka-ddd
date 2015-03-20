@@ -6,20 +6,22 @@ import org.scalacheck.Gen
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, WordSpecLike}
 import org.slf4j.LoggerFactory.getLogger
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
-import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId}
+import pl.newicom.dddd.aggregate.{Command, BusinessEntity, EntityId}
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
-import pl.newicom.dddd.office.Office._
-import pl.newicom.dddd.office.OfficeInfo
-import pl.newicom.dddd.utils.UUIDSupport._
 import pl.newicom.dddd.office.LocalOffice._
+import pl.newicom.dddd.office.Office._
+import pl.newicom.dddd.utils.UUIDSupport._
+
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory : OfficeInfo](implicit _system: ActorSystem, arClassTag: ClassTag[A])
+abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](implicit _system: ActorSystem, arClassTag: ClassTag[A])
   extends GivenWhenThenTestFixture(_system) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
 
   val logger = getLogger(getClass)
+
+  val domain = arClassTag.runtimeClass.getSimpleName
 
   override def officeUnderTest: ActorRef = {
     if (_officeUnderTest == null) _officeUnderTest = office[A]
@@ -31,7 +33,7 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory : Off
   implicit var aggregateIdGen: Gen[EntityId] = null
 
   before {
-    aggregateIdGen = Gen.const[EntityId](s"${implicitly[OfficeInfo[A]].name}-$uuid7")
+    aggregateIdGen = Gen.const[EntityId](domain + "-" + uuid7)
   }
 
   after {
