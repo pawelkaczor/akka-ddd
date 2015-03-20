@@ -39,15 +39,15 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot] {
   implicit def changeName: Gen[ChangeName] = for { name <- Gen.alphaStr } yield ChangeName(dummyId, name)
   implicit def generateValue: Gen[GenerateValue] = aggregateIdGen.flatMap(GenerateValue(_))
 
-  /**
-   * Commands are generated (see generators above).
-   * The command under test (created inside When clause)
-   * is accessible from inside Then/expect clause.
-   *
-   * No need to define val members for name, description, ...
-   * No need to define concrete values for name, description, ...
-   */
   "Dummy office" should {
+    /**
+     * Commands are generated (see generators above).
+     * The command under test (created inside When clause)
+     * is accessible from inside Then/expect clause.
+     *
+     * No need to define val members for name, description, ...
+     * No need to define concrete values for name, description, ...
+     */
     "create Dummy" in {
       when {
         a [CreateDummy]
@@ -56,13 +56,11 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot] {
         DummyCreated(c.id, c.name, c.description, c.value)
       }
     }
-  }
 
-  /**
-   * Events triggered by Given command(s) are accessible from inside When clause.
-   * Gen.suchThat can be used to configure command generator inside test body.
-   */
-  "Dummy office" should {
+    /**
+     * Events triggered by Given command(s) are accessible from inside When clause.
+     * Gen.suchThat can be used to configure command generator inside test body.
+     */
     "update Dummy's name" in {
       given {
         a [CreateDummy]
@@ -74,12 +72,10 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot] {
         NameChanged(c.id, c.name)
       }
     }
-  }
 
-  /**
-   * No problem with two or more commands inside Given clause.
-   */
-  "Dummy office" should {
+    /**
+     * No problem with two or more commands inside Given clause.
+     */
     "handle subsequent Update command" in {
       given(
         a_list_of [CreateDummy, ChangeName]
@@ -91,12 +87,10 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot] {
         NameChanged(c.id, c.name)
       }
     }
-  }
 
-  /**
-   * Events triggered by Given command(s) are accessible from inside Then/expect clause.
-   */
-  "Dummy office" should {
+    /**
+     * Events triggered by Given command(s) are accessible from inside Then/expect clause.
+     */
     "confirm generated value" in {
       given(
         a_list_of [CreateDummy, GenerateValue]
@@ -108,12 +102,10 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot] {
         ValueChanged(c.id, past[ValueGenerated].value, dummyVersion = 2)
       }
     }
-  }
 
-  /**
-   * Gen.map can be used to modify generated command.
-   */
-  "Dummy office" should {
+    /**
+     * Gen.map can be used to modify generated command.
+     */
     "reject null value" in {
       when {
         a [CreateDummy] map (_ copy(value = null))
@@ -123,6 +115,7 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot] {
       .expectException[RuntimeException]("null value not allowed")
     }
   }
+
 
 }
 
