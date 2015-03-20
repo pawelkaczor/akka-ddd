@@ -13,7 +13,7 @@ class ViewMetadataDaoSpec extends WordSpecLike with Matchers with SqlViewStoreTe
   implicit val _ = new Equality[ViewMetadataRecord] {
     def areEqual(a: ViewMetadataRecord, b: Any): Boolean =
       b match {
-        case b_rec: ViewMetadataRecord => a.copy(id = -1) == b_rec.copy(id = -1)
+        case b_rec: ViewMetadataRecord => a.copy(id = Some(-1)) == b_rec.copy(id = Some(-1))
         case _ => false
       }
   }
@@ -46,16 +46,16 @@ class ViewMetadataDaoSpec extends WordSpecLike with Matchers with SqlViewStoreTe
 
       // Then
       viewStore withSession { implicit s: Session =>
-        dao.byViewId("test view").get should equal (ViewMetadataRecord(1, "test view", 1))
+        dao.byViewId("test view").get should equal (ViewMetadataRecord(Some(1), "test view", 1))
       }
     }
   }
 
-  override def dropSchema(session: JdbcBackend.Session): Unit =
-    dao.dropSchema(session)
+  override def dropSchema(implicit s: JdbcBackend.Session): Unit =
+    dao.dropSchema
 
 
-  override def createSchema(session: JdbcBackend.Session): Unit =
-    dao.createSchema(session)
+  override def createSchema(implicit s: JdbcBackend.Session): Unit =
+    dao.createSchema
 
 }

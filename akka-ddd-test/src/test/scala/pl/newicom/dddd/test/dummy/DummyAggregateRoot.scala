@@ -58,7 +58,7 @@ object DummyAggregateRoot {
 class DummyAggregateRoot extends AggregateRoot[DummyState] {
   this: EventPublisher =>
 
-  override def persistenceId = "Dummy-" + id
+  override def persistenceId = s"${dummyOffice.name}-$id"
 
   override val factory: AggregateRootFactory = {
     case DummyAggregateRoot.DummyCreated(_, _, _, value) => DummyState(value)

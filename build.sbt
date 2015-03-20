@@ -64,15 +64,21 @@ lazy val `view-update` = project
   .dependsOn(`akka-ddd-messaging`, `eventstore-akka-persistence`)
 
 lazy val `view-update-sql` = project
+  .configs(IntegrationTest)
   .settings(`Pub&RelSettings`: _*)
+  .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
   .settings(
     licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
+    testOptions       in Test            := Seq(Tests.Filter(specFilter)),
+    testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
+    parallelExecution in IntegrationTest := false,
     libraryDependencies ++= Seq(
-      SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.slf4j,
-      "ch.qos.logback" % "logback-classic" % "1.1.2" % "test"
+      SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.slf4j, Akka.testkit,
+      "ch.qos.logback" % "logback-classic" % "1.1.2" % "test", scalaCheck % "test"
+
     ),
     startYear := Some(2014))
-  .dependsOn(`view-update`)
+  .dependsOn(`view-update`, `akka-ddd-test` % "test->compile;test->test")
 
 lazy val `akka-ddd-test` = project
   .configs(IntegrationTest)

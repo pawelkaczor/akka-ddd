@@ -2,10 +2,10 @@ package pl.newicom.dddd.view.sql
 
 import pl.newicom.dddd.messaging.event.DomainEventMessage
 
-import scala.slick.driver.JdbcProfile
+import scala.slick.jdbc.JdbcBackend
 
 trait Projection {
 
-  def consume(event: DomainEventMessage)(implicit session: JdbcProfile#Backend#Session)
+  def consume(event: DomainEventMessage)(implicit session: JdbcBackend.Session)
 
 }

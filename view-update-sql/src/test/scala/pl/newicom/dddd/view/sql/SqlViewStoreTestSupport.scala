@@ -13,8 +13,8 @@ trait SqlViewStoreTestSupport extends SqlViewStoreConfiguration with BeforeAndAf
 
   implicit val profile = H2Driver
 
-  def dropSchema(session: JdbcBackend.Session)
-  def createSchema(session: JdbcBackend.Session)
+  def dropSchema(implicit s: JdbcBackend.Session)
+  def createSchema(implicit s: JdbcBackend.Session)
 
   override def beforeAll() {
     import scala.slick.jdbc.JdbcBackend._
