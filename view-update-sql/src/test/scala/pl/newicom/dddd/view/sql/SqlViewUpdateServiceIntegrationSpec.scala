@@ -3,15 +3,13 @@ package pl.newicom.dddd.view.sql
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
-import eventstore.EventStoreExtension
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
-import pl.newicom.dddd.eventhandling.{LocalPublisher, EventPublisher, LoggingEventPublisher}
+import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.DomainEventMessage
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{CreateDummy, DummyCreated}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, _}
 import pl.newicom.dddd.test.support.OfficeSpec
-import pl.newicom.dddd.view.ViewUpdateService
 import pl.newicom.dddd.view.sql.SqlViewUpdateServiceIntegrationSpec._
 
 import scala.concurrent.duration._
@@ -31,9 +29,6 @@ object SqlViewUpdateServiceIntegrationSpec {
 
 
 class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot] with SqlViewStoreTestSupport{
-
-  lazy val viewMetadataDao = new ViewMetadataDao()
-  lazy val esExtension = EventStoreExtension(system)
 
   "SqlViewUpdateService" should {
     "propagate events from event store to configured projection" in {
@@ -67,6 +62,8 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
 
     }
   }
+
+  lazy val viewMetadataDao = new ViewMetadataDao()
 
   override def dropSchema(implicit s: JdbcBackend.Session): Unit = {
     viewMetadataDao.dropSchema
