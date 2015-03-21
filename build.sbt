@@ -18,27 +18,25 @@ resolvers in ThisBuild ++= Seq("Akka Snapshot Repository" at "http://repo.akka.i
 publishMavenStyle in ThisBuild := true
 
 lazy val root = (project in file("."))
-  .settings(`Pub&RelSettings`: _*)
   .aggregate(`akka-ddd-messaging`, `akka-ddd-core`, `akka-ddd-write-front`, `view-update`, `view-update-sql`, `akka-ddd-test`, `eventstore-akka-persistence`, `http-support`)
   .settings(
-    publishArtifact := false)
+    commonSettings,
+    publishArtifact := false
+  )
 
 lazy val `akka-ddd-messaging` = project
-  .settings(`Pub&RelSettings`: _*)
   .settings(
-    licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
+    commonSettings,
     libraryDependencies ++= Json.`4s` ++ Seq(
       Akka.actor,
       "com.github.nscala-time" %% "nscala-time" % "1.4.0"
-    ),
-    startYear := Some(2014)
+    )
   )
 
 lazy val `akka-ddd-core` = project
-  .settings(`Pub&RelSettings`: _*)
   .settings(
-    licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
-    startYear := Some(2014),
+    commonSettings,
+    scalacOptions ++= Seq("-language:implicitConversions"),
     publishArtifact in Test := true,
     libraryDependencies ++= Seq(
       Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j
@@ -46,10 +44,8 @@ lazy val `akka-ddd-core` = project
   .dependsOn(`akka-ddd-messaging`)
 
 lazy val `akka-ddd-write-front` = project
-  .settings(`Pub&RelSettings`: _*)
   .settings(
-    licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
-    startYear := Some(2014),
+    commonSettings,
     publishArtifact in Test := true,
     libraryDependencies ++= Json.`4s` ++ Akka.http ++ Seq(
       Akka.contrib
@@ -57,18 +53,16 @@ lazy val `akka-ddd-write-front` = project
   .dependsOn(`akka-ddd-messaging`)
 
 lazy val `view-update` = project
-  .settings(`Pub&RelSettings`: _*)
   .settings(
-    licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
-    startYear := Some(2014))
-  .dependsOn(`akka-ddd-messaging`, `eventstore-akka-persistence`)
+    commonSettings
+  ).dependsOn(`akka-ddd-messaging`, `eventstore-akka-persistence`)
 
 lazy val `view-update-sql` = project
   .configs(IntegrationTest)
-  .settings(`Pub&RelSettings`: _*)
-  .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
   .settings(
-    licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
+    commonSettings,
+    scalacOptions ++= Seq("-language:existentials"),
+    inConfig(IntegrationTest)(Defaults.testTasks),
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
     parallelExecution in IntegrationTest := false,
@@ -76,16 +70,15 @@ lazy val `view-update-sql` = project
       SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.slf4j, Akka.testkit,
       "ch.qos.logback" % "logback-classic" % "1.1.2" % "test", scalaCheck % "test"
 
-    ),
-    startYear := Some(2014))
+    ))
   .dependsOn(`view-update`, `akka-ddd-test` % "test->compile;test->test")
 
 lazy val `akka-ddd-test` = project
   .configs(IntegrationTest)
-  .settings(`Pub&RelSettings`: _*)
-  .settings(inConfig(IntegrationTest)(Defaults.testTasks): _*)
   .settings(
-    licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
+    commonSettings,
+    scalacOptions ++= Seq("-language:implicitConversions"),
+    inConfig(IntegrationTest)(Defaults.testTasks),
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
     parallelExecution in IntegrationTest := false,
@@ -94,33 +87,34 @@ lazy val `akka-ddd-test` = project
       Akka.testkit, Akka.multiNodeTestkit,
       scalaCheck, scalaTest,
       "commons-io" % "commons-io" % "2.4"
-    ),
-    startYear := Some(2014))
+    ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence` % "test->compile")
 
 lazy val `eventstore-akka-persistence` = project
-  .settings(`Pub&RelSettings`: _*)
   .settings(
-    licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
+    commonSettings,
     libraryDependencies ++= Seq(
       Eventstore.client excludeAll ExclusionRule(organization = "com.typesafe.akka"),
       Eventstore.akkaJournal excludeAll ExclusionRule(organization = "com.typesafe.akka"),
       Json4s.native, Json4s.ext,
       Akka.slf4j, Akka.persistence
-    ),
-    startYear := Some(2014))
+    ))
   .dependsOn(`akka-ddd-messaging`)
 
 lazy val `http-support` = project
-  .settings(`Pub&RelSettings`: _*)
   .settings(
-    licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
-    libraryDependencies ++= Json.`4s` ++ Akka.http,
-    startYear := Some(2014)
+    commonSettings,
+    scalacOptions ++= Seq("-language:implicitConversions"),
+    libraryDependencies ++= Json.`4s` ++ Akka.http
   )
 
+lazy val commonSettings: Seq[Setting[_]] = Publish.settings ++ releaseSettings ++ Seq(
+  updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true),
+  licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
+  startYear := Some(2014)
+)
+
 lazy val IntegrationTest = config("it") extend Test
-lazy val `Pub&RelSettings`: Seq[Def.Setting[_]] = Publish.settings ++ releaseSettings
 
 def integrationFilter(name: String): Boolean = name endsWith "IntegrationSpec"
 def specFilter(name: String): Boolean = (name endsWith "Spec") && !integrationFilter(name)
