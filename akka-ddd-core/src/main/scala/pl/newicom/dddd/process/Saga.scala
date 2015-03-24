@@ -2,6 +2,7 @@ package pl.newicom.dddd.process
 
 import akka.actor.{ActorLogging, ActorPath, Props}
 import akka.persistence.{AtLeastOnceDelivery, PersistentActor, RecoveryCompleted}
+import org.json4s.NoTypeHints
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.alod._
@@ -10,6 +11,7 @@ import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.office.OfficeInfo
+import pl.newicom.dddd.serialization.JsonSerializationHints
 
 abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A] {
   import scala.concurrent.duration._
@@ -31,6 +33,11 @@ abstract class SagaConfig[A <: Saga](val bpsName: String) extends OfficeInfo[A] 
    * messages created by [[SagaManager]] to [[Saga]] instance,
    */
   def correlationIdResolver: PartialFunction[DomainEvent, EntityId]
+
+  def serializationHints = new JsonSerializationHints {
+    def typeHints = NoTypeHints
+    def serializers = List()
+  }
 
 }
 
