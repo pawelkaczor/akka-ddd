@@ -1,18 +1,15 @@
 package pl.newicom.dddd.test.dummy
 
 import akka.actor.{ActorPath, Props}
-import org.json4s.{FullTypeHints, Serializer, TypeHints}
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.process.{Saga, SagaActorFactory, SagaConfig}
-import pl.newicom.dddd.serialization.JsonSerializationHints
-import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyEvent}
+import pl.newicom.dddd.test.dummy.DummyAggregateRoot.ValueChanged
+import pl.newicom.dddd.test.dummy.DummySaga.DummyCommand
 
 object DummySaga {
-
-  case class DummyEvent(processId: EntityId, value: Int)
 
   implicit def defaultSagaIdResolution[A]: EntityIdResolution[A] = new EntityIdResolution[A]
 
@@ -23,13 +20,8 @@ object DummySaga {
   }
 
   class DummySagaConfig(bpsName: String) extends SagaConfig[DummySaga](bpsName) {
-    def serializationHints: JsonSerializationHints = new JsonSerializationHints {
-      def typeHints: TypeHints = FullTypeHints(List(classOf[DummyEvent]))
-      def serializers: List[Serializer[_]] = List()
-    }
-
     def correlationIdResolver = {
-      case DummyEvent(pId, _) => pId
+      case ValueChanged(pId, _, _) => pId
       case _ => throw new scala.RuntimeException("unknown event")
     }
   }
@@ -52,17 +44,17 @@ class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPat
 
   def applyEvent = {
     case e =>
-      val de = e.asInstanceOf[DummyEvent]
-      counter = de.value
+      val de = e.asInstanceOf[ValueChanged]
+      counter = de.value.asInstanceOf[Int]
       context.system.eventStream.publish(e)
       if (dummyOffice.isDefined) {
-        deliverCommand(dummyOffice.get, DummyCommand(de.processId, de.value))
+        deliverCommand(dummyOffice.get, DummyCommand(de.id, counter))
       }
   }
 
   // see alternative implementation below
   def receiveEvent: Receive = {
-    case em @ EventMessage(_, DummyEvent(_, value)) if counter + 1 == value =>
+    case em @ EventMessage(_, ValueChanged(_, value: Int, _)) if counter + 1 == value =>
       raise(em)
       log.debug(s"Processed event: $em")
   }
@@ -71,7 +63,7 @@ class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPat
   /*
       def receiveEvent: Receive = {
         case em: EventMessage => em.event match {
-          case DummyEvent(_, value) if currentValue + 1 == value =>
+          case ValueChanged(_, value: Int) if currentValue + 1 == value =>
             raise(em)
             log.debug(s"Processed event: $em")
           case _ => handleUnexpectedEvent(em)

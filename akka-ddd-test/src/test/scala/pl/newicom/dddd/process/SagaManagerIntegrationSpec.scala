@@ -1,58 +1,66 @@
 package pl.newicom.dddd.process
 
 import akka.actor._
-import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import org.json4s.{Formats, FullTypeHints}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, WordSpecLike}
-import pl.newicom.dddd.actor.CreationSupport
-import pl.newicom.dddd.messaging.event.EventMessage
+import akka.testkit.TestProbe
+import pl.newicom.dddd.actor.PassivationConfig
+import pl.newicom.dddd.aggregate.AggregateRootActorFactory
+import pl.newicom.dddd.delivery.protocol.Processed
+import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
 import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, registerSaga}
-import pl.newicom.dddd.test.dummy.DummySaga
-import pl.newicom.dddd.test.dummy.DummySaga.{DummyEvent, DummySagaConfig}
-import pl.newicom.dddd.utils.UUIDSupport.uuid7
+import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, CreateDummy, ValueChanged}
+import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga}
+import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaConfig}
+import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.eventstore.EventstoreSubscriber
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 object SagaManagerIntegrationSpec {
 
   implicit val sys: ActorSystem = ActorSystem("SagaManagerIntegrationSpec")
 
-  implicit def toEventMessage(te: DummyEvent): EventMessage = new EventMessage(te)
+  implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
+    new AggregateRootActorFactory[DummyAggregateRoot] {
+      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot with LocalPublisher)
+      override def inactivityTimeout: Duration = it
+    }
 
 }
 
-class SagaManagerIntegrationSpec extends TestKit(sys) with WordSpecLike with ImplicitSender
-  with SagaManagerTestSupport with BeforeAndAfterAll with BeforeAndAfter  {
+class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot] {
 
-  override implicit val formats: Formats = defaultFormats + FullTypeHints(List(classOf[DummyEvent]))
+  def dummyId = aggregateId
+  implicit lazy val testSagaConfig = new DummySagaConfig(dummyId)
 
-  val dummyBpsName =  s"dummy-$uuid7"
-  val processId = uuid7
-
-  implicit val testSagaConfig = new DummySagaConfig(dummyBpsName)
-
-  after {
-    sys.terminate()
-    Await.result(sys.whenTerminated, 5.seconds)
-  }
 
   "SagaManager" should {
     "read events from bps" in {
       // Given
       val probe = TestProbe()
-      system.eventStream.subscribe(probe.ref, classOf[DummyEvent])
-      storeEvents(dummyBpsName, DummyEvent(processId, 1), DummyEvent(processId, 2))
+      system.eventStream.subscribe(probe.ref, classOf[ValueChanged])
+      ignoreMsg({ case Processed(_) => true })
+
+      given {
+        List(
+          CreateDummy(dummyId, "name", "description", 0),
+          ChangeValue(dummyId, 1)
+        )
+      }
+      .when {
+        ChangeValue(dummyId, 2)
+      }
+      .expect { c =>
+        ValueChanged(dummyId, c.value, 2L)
+      }
 
       // When
       var (sagaOffice, sagaManager) = registerSaga[DummySaga]
 
       // Then
       {
-        probe.expectMsgAllClassOf(classOf[DummyEvent], classOf[DummyEvent])
+        probe.expectMsgAllClassOf(classOf[ValueChanged], classOf[ValueChanged])
 
         sagaManager ! "snap"
         sagaManager ! "numberOfUnconfirmed"
@@ -60,13 +68,27 @@ class SagaManagerIntegrationSpec extends TestKit(sys) with WordSpecLike with Imp
         Thread.sleep(500)
       }
 
-      ensureActorTerminated(sagaManager)
+      ensureActorUnderTestTerminated(sagaManager)
 
-      storeEvents(dummyBpsName, DummyEvent(processId, 3), DummyEvent(processId, 5))
+
+      when {
+        ChangeValue(dummyId, 3)
+      }
+      .expect { c =>
+        ValueChanged(dummyId, c.value, 3L)
+      }
+
+      when {
+        ChangeValue(dummyId, 5)
+      }
+      .expect { c =>
+        ValueChanged(dummyId, c.value, 4L)
+      }
+
       sagaManager = registerSaga[DummySaga](sagaOffice)
 
       {
-        probe.expectMsgClass(classOf[DummyEvent])
+        probe.expectMsgClass(classOf[ValueChanged])
 
         sagaManager ! "snap"
         sagaManager ! "numberOfUnconfirmed"
@@ -75,12 +97,19 @@ class SagaManagerIntegrationSpec extends TestKit(sys) with WordSpecLike with Imp
 
       }
 
-      ensureActorTerminated(sagaManager)
-      storeEvents(dummyBpsName, DummyEvent(processId, 4))
+      ensureActorUnderTestTerminated(sagaManager)
+
+      when {
+        ChangeValue(dummyId, 4)
+      }
+      .expect { c =>
+        ValueChanged(dummyId, c.value, 5L)
+      }
+
       sagaManager = registerSaga[DummySaga](sagaOffice)
 
       {
-        probe.expectMsgAllClassOf(classOf[DummyEvent], classOf[DummyEvent])
+        probe.expectMsgAllClassOf(classOf[ValueChanged], classOf[ValueChanged])
 
         sagaManager ! "snap"
         sagaManager ! "numberOfUnconfirmed"
@@ -98,26 +127,6 @@ class SagaManagerIntegrationSpec extends TestKit(sys) with WordSpecLike with Imp
       def myReceive: Receive = {
         case "numberOfUnconfirmed" => sender() ! numberOfUnconfirmed
       }
-    }
-  }
-
-  implicit def topLevelParent(implicit system: ActorSystem): CreationSupport = {
-    new CreationSupport {
-      override def getChild(name: String): Option[ActorRef] = None
-      override def createChild(props: Props, name: String): ActorRef = {
-        system.actorOf(props, name)
-      }
-    }
-  }
-
-  def ensureActorTerminated(actor: ActorRef) = {
-    watch(actor)
-    actor ! PoisonPill
-    fishForMessage(1.seconds) {
-      case Terminated(_) =>
-        unwatch(actor)
-        true
-      case _ => false
     }
   }
 

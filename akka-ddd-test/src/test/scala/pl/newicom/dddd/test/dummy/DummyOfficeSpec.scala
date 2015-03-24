@@ -39,10 +39,10 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot] {
       given {
         CreateDummy(dummyId, "dummy name", "dummy description", "dummy value")
       }
-        .when {
+      .when {
         ChangeName(dummyId, "some other dummy name")
       }
-        .expect { c =>
+      .expect { c =>
         NameChanged(c.id, c.name)
       }
     }
@@ -52,10 +52,10 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot] {
         CreateDummy(dummyId, "dummy name", "dummy description", "dummy value"),
         ChangeName(dummyId, "some other dummy name")
       )
-        .when {
+      .when {
         ChangeName(dummyId, "yet another dummy name")
       }
-        .expect { c =>
+      .expect { c =>
         NameChanged(c.id, c.name)
       }
     }
@@ -64,7 +64,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot] {
       when {
         CreateDummy(dummyId, "dummy name", "dummy description", value = null)
       }
-        .expectException[RuntimeException]("null value not allowed")
+      .expectException[RuntimeException]("null value not allowed")
     }
 
   }

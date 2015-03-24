@@ -10,8 +10,8 @@ import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.office.Office._
 import pl.newicom.dddd.process.SagaSpec._
+import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga
-import pl.newicom.dddd.test.dummy.DummySaga.DummyEvent
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 import scala.concurrent.duration._
@@ -47,16 +47,16 @@ class SagaSpec extends TestKit(sys) with WordSpecLike with ImplicitSender with B
     "not process previously processed events" in {
       // Given
       val probe = TestProbe()
-      system.eventStream.subscribe(probe.ref, classOf[DummyEvent])
+      system.eventStream.subscribe(probe.ref, classOf[ValueChanged])
 
-      val em1 = toEventMessage(DummyEvent(processId, 1))
+      val em1 = toEventMessage(ValueChanged(processId, 1, 1L))
 
       // When
       sagaOffice ! em1
       sagaOffice ! em1
 
       // Then
-      probe.expectMsgClass(classOf[DummyEvent])
+      probe.expectMsgClass(classOf[ValueChanged])
       probe.expectNoMsg(1.seconds)
     }
   }
@@ -65,7 +65,7 @@ class SagaSpec extends TestKit(sys) with WordSpecLike with ImplicitSender with B
     "acknowledge previously processed events" in {
       // Given
       val sagaOffice = office[DummySaga]
-      val em1 = toEventMessage(DummyEvent(processId, 1))
+      val em1 = toEventMessage(ValueChanged(processId, 1, 1L))
 
       // When/Then
       sagaOffice ! em1
@@ -76,7 +76,7 @@ class SagaSpec extends TestKit(sys) with WordSpecLike with ImplicitSender with B
     }
   }
 
-  def toEventMessage(e: DummyEvent): EventMessage = {
+  def toEventMessage(e: ValueChanged): EventMessage = {
     new EventMessage(e).withMetaData(Map(
       CorrelationId -> processId,
       DeliveryId -> 1L
