@@ -5,31 +5,11 @@ import akka.actor.{Actor, ActorLogging, ActorRef}
 import eventstore.EventNumber._
 import eventstore.EventStream._
 import eventstore._
-import org.json4s.ext.{JodaTimeSerializers, UUIDSerializer}
-import org.json4s.native.Serialization._
-import org.json4s.{DefaultFormats, Formats, FullTypeHints}
-import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.delivery.protocol.alod.Processed
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
 
-import scala.collection.immutable.Map
 import scala.util.Success
 
-trait EventMessageUnmarshaller {
-
-  val defaultFormats: Formats = DefaultFormats ++ JodaTimeSerializers.all + UUIDSerializer + FullTypeHints(List(classOf[Processed], classOf[Success[_]]))
-  implicit val formats: Formats = defaultFormats
-
-  def unmarshallEventMessage(er: EventRecord): (EventMessage, Long) = {
-    val eventData = er.data
-    val data = read[Map[String, Any]](eventData.data.value.utf8String)
-    val event = data("payload").asInstanceOf[DomainEvent]
-    val metadata = read[Map[String, Any]](eventData.metadata.value.utf8String)
-    val position = er.number.value.asInstanceOf[Long]
-    (new EventMessage(event).withMetaData(metadata), position)
-  }
-}
 
 trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializationSupport with ActorLogging {
   this: Actor =>
