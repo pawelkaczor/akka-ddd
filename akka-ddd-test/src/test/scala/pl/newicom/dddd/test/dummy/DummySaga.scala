@@ -46,6 +46,8 @@ object DummySaga {
  */
 class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPath]) extends Saga {
 
+  override def persistenceId: String = s"DummySaga-$id"
+
   var counter: Int = 0
 
   def applyEvent = {

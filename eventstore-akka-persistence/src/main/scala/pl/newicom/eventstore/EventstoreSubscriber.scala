@@ -7,7 +7,7 @@ import eventstore.EventStream._
 import eventstore._
 import org.json4s.ext.{JodaTimeSerializers, UUIDSerializer}
 import org.json4s.native.Serialization._
-import org.json4s.{FullTypeHints, DefaultFormats, Formats}
+import org.json4s.{DefaultFormats, Formats, FullTypeHints}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.alod.Processed
 import pl.newicom.dddd.messaging.MetaData
@@ -23,14 +23,15 @@ trait EventMessageUnmarshaller {
 
   def unmarshallEventMessage(er: EventRecord): (EventMessage, Long) = {
     val eventData = er.data
-    val event = read[DomainEvent](eventData.data.value.utf8String)
+    val data = read[Map[String, Any]](eventData.data.value.utf8String)
+    val event = data("payload").asInstanceOf[DomainEvent]
     val metadata = read[Map[String, Any]](eventData.metadata.value.utf8String)
     val position = er.number.value.asInstanceOf[Long]
     (new EventMessage(event).withMetaData(metadata), position)
   }
 }
 
-trait EventstoreSubscriber extends EventStreamSubscriber with EventMessageUnmarshaller with ActorLogging {
+trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializationSupport with ActorLogging {
   this: Actor =>
 
   def subscribe(streamName: String, fromPositionExclusive: Option[Long]): ActorRef = {
@@ -42,14 +43,19 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventMessageUnmars
         self,
         Plain(streamName),
         fromPositionExclusive.map(l => Exact(l.toInt)),
-        resolveLinkTos = false),
+        resolveLinkTos = true),
       s"subscription-$streamName")
   }
 
   def receiveEvent(metaDataProvider: EventMessage => Option[MetaData]): Receive = {
-    case er: EventRecord =>
-      val (em, pos) = unmarshallEventMessage(er)
-      eventReceived(em.withMetaData(metaDataProvider(em)), pos)
+    case ResolvedEvent(EventRecord(streamId, _, eventData, _), linkEvent) =>
+      val eventNumber = linkEvent.number.value
+      toEventMessage(eventData) match {
+        case Success(em) =>
+          eventReceived(em.withMetaData(metaDataProvider(em)), eventNumber)
+        case scala.util.Failure(cause) =>
+          throw cause
+      }
 
     case Failure(NotAuthenticated) =>
       log.error("Invalid credentials")
