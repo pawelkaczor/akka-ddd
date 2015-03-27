@@ -67,7 +67,7 @@ lazy val `view-update-sql` = project
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
     parallelExecution in IntegrationTest := false,
     libraryDependencies ++= Seq(
-      SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.slf4j, Akka.testkit,
+      SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.slf4j, Akka.testkit % "test",
       "ch.qos.logback" % "logback-classic" % "1.1.2" % "test", scalaCheck % "test"
 
     ))
@@ -113,8 +113,10 @@ lazy val `akka-ddd-scheduling` = project
   .settings(
     commonSettings,
     libraryDependencies ++= Seq(
+      Akka.slf4j, Akka.testkit % "test", scalaCheck % "test",
+      "ch.qos.logback" % "logback-classic" % "1.1.2" % "test"
     ))
-  .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence`)
+  .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence`, `akka-ddd-test` % "test->compile;test->test")
 
 lazy val commonSettings: Seq[Setting[_]] = Publish.settings ++ releaseSettings ++ Seq(
   updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true),

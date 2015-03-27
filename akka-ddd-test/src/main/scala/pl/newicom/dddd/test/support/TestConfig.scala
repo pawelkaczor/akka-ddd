@@ -9,6 +9,7 @@ object TestConfig {
       |akka.loglevel = DEBUG
       |akka.actor.debug.autoreceive = "on"
       |akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+      |akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     """.stripMargin)
 
   implicit def testSystem: ActorSystem = testSystem(TestConfig.config)
