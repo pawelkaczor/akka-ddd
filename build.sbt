@@ -86,6 +86,8 @@ lazy val `akka-ddd-test` = project
       Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j,
       Akka.testkit, Akka.multiNodeTestkit,
       scalaCheck, scalaTest,
+      "org.iq80.leveldb"            % "leveldb"          % "0.7",
+      "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.7",
       "commons-io" % "commons-io" % "2.4"
     ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence` % "test->compile")
