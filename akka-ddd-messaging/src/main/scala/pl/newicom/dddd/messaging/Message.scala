@@ -31,7 +31,7 @@ class MetaData(var metadata: Map[String, Any] = Map.empty) extends Serializable 
   def tryGet[B](attrName: String): Option[B] = metadata.get(attrName).asInstanceOf[Option[B]]
 
   def exceptDeliveryAttributes: Option[MetaData] = {
-    val resultMap = this.metadata.filterKeys(a => a.startsWith("_"))
+    val resultMap = this.metadata.filterKeys(a => !a.startsWith("_"))
     if (resultMap.isEmpty) None else Some(new MetaData(resultMap))
   }
 
