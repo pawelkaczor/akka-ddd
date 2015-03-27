@@ -1,7 +1,8 @@
 package pl.newicom.dddd.messaging
 
+import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.delivery.protocol.{Receipt, Processed, alod}
-import pl.newicom.dddd.messaging.MetaData.DeliveryId
+import pl.newicom.dddd.messaging.MetaData.{CorrelationId, DeliveryId}
 
 import scala.util.{Success, Try}
 
@@ -71,9 +72,13 @@ abstract class Message(var metadata: Option[MetaData] = None) extends Serializab
 
   def withDeliveryId(deliveryId: Long) = withMetaAttribute(DeliveryId, deliveryId)
 
+  def withCorrelationId(correlationId: EntityId) = withMetaAttribute(CorrelationId, correlationId)
+
   def deliveryId: Option[Long] = tryGetMetaAttribute[Any](DeliveryId).map {
     case bigInt: scala.math.BigInt => bigInt.toLong
     case l: Long => l
   }
+
+  def correlationId: Option[EntityId] = tryGetMetaAttribute[EntityId](CorrelationId)
 
 }
