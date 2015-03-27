@@ -19,7 +19,7 @@ object SagaSupport {
     val sagaConfig: SagaConfig[A] = implicitly[SagaConfig[A]]
 
     val sagaManagerProps = Props[SagaManager](smf(sagaConfig, sagaOfficePath))
-    val sagaManager = cs.createChild(sagaManagerProps, s"SagaManager-${sagaConfig.streamName}")
+    val sagaManager = cs.createChild(sagaManagerProps, s"SagaManager-${sagaConfig.bpsName}")
 
     sagaManager
   }

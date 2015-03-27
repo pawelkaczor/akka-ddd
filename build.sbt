@@ -18,7 +18,7 @@ resolvers in ThisBuild ++= Seq("Akka Snapshot Repository" at "http://repo.akka.i
 publishMavenStyle in ThisBuild := true
 
 lazy val root = (project in file("."))
-  .aggregate(`akka-ddd-messaging`, `akka-ddd-core`, `akka-ddd-write-front`, `view-update`, `view-update-sql`, `akka-ddd-test`, `eventstore-akka-persistence`, `http-support`)
+  .aggregate(`akka-ddd-messaging`, `akka-ddd-core`, `akka-ddd-write-front`, `view-update`, `view-update-sql`, `akka-ddd-test`, `eventstore-akka-persistence`, `http-support`, `akka-ddd-scheduling`)
   .settings(
     commonSettings,
     publishArtifact := false
@@ -96,8 +96,7 @@ lazy val `eventstore-akka-persistence` = project
   .settings(
     commonSettings,
     libraryDependencies ++= Seq(
-      Eventstore.client excludeAll ExclusionRule(organization = "com.typesafe.akka"),
-      Eventstore.akkaJournal excludeAll ExclusionRule(organization = "com.typesafe.akka"),
+      Eventstore.client, Eventstore.akkaJournal,
       Json4s.native, Json4s.ext,
       Akka.slf4j, Akka.persistence
     ))
@@ -109,6 +108,13 @@ lazy val `http-support` = project
     scalacOptions ++= Seq("-language:implicitConversions"),
     libraryDependencies ++= Json.`4s` ++ Akka.http
   )
+
+lazy val `akka-ddd-scheduling` = project
+  .settings(
+    commonSettings,
+    libraryDependencies ++= Seq(
+    ))
+  .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence`)
 
 lazy val commonSettings: Seq[Setting[_]] = Publish.settings ++ releaseSettings ++ Seq(
   updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true),

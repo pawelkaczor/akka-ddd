@@ -1,52 +1,63 @@
 package pl.newicom.dddd.process
 
 import akka.actor.ActorPath
+import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.delivery.AtLeastOnceDeliverySupport
-import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
+import pl.newicom.dddd.messaging.event._
 import pl.newicom.dddd.messaging.{Message, MetaData}
 import pl.newicom.dddd.office.OfficeInfo
-import pl.newicom.dddd.process.ReceptorConfig.{StimuliSource, Transduction}
+import pl.newicom.dddd.process.ReceptorConfig.{ReceiverResolver, StimuliSource, Transduction}
 import pl.newicom.dddd.serialization.JsonSerializationHints
 
 object ReceptorConfig {
   type Transduction = PartialFunction[EventMessage, Message]
-  type StimuliSource[A] = OfficeInfo[A]
+  type ReceiverResolver = PartialFunction[Message, ActorPath]
+  type StimuliSource = EventStream
 }
 
 abstract class ReceptorConfig {
-  def stimuliSource: String
+  def stimuliSource: StimuliSource
   def transduction: Transduction
-  def receiver: ActorPath
+  def receiverResolver: ReceiverResolver
   def serializationHints: JsonSerializationHints
 }
 
 trait ReceptorGrammar {
-  def reactTo[A : StimuliSource]:                    ReceptorGrammar
-  def applyTransduction(transduction: Transduction): ReceptorGrammar
-  def propagateTo(receiver: ActorPath):              ReceptorConfig
+  def reactTo[A : OfficeInfo](subChannel: Option[String] = None):     ReceptorGrammar
+  def applyTransduction(transduction: Transduction):                  ReceptorGrammar
+  def route(receiverResolver: ReceiverResolver):                      ReceptorConfig
+  def propagateTo(receiver: ActorPath):                               ReceptorConfig
 }
 
 case class ReceptorBuilder(
-  stimuliSource: String = null,
+  stimuliSource: StimuliSource = null,
   transduction: Transduction = {case em => em},
-  receiver: ActorPath = null,
+  receiverResolver: ReceiverResolver = null,
   serializationHints: JsonSerializationHints = null) extends ReceptorGrammar {
 
-  def reactTo[A : StimuliSource] = {
-    val source: StimuliSource[_] = implicitly[StimuliSource[_]]
-    copy(stimuliSource = source.streamName, serializationHints = source.serializationHints)
+  def reactTo[A : OfficeInfo]: ReceptorBuilder = {
+    reactTo[A](None)
+  }
+
+  def reactTo[A : OfficeInfo](clerk: Option[EntityId]) = {
+    val officeInfo: OfficeInfo[_] = implicitly[OfficeInfo[_]]
+    val officeName = officeInfo.name
+    val eventStream = clerk.fold[EventStream](OfficeEventStream(officeInfo)) { c => ClerkEventStream(officeName, c) }
+    copy(stimuliSource = eventStream, serializationHints = officeInfo.serializationHints)
   }
 
   def applyTransduction(transduction: Transduction) =
     copy(transduction = transduction)
 
-  def propagateTo(_receiver: ActorPath) =
+  def route(_receiverResolver: ReceiverResolver) =
     new ReceptorConfig() {
       def stimuliSource = ReceptorBuilder.this.stimuliSource
       def transduction = ReceptorBuilder.this.transduction
       def serializationHints = ReceptorBuilder.this.serializationHints
-      def receiver = _receiver
+      def receiverResolver = _receiverResolver
     }
+
+  def propagateTo(_receiver: ActorPath) = route({case _ => _receiver})
 }
 
 abstract class Receptor extends AtLeastOnceDeliverySupport {
@@ -54,9 +65,11 @@ abstract class Receptor extends AtLeastOnceDeliverySupport {
 
   def config: ReceptorConfig
 
-  override lazy val destination = config.receiver
+  def deadLetters = context.system.deadLetters.path
 
-  override lazy val persistenceId: String = s"Receptor-${config.stimuliSource}-${self.path.hashCode}"
+  def destination(msg: Message) = config.receiverResolver.applyOrElse(msg, (any: Message) => deadLetters)
+
+  override lazy val persistenceId: String = s"Receptor-${config.stimuliSource.officeName}-${self.path.hashCode}"
 
   override def recoveryCompleted(): Unit =
     subscribe(config.stimuliSource, lastSentDeliveryId)

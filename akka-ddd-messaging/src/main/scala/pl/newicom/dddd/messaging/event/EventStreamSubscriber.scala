@@ -7,11 +7,11 @@ trait EventStreamSubscriber {
   this: Actor =>
 
   /**
-   * Subscribes this actor to event stream of given name.
+   * Subscribes this actor to given event stream.
    * @param fromPositionExclusive if provided Subscriber will be receiving events
    *                              from given position (exclusively)
    */
-  def subscribe(streamName: String, fromPositionExclusive: Option[Long]): ActorRef
+  def subscribe(stream: EventStream, fromPositionExclusive: Option[Long]): ActorRef
 
   /**
    * Logic of receiving event messages from event stream.

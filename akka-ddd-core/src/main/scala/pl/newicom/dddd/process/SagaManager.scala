@@ -15,6 +15,7 @@ object SagaManager {
     new OfficeInfo[BusinessProcess[_]] {
       def name: String = sagaConfig.name
       def serializationHints = sagaConfig.serializationHints
+      override def isSagaOffice = true
     }
   }
 

@@ -12,7 +12,8 @@ object ReceptorSupport {
 
   def registerReceptor(receptorConfig: ReceptorConfig)(implicit cs: CreationSupport, rf: ReceptorFactory): ActorRef = {
     val receptorProps = Props[Receptor](rf(receptorConfig))
-    cs.createChild(receptorProps, s"Receptor-${receptorConfig.stimuliSource}")
+    // TODO fix actor name
+    cs.createChild(receptorProps, s"Receptor-${receptorConfig.stimuliSource.officeName}")
   }
 
 }

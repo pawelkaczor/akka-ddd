@@ -18,13 +18,6 @@ object OfficeInfo {
       def name = _name
     }
 
-  def apply[A](_name: String, _streamName: String, _serializationHints: JsonSerializationHints): OfficeInfo[A] =
-    new OfficeInfo[A] {
-      def serializationHints = _serializationHints
-      override def streamName = _streamName
-      def name = _name
-    }
-
   def apply[A](_name: String): OfficeInfo[A] =
     new OfficeInfo[A] {
       def serializationHints = new JsonSerializationHints {
@@ -38,6 +31,6 @@ object OfficeInfo {
 
 trait OfficeInfo[A] {
   def name: String
-  def streamName: String = name
+  def isSagaOffice: Boolean = false
   def serializationHints: JsonSerializationHints
 }

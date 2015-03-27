@@ -12,7 +12,7 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
 
   private var deliveryState: DeliveryState = InitialState
 
-  def destination: ActorPath
+  def destination(msg: Message): ActorPath
 
   def recoveryCompleted(): Unit
   
@@ -34,7 +34,8 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
       if (em.entityId == null) {
         log.warning(s"No entityId. Skipping $em")
       } else {
-        deliver(destination, deliveryIdToMessage(em.asInstanceOf[Message]))
+        val message = em.asInstanceOf[Message]
+        deliver(destination(message), deliveryIdToMessage(message))
       }
 
     case receipt: Delivered =>

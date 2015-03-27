@@ -2,6 +2,7 @@ package pl.newicom.dddd.process
 
 import akka.actor.{ActorLogging, ActorPath, Props}
 import akka.persistence.{AtLeastOnceDelivery, PersistentActor, RecoveryCompleted}
+import org.joda.time.DateTime
 import org.json4s.NoTypeHints
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.aggregate._
@@ -11,6 +12,7 @@ import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.office.OfficeInfo
+import pl.newicom.dddd.scheduling.ScheduleEvent
 import pl.newicom.dddd.serialization.JsonSerializationHints
 
 abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A] {
@@ -50,6 +52,10 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
 
   override def persistenceId: String = sagaId
 
+  def schedulingOffice: Option[ActorPath] = None
+
+  def sagaOffice: ActorPath = context.parent.path.parent
+
   override def aroundReceive(receive: Receive, msg: Any): Unit = {
     super.aroundReceive(receiveDuplicate(acknowledgeEvent).orElse(receive), msg)
   }
@@ -69,6 +75,13 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
   def receiveDeliveryReceipt: Receive = {
     case receipt: Delivered =>
       persist(receipt)(updateState)
+  }
+
+  def schedule(event: DomainEvent, deadline: DateTime, correlationId: EntityId = sagaId): Unit = {
+    schedulingOffice.fold(throw new UnsupportedOperationException("Scheduling Office is not defined.")) { schOffice =>
+      val command = ScheduleEvent("global", sagaOffice, deadline, event)
+      deliverMsg(schOffice, CommandMessage(command).withCorrelationId(correlationId))
+    }
   }
 
   /**
@@ -124,6 +137,4 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
   def handleUnexpectedEvent(em: EventMessage): Unit = {
     log.warning(s"Unhandled: $em") // unhandled event should be redelivered by SagaManager
   }
-
 }
-
