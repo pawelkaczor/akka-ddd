@@ -25,6 +25,6 @@ class EventMessage(
 
   override def toString: String = {
     val msgClass = getClass.getSimpleName
-    s"$msgClass(event = $event, identifier = $id, timestamp = $timestamp, metaData = $metadata)"
+    s"$msgClass(event = $event, id = $id, timestamp = $timestamp, metaData = $metadata)"
   }
 }
