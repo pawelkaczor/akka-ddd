@@ -1,6 +1,6 @@
 package pl.newicom.dddd.serialization
 
-import org.json4s.{Formats, Serializer, TypeHints}
+import org.json4s.{NoTypeHints, Formats, Serializer, TypeHints}
 
 trait JsonSerializationHints {
 
@@ -13,4 +13,9 @@ trait JsonSerializationHints {
     override def typeHints: TypeHints = _1 + other.typeHints
     override def serializers: List[Serializer[_]] = _2 ++ other.serializers
   }
+}
+
+object NoSerializationHints extends JsonSerializationHints {
+  def typeHints = NoTypeHints
+  def serializers = List()
 }

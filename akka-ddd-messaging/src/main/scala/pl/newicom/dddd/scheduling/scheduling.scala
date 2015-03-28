@@ -14,4 +14,4 @@ import pl.newicom.dddd.aggregate.{Command, DomainEvent}
   // 
   // Events
   // 
-  case class EventScheduled(businessUnit: String, target: ActorPath, deadline: DateTime, event: DomainEvent)
+  case class EventScheduled(businessUnit: String, target: ActorPath, deadline: DateTime, deadlineMillis: Long, event: DomainEvent)

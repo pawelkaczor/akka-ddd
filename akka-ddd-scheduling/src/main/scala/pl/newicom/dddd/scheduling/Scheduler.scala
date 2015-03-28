@@ -51,7 +51,7 @@ class Scheduler(val pc: PassivationConfig, businessUnit: String) extends Aggrega
   //override def preRestart(reason: Throwable, message: Option[Any]) = ()
 
   override val factory: AggregateRootFactory = {
-    case EventScheduled(_, _, _, _) => SchedulerState()
+    case EventScheduled(_, _, _, _, _) => SchedulerState()
   }
 
   override def handleCommand: Receive = {
@@ -61,6 +61,7 @@ class Scheduler(val pc: PassivationConfig, businessUnit: String) extends Aggrega
           businessUnit,
           target,
           deadline.withSecondOfMinute(0).withMillisOfSecond(0),
+          deadline.getMillis,
           msg)
       )
   }

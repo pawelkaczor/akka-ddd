@@ -7,7 +7,7 @@ import pl.newicom.dddd.messaging.event._
 import pl.newicom.dddd.messaging.{Message, MetaData}
 import pl.newicom.dddd.office.OfficeInfo
 import pl.newicom.dddd.process.ReceptorConfig.{ReceiverResolver, StimuliSource, Transduction}
-import pl.newicom.dddd.serialization.JsonSerializationHints
+import pl.newicom.dddd.serialization.{NoSerializationHints, JsonSerializationHints}
 
 object ReceptorConfig {
   type Transduction = PartialFunction[EventMessage, Message]
@@ -43,7 +43,11 @@ case class ReceptorBuilder(
     val officeInfo: OfficeInfo[_] = implicitly[OfficeInfo[_]]
     val officeName = officeInfo.name
     val eventStream = clerk.fold[EventStream](OfficeEventStream(officeInfo)) { c => ClerkEventStream(officeName, c) }
-    copy(stimuliSource = eventStream, serializationHints = officeInfo.serializationHints)
+    reactToStream(eventStream, officeInfo.serializationHints)
+  }
+
+  def reactToStream(eventStream: EventStream, serializationHints: JsonSerializationHints = NoSerializationHints) = {
+    copy(stimuliSource = eventStream, serializationHints = serializationHints)
   }
 
   def applyTransduction(transduction: Transduction) =
