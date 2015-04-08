@@ -7,7 +7,6 @@ import pl.newicom.dddd.messaging.event._
 import pl.newicom.dddd.messaging.{Message, MetaData}
 import pl.newicom.dddd.office.OfficeInfo
 import pl.newicom.dddd.process.ReceptorConfig.{ReceiverResolver, StimuliSource, Transduction}
-import pl.newicom.dddd.serialization.{NoSerializationHints, JsonSerializationHints}
 
 object ReceptorConfig {
   type Transduction = PartialFunction[EventMessage, Message]
@@ -19,7 +18,6 @@ abstract class ReceptorConfig {
   def stimuliSource: StimuliSource
   def transduction: Transduction
   def receiverResolver: ReceiverResolver
-  def serializationHints: JsonSerializationHints
 }
 
 trait ReceptorGrammar {
@@ -30,10 +28,10 @@ trait ReceptorGrammar {
 }
 
 case class ReceptorBuilder(
-  stimuliSource: StimuliSource = null,
-  transduction: Transduction = {case em => em},
-  receiverResolver: ReceiverResolver = null,
-  serializationHints: JsonSerializationHints = null) extends ReceptorGrammar {
+    stimuliSource: StimuliSource = null,
+    transduction: Transduction = {case em => em},
+    receiverResolver: ReceiverResolver = null)
+  extends ReceptorGrammar {
 
   def reactTo[A : OfficeInfo]: ReceptorBuilder = {
     reactTo[A](None)
@@ -43,11 +41,11 @@ case class ReceptorBuilder(
     val officeInfo: OfficeInfo[_] = implicitly[OfficeInfo[_]]
     val officeName = officeInfo.name
     val eventStream = clerk.fold[EventStream](OfficeEventStream(officeInfo)) { c => ClerkEventStream(officeName, c) }
-    reactToStream(eventStream, officeInfo.serializationHints)
+    reactToStream(eventStream)
   }
 
-  def reactToStream(eventStream: EventStream, serializationHints: JsonSerializationHints = NoSerializationHints) = {
-    copy(stimuliSource = eventStream, serializationHints = serializationHints)
+  def reactToStream(eventStream: EventStream) = {
+    copy(stimuliSource = eventStream)
   }
 
   def applyTransduction(transduction: Transduction) =
@@ -57,7 +55,6 @@ case class ReceptorBuilder(
     new ReceptorConfig() {
       def stimuliSource = ReceptorBuilder.this.stimuliSource
       def transduction = ReceptorBuilder.this.transduction
-      def serializationHints = ReceptorBuilder.this.serializationHints
       def receiverResolver = _receiverResolver
     }
 

@@ -1,7 +1,6 @@
 package pl.newicom.dddd.office
 
-import org.json4s.FullTypeHints
-import pl.newicom.dddd.serialization.JsonSerializationHints
+import pl.newicom.dddd.serialization.{JsonSerializationHints, NoSerializationHints}
 
 import scala.reflect.ClassTag
 
@@ -20,10 +19,7 @@ object OfficeInfo {
 
   def apply[A](_name: String): OfficeInfo[A] =
     new OfficeInfo[A] {
-      def serializationHints = new JsonSerializationHints {
-        def typeHints = FullTypeHints(List())
-        def serializers = List()
-      }
+      def serializationHints = NoSerializationHints
       def name = _name
     }
 

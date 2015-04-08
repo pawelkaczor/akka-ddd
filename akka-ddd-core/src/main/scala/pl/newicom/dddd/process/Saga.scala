@@ -3,7 +3,6 @@ package pl.newicom.dddd.process
 import akka.actor.{ActorLogging, ActorPath, Props}
 import akka.persistence.{AtLeastOnceDelivery, PersistentActor, RecoveryCompleted}
 import org.joda.time.DateTime
-import org.json4s.NoTypeHints
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.alod._
@@ -13,7 +12,7 @@ import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.office.OfficeInfo
 import pl.newicom.dddd.scheduling.ScheduleEvent
-import pl.newicom.dddd.serialization.JsonSerializationHints
+import pl.newicom.dddd.serialization.NoSerializationHints
 
 abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A] {
   import scala.concurrent.duration._
@@ -23,23 +22,19 @@ abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A]
 }
 
 /**
- *
  * @param bpsName name of Business Process Stream (bps)
  */
 abstract class SagaConfig[A <: Saga](val bpsName: String) extends OfficeInfo[A] {
 
   def name = bpsName
 
+  def serializationHints = NoSerializationHints
+
   /**
    * Correlation ID identifies process instance. It is used to route EventMessage
    * messages created by [[SagaManager]] to [[Saga]] instance,
    */
   def correlationIdResolver: PartialFunction[DomainEvent, EntityId]
-
-  def serializationHints = new JsonSerializationHints {
-    def typeHints = NoTypeHints
-    def serializers = List()
-  }
 
 }
 

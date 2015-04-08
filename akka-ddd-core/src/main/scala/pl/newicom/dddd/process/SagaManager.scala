@@ -6,15 +6,16 @@ import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
 import pl.newicom.dddd.office.OfficeInfo
 import SagaManager._
+import pl.newicom.dddd.serialization.NoSerializationHints
 import scala.concurrent.duration._
 
 class BusinessProcess[A : OfficeInfo]
 
 object SagaManager {
-  implicit def businessProcessInfo(implicit sagaConfig: SagaConfig[_]): OfficeInfo[BusinessProcess[_]] = {
+  implicit def businessProcessInfo(implicit sc: SagaConfig[_]): OfficeInfo[BusinessProcess[_]] = {
     new OfficeInfo[BusinessProcess[_]] {
-      def name: String = sagaConfig.name
-      def serializationHints = sagaConfig.serializationHints
+      def name = sc.name
+      def serializationHints = NoSerializationHints
       override def isSagaOffice = true
     }
   }
