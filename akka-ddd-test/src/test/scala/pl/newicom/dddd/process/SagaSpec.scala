@@ -9,19 +9,15 @@ import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.office.Office._
-import pl.newicom.dddd.process.SagaSpec._
-import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, ValueChanged}
+import pl.newicom.dddd.test.dummy.DummyAggregateRoot.ValueChanged
 import pl.newicom.dddd.test.dummy.DummySaga
+import pl.newicom.dddd.test.support.TestConfig
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 import scala.concurrent.duration._
 
 
-object SagaSpec {
-  implicit val sys: ActorSystem = ActorSystem("SagaSpec")
-}
-
-class SagaSpec extends TestKit(sys) with WordSpecLike with ImplicitSender with BeforeAndAfterAll with BeforeAndAfter  {
+class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with ImplicitSender with BeforeAndAfterAll with BeforeAndAfter  {
 
   implicit object TestSagaActorFactory extends SagaActorFactory[DummySaga] {
     override def props(pc: PassivationConfig): Props = {
