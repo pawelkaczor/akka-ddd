@@ -12,6 +12,7 @@ import pl.newicom.dddd.clustertest.MultiNodeWithLevelDbJournalSpec.LevelDbJourna
 object MultiNodeWithLevelDbJournalSpec {
   val LevelDbJournalConfig = ConfigFactory.parseString("""
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
+    akka.persistence.snapshot-store.plugin = "eventstore.persistence.snapshot-store"
     akka.persistence.journal.leveldb-shared.store {
       native = off
       dir = "target/test-shared-journal"
