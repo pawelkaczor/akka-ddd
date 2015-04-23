@@ -33,7 +33,7 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](impl
   implicit var aggregateIdGen: Gen[EntityId] = null
 
   before {
-    aggregateIdGen = Gen.const[EntityId](domain + "-" + uuid7)
+    aggregateIdGen = Gen.const[EntityId](domain + "-" + uuid10)
   }
 
   after {

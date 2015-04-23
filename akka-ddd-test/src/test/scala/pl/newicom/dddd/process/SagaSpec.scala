@@ -12,7 +12,7 @@ import pl.newicom.dddd.office.Office._
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.ValueChanged
 import pl.newicom.dddd.test.dummy.DummySaga
 import pl.newicom.dddd.test.support.TestConfig
-import pl.newicom.dddd.utils.UUIDSupport.uuid7
+import pl.newicom.dddd.utils.UUIDSupport.uuid10
 
 import scala.concurrent.duration._
 
@@ -30,7 +30,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
     }
   }
 
-  def processId = uuid7
+  def processId = uuid10
   val sagaOffice = office[DummySaga]
 
   after {
