@@ -17,6 +17,9 @@ import scala.reflect.ClassTag
 
 abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_system) with ImplicitSender {
 
+  val timeoutGiven = Timeout(5.seconds)
+  val timeoutThen  = Timeout(5.seconds)
+
   def officeUnderTest: ActorRef
 
   def ensureOfficeTerminated(): Unit
@@ -99,7 +102,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
     def expectException[E <: Exception](message: String = null)(implicit t: ClassTag[E]): Unit = {
       whenFun()
-      expectMsgPF[Boolean](3 seconds, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
+      expectMsgPF[Boolean](timeoutThen.duration, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
         case Processed(scala.util.Failure(ex)) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
       }
     }
@@ -112,7 +115,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
       val probe = TestProbe()
       _system.eventStream.subscribe(probe.ref, t.runtimeClass)
       whenFun()
-      probe.expectMsgPF[E](3 seconds, hint)(matcher)
+      probe.expectMsgPF[E](timeoutThen.duration, hint)(matcher)
     }
 
   }
@@ -121,8 +124,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   def given(cs: Command*): Given = {
     import akka.pattern.ask
-    implicit val timeout = Timeout(5.seconds)
-
+    implicit val timeout = timeoutGiven
     Given(
       givenFun = () => {
         cs.map { c =>
