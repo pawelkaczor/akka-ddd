@@ -10,14 +10,19 @@ import pl.newicom.dddd.aggregate.{Command, BusinessEntity, EntityId}
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
 import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.office.Office._
+import pl.newicom.dddd.test.support.OfficeSpec.sys
 import pl.newicom.dddd.utils.UUIDSupport._
 
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](implicit _system: ActorSystem, arClassTag: ClassTag[A])
-  extends GivenWhenThenTestFixture(_system) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
+object OfficeSpec {
+  def sys(arClass: Class[_]) = ActorSystem(s"${arClass.getSimpleName}OfficeSpec_$uuid7")
+}
+
+abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_system: Option[ActorSystem] = None)(implicit arClassTag: ClassTag[A])
+  extends GivenWhenThenTestFixture(_system.getOrElse(sys(arClassTag.runtimeClass))) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
 
   val logger = getLogger(getClass)
 
