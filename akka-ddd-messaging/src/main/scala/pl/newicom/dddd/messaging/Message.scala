@@ -81,6 +81,8 @@ abstract class Message(var metadata: Option[MetaData] = None) extends Serializab
 
   def withCausationId(causationId: EntityId) = withMetaAttribute(CausationId, causationId)
 
+  def withSessionId(sessionId: EntityId) = withMetaAttribute(SessionId, sessionId)
+
   def deliveryId: Option[Long] = tryGetMetaAttribute[Any](DeliveryId).map {
     case bigInt: scala.math.BigInt => bigInt.toLong
     case l: Long => l
