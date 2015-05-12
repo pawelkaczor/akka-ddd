@@ -6,6 +6,7 @@ import pl.newicom.dddd.aggregate.{BusinessEntity, Command}
 import pl.newicom.dddd.messaging.EntityMessage
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
+import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -15,7 +16,7 @@ object LocalOffice {
   implicit def localOfficeFactory[A <: BusinessEntity: BusinessEntityActorFactory: EntityIdResolution : ClassTag](implicit system: ActorSystem): OfficeFactory[A] = {
     new OfficeFactory[A] {
       override def getOrCreate: ActorRef = {
-        system.actorOf(Props(new LocalOffice[A]()), officeName)
+        system.actorOf(Props(new LocalOffice[A]()), s"${officeName}_${uuid7}")
       }
     }
   }
