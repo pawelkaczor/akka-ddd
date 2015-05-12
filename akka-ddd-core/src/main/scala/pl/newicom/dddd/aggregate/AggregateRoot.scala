@@ -71,7 +71,7 @@ trait AggregateRoot[S <: AggregateState]
   }
 
   def raise(event: DomainEvent) {
-    persist(new EventMessage(event = event).withMetaData(commandMessage.metadataExceptDeliveryAttributes)) {
+    persist(new EventMessage(event).causedBy(commandMessage)) {
       persisted =>
         {
           log.info("Event persisted: {}", event)

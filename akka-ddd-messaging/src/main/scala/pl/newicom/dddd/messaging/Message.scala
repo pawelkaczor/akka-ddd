@@ -2,14 +2,15 @@ package pl.newicom.dddd.messaging
 
 import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.delivery.protocol.{Receipt, Processed, alod}
-import pl.newicom.dddd.messaging.MetaData.{CorrelationId, DeliveryId}
+import pl.newicom.dddd.messaging.MetaData._
 
 import scala.util.{Success, Try}
 
 object MetaData {
-  val DeliveryId = "_deliveryId"
-  val CorrelationId: String = "correlationId"
-  val SessionId: String = "sessionId"
+  val DeliveryId          = "_deliveryId"
+  val CausationId         = "causationId"
+  val CorrelationId       = "correlationId"
+  val SessionId           = "sessionId"
 }
 
 class MetaData(var metadata: Map[String, Any] = Map.empty) extends Serializable {
@@ -45,6 +46,10 @@ abstract class Message(var metadata: Option[MetaData] = None) extends Serializab
 
   type MessageImpl <: Message
 
+  def causedBy(msg: Message): MessageImpl =
+    withMetaData(msg.metadataExceptDeliveryAttributes)
+      .withCausationId(msg.id).asInstanceOf[MessageImpl]
+
   def metadataExceptDeliveryAttributes: Option[MetaData] = {
     metadata.flatMap(_.exceptDeliveryAttributes)
   }
@@ -73,6 +78,8 @@ abstract class Message(var metadata: Option[MetaData] = None) extends Serializab
   def withDeliveryId(deliveryId: Long) = withMetaAttribute(DeliveryId, deliveryId)
 
   def withCorrelationId(correlationId: EntityId) = withMetaAttribute(CorrelationId, correlationId)
+
+  def withCausationId(causationId: EntityId) = withMetaAttribute(CausationId, causationId)
 
   def deliveryId: Option[Long] = tryGetMetaAttribute[Any](DeliveryId).map {
     case bigInt: scala.math.BigInt => bigInt.toLong
