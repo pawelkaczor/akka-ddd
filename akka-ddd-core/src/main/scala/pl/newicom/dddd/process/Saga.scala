@@ -51,6 +51,13 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
 
   def sagaOffice: ActorPath = context.parent.path.parent
 
+  private var _lastEventMessage: Option[EventMessage] = None
+
+  /**
+   * Event message being processed. Not available during recovery
+   */
+  def eventMessage = _lastEventMessage.get
+
   override def aroundReceive(receive: Receive, msg: Any): Unit = {
     super.aroundReceive(receiveDuplicate(acknowledgeEvent).orElse(receive), msg)
   }
@@ -64,7 +71,7 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
   }
 
   def deliverCommand(office: ActorPath, command: Command): Unit = {
-    deliverMsg(office, CommandMessage(command))
+    deliverMsg(office, CommandMessage(command).causedBy(eventMessage))
   }
 
   def receiveDeliveryReceipt: Receive = {
@@ -131,5 +138,14 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
 
   def handleUnexpectedEvent(em: EventMessage): Unit = {
     log.warning(s"Unhandled: $em") // unhandled event should be redelivered by SagaManager
+  }
+
+  override def messageProcessed(m: Message): Unit = {
+    _lastEventMessage = m match {
+      case em: EventMessage =>
+        Some(em)
+      case _ => None
+    }
+    super.messageProcessed(m)
   }
 }

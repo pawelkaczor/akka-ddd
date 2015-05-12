@@ -47,6 +47,7 @@ class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPat
       val de = e.asInstanceOf[ValueChanged]
       counter = de.value.asInstanceOf[Int]
       context.system.eventStream.publish(e)
+      log.debug(s"Applied event message: ${eventMessage}")
       if (dummyOffice.isDefined) {
         deliverCommand(dummyOffice.get, DummyCommand(de.id, counter))
       }
