@@ -18,7 +18,7 @@ object Deps {
     val testkit = apply("testkit")
     val multiNodeTestkit = apply("multi-node-testkit")
 
-    private def apply(moduleName: String) = "com.typesafe.akka" %% s"akka-$moduleName" % AkkaVersion withSources()
+    private def apply(moduleName: String) = "com.typesafe.akka" %% s"akka-$moduleName" % AkkaVersion
   }
 
   object Json {
@@ -29,12 +29,12 @@ object Deps {
     val native = apply("native")
     val ext = apply("ext")
 
-    private def apply(moduleName: String) = "org.json4s" %% s"json4s-$moduleName" % "3.2.11" withSources()
+    private def apply(moduleName: String) = "org.json4s" %% s"json4s-$moduleName" % "3.2.11"
   }
 
   object Eventstore {
-    val client = "pl.newicom.dddd" %% "eventstore-client" % "2.0.2-SNAPSHOT" withSources()
-    val akkaJournal = "pl.newicom.dddd" %% "akka-persistence-eventstore" % "2.0.2-SNAPSHOT" withSources()
+    val client = "pl.newicom.dddd" %% "eventstore-client" % "2.0.2-SNAPSHOT"
+    val akkaJournal = "pl.newicom.dddd" %% "akka-persistence-eventstore" % "2.0.2-SNAPSHOT"
   }
 
   object SqlDb {
