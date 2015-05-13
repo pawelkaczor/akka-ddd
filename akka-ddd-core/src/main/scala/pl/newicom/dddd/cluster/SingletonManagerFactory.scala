@@ -1,7 +1,7 @@
 package pl.newicom.dddd.cluster
 
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
-import akka.contrib.pattern.{ClusterSingletonProxy, ClusterSingletonManager}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonManager}
 import pl.newicom.dddd.actor.CreationSupport
 
 class SingletonManagerFactory(implicit system: ActorSystem) extends CreationSupport {

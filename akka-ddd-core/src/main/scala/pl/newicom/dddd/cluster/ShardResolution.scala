@@ -1,6 +1,6 @@
 package pl.newicom.dddd.cluster
 
-import akka.contrib.pattern.ShardRegion._
+import akka.cluster.sharding.ShardRegion._
 import pl.newicom.dddd.cluster.ShardResolution._
 import pl.newicom.dddd.aggregate.Command
 import pl.newicom.dddd.messaging.EntityMessage

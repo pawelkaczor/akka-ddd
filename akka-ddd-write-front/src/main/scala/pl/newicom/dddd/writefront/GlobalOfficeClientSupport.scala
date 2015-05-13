@@ -1,7 +1,7 @@
 package pl.newicom.dddd.writefront
 
 import akka.actor._
-import akka.contrib.pattern.ClusterClient
+import akka.cluster.client.ClusterClient
 
 import scala.collection.mutable
 

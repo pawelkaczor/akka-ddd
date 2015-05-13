@@ -1,8 +1,9 @@
 package pl.newicom.dddd.cluster
 
 import akka.actor._
-import akka.contrib.pattern.{ClusterReceptionistExtension, ClusterSharding}
-import akka.contrib.pattern.ShardRegion.Passivate
+import akka.cluster.sharding.{ClusterSharding, ShardRegion}
+import akka.cluster.client.ClusterReceptionistExtension
+import akka.cluster.sharding.ShardRegion.Passivate
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, PassivationConfig}
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.office.OfficeFactory

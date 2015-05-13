@@ -9,7 +9,7 @@ version in ThisBuild := "1.0.2-SNAPSHOT"
 
 organization in ThisBuild := "pl.newicom.dddd"
 
-scalaVersion in ThisBuild := "2.11.5"
+scalaVersion in ThisBuild := "2.11.6"
 
 scalacOptions in ThisBuild := Seq("-encoding", "utf8", "-feature", "-language:postfixOps")
 
@@ -39,7 +39,7 @@ lazy val `akka-ddd-core` = project
     scalacOptions ++= Seq("-language:implicitConversions"),
     publishArtifact in Test := true,
     libraryDependencies ++= Seq(
-      Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j
+      Akka.clusterTools, Akka.clusterSharding, Akka.persistence, Akka.slf4j
     ))
   .dependsOn(`akka-ddd-messaging`)
 
@@ -48,7 +48,7 @@ lazy val `akka-ddd-write-front` = project
     commonSettings,
     publishArtifact in Test := true,
     libraryDependencies ++= Json.`4s` ++ Akka.http ++ Seq(
-      Akka.contrib
+      Akka.clusterTools
     ))
   .dependsOn(`akka-ddd-messaging`)
 
@@ -67,7 +67,7 @@ lazy val `view-update-sql` = project
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
     parallelExecution in IntegrationTest := false,
     libraryDependencies ++= Seq(
-      SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.slf4j, Akka.testkit % "test",
+      SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.testkit % "test",
       "ch.qos.logback" % "logback-classic" % "1.1.2" % "test", scalaCheck % "test"
 
     ))
@@ -83,9 +83,7 @@ lazy val `akka-ddd-test` = project
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
     parallelExecution in IntegrationTest := false,
     libraryDependencies ++= Seq(
-      Akka.actor, Akka.contrib, Akka.persistence, Akka.slf4j,
-      Akka.testkit, Akka.multiNodeTestkit,
-      scalaCheck, scalaTest,
+      Akka.testkit, Akka.multiNodeTestkit, scalaCheck, scalaTest,
       "org.iq80.leveldb"            % "leveldb"          % "0.7",
       "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.7",
       "commons-io" % "commons-io" % "2.4"
@@ -113,7 +111,7 @@ lazy val `akka-ddd-scheduling` = project
   .settings(
     commonSettings,
     libraryDependencies ++= Seq(
-      Akka.slf4j, Akka.testkit % "test", scalaCheck % "test",
+      Akka.testkit % "test", scalaCheck % "test",
       "ch.qos.logback" % "logback-classic" % "1.1.2" % "test"
     ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence`, `akka-ddd-test` % "test->compile;test->test")

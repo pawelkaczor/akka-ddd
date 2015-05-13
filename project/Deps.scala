@@ -13,7 +13,8 @@ object Deps {
     val http  = Seq(httpCore, httpTestKit)
     val slf4j = apply("slf4j")
     val persistence = apply("persistence-experimental")
-    val contrib = apply("contrib")
+    val clusterTools = apply("cluster-tools")
+    val clusterSharding = apply("cluster-sharding")
     val testkit = apply("testkit")
     val multiNodeTestkit = apply("multi-node-testkit")
 
