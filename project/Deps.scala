@@ -4,13 +4,14 @@ import Keys._
 object Deps {
 
   val AkkaVersion = "2.4-SNAPSHOT"
-  val AkkaHttpVersion = "1.0-M3"
+  val AkkaHttpVersion = "1.0-RC2"
 
   object Akka {
     val actor = apply("actor")
-    val httpCore  = "com.typesafe.akka" %% "akka-http-experimental" % AkkaHttpVersion
-    val httpTestKit  = "com.typesafe.akka" %% "akka-http-testkit-experimental" % AkkaHttpVersion % "test"
-    val http  = Seq(httpCore, httpTestKit)
+    val httpCore  = "com.typesafe.akka" %% "akka-http-core-experimental" % AkkaHttpVersion
+    val httpScala  = "com.typesafe.akka" %% "akka-http-scala-experimental" % AkkaHttpVersion
+    val httpTestKit  = "com.typesafe.akka" %% "akka-http-testkit-experimental" % "1.0-M4" % "test"
+    val http  = Seq(httpCore, httpScala, httpTestKit)
     val slf4j = apply("slf4j")
     val persistence = apply("persistence-experimental")
     val clusterTools = apply("cluster-tools")

@@ -47,10 +47,10 @@ lazy val `akka-ddd-write-front` = project
   .settings(
     commonSettings,
     publishArtifact in Test := true,
-    libraryDependencies ++= Json.`4s` ++ Akka.http ++ Seq(
+    libraryDependencies ++= Seq(
       Akka.clusterTools
     ))
-  .dependsOn(`akka-ddd-messaging`)
+  .dependsOn(`akka-ddd-messaging`, `http-support`)
 
 lazy val `view-update` = project
   .settings(

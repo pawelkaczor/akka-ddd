@@ -1,10 +1,10 @@
 package pl.newicom.dddd.http
 
-import akka.http.marshalling.{PredefinedToEntityMarshallers, ToEntityMarshaller => TEM}
-import akka.http.model.{ContentTypeRange, MediaRange, MediaTypes}
-import akka.http.unmarshalling.Unmarshaller.UnsupportedContentTypeException
-import akka.http.unmarshalling.{FromEntityUnmarshaller => FEUM, PredefinedFromEntityUnmarshallers}
-import akka.http.util.FastFuture
+import akka.http.scaladsl.marshalling.{PredefinedToEntityMarshallers, ToEntityMarshaller => TEM}
+import akka.http.scaladsl.model.{ContentTypeRange, MediaRange, MediaTypes}
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller => FEUM, PredefinedFromEntityUnmarshallers}
+import akka.http.scaladsl.util.FastFuture
 import akka.stream.FlowMaterializer
 import org.json4s.Formats
 import org.json4s.native.Serialization._

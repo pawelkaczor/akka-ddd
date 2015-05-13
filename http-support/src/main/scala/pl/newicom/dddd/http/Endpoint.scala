@@ -1,6 +1,6 @@
 package pl.newicom.dddd.http
 
-import akka.http.server.{Directives, Route}
+import akka.http.scaladsl.server.{Directives, Route}
 import org.json4s.ext.{JodaTimeSerializers, UUIDSerializer}
 import org.json4s.{DefaultFormats, Formats}
 

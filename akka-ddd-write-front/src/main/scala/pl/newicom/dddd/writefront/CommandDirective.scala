@@ -1,7 +1,7 @@
 package pl.newicom.dddd.writefront
 
-import akka.http.server._
-import akka.http.server.directives.HeaderDirectives._
+import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.directives.HeaderDirectives._
 
 trait CommandDirective {
 
