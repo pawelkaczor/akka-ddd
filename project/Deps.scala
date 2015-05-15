@@ -7,16 +7,17 @@ object Deps {
   val AkkaHttpVersion = "1.0-RC2"
 
   object Akka {
-    val actor = apply("actor")
-    val httpCore  = "com.typesafe.akka" %% "akka-http-core-experimental" % AkkaHttpVersion
-    val httpScala  = "com.typesafe.akka" %% "akka-http-scala-experimental" % AkkaHttpVersion
-    val http  = Seq(httpCore, httpScala)
-    val slf4j = apply("slf4j")
-    val persistence = apply("persistence-experimental")
-    val clusterTools = apply("cluster-tools")
-    val clusterSharding = apply("cluster-sharding")
-    val testkit = apply("testkit")
-    val multiNodeTestkit = apply("multi-node-testkit")
+    val actor             = apply("actor")
+    val httpCore          = "com.typesafe.akka" %% "akka-http-core-experimental" % AkkaHttpVersion
+    val httpScala         = "com.typesafe.akka" %% "akka-http-scala-experimental" % AkkaHttpVersion
+    val httpTestKit       = "com.typesafe.akka" %% "akka-http-testkit-scala-experimental" % AkkaHttpVersion % "test"
+    val http              = Seq(httpCore, httpScala, httpTestKit)
+    val slf4j             = apply("slf4j")
+    val persistence       = apply("persistence-experimental")
+    val clusterTools      = apply("cluster-tools")
+    val clusterSharding   = apply("cluster-sharding")
+    val testkit           = apply("testkit")
+    val multiNodeTestkit  = apply("multi-node-testkit")
 
     private def apply(moduleName: String) = "com.typesafe.akka" %% s"akka-$moduleName" % AkkaVersion
   }
