@@ -2,11 +2,14 @@ package pl.newicom.dddd.test.dummy
 
 import java.util.UUID
 
+import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate
 import pl.newicom.dddd.aggregate.{AggregateRoot, AggregateState, EntityId}
 import pl.newicom.dddd.eventhandling.EventPublisher
+import pl.newicom.dddd.messaging.CollaborationSupport
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
+import pl.newicom.dddd.test.dummy.ValueGenerator.GenerateRandom
 import pl.newicom.dddd.utils.UUIDSupport._
 
 object DummyAggregateRoot {
@@ -55,8 +58,10 @@ object DummyAggregateRoot {
 
 }
 
-class DummyAggregateRoot extends AggregateRoot[DummyState] {
+class DummyAggregateRoot extends CollaborationSupport with AggregateRoot[DummyState] {
   this: EventPublisher =>
+
+  val valueGenerator = context.actorOf(Props[ValueGenerator])
 
   override def persistenceId = s"${dummyOffice.name}-$id"
 
@@ -102,7 +107,11 @@ class DummyAggregateRoot extends AggregateRoot[DummyState] {
 
     case GenerateValue(id) =>
       if (initialized) {
-        raise(ValueGenerated(id, value = uuid, confirmationToken = uuidObj))
+        receiveNext {
+          case ValueGenerator.ValueGenerated(value) =>
+            raise(ValueGenerated(id, value, confirmationToken = uuidObj))
+        }
+        valueGenerator ! GenerateRandom
       } else {
         throw new RuntimeException("Unknown Dummy")
       }
