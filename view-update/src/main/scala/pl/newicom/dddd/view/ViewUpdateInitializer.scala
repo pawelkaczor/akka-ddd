@@ -44,11 +44,12 @@ class ViewUpdateInitializer(updateService: ActorRef) extends Actor with ActorLog
         _ <- ensureViewStoreAvailable()
       } yield "OK").pipeTo(self)
 
-    case Success(_) =>
-      updateService ! ViewUpdateService.Start(esExtension.actor)
-
     case Failure(ex) =>
       throw new ViewUpdatingInitializationException(ex)
+
+    case _ =>
+      updateService ! ViewUpdateService.Start(esExtension.actor)
+
   }
 
 }
