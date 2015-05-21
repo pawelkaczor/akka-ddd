@@ -1,5 +1,6 @@
 package pl.newicom.dddd.view
 
+import akka.actor.Status.{Success, Failure}
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.util.Timeout
 import eventstore.EventStoreExtension
@@ -7,8 +8,7 @@ import eventstore.EventStream.System
 import pl.newicom.dddd.view.ViewUpdateInitializer._
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationDouble
-import scala.util.{Failure, Success}
+import scala.concurrent.duration._
 
 object ViewUpdateInitializer {
   object Started
@@ -36,12 +36,19 @@ class ViewUpdateInitializer(updateService: ActorRef) extends Actor with ActorLog
     updateService ? ViewUpdateService.EnsureViewStoreAvailable
   }
 
+  import akka.pattern.pipe
   override def receive: Receive = {
     case Started =>
-      Future.sequence(List(ensureEventStoreAvailable(), ensureViewStoreAvailable())).onComplete {
-        case Success(_) => updateService ! ViewUpdateService.Start(esExtension.actor)
-        case Failure(ex) => throw new ViewUpdatingInitializationException(ex)
-      }
+      (for {
+        _ <- ensureEventStoreAvailable()
+        _ <- ensureViewStoreAvailable()
+      } yield "OK").pipeTo(self)
+
+    case Success(_) =>
+      updateService ! ViewUpdateService.Start(esExtension.actor)
+
+    case Failure(ex) =>
+      throw new ViewUpdatingInitializationException(ex)
   }
 
 }
