@@ -1,7 +1,7 @@
 package pl.newicom.dddd.writefront
 
 import akka.actor._
-import akka.cluster.client.ClusterClient
+import akka.cluster.client.{ClusterClientSettings, ClusterClient}
 
 import scala.collection.mutable
 
@@ -13,10 +13,10 @@ trait GlobalOfficeClientSupport {
   private lazy val officeClientMap: mutable.Map[String, ActorRef] = mutable.Map.empty
 
   private lazy val clusterClient: ActorRef = {
-    val initialContacts = contactPoints.map {
-      case AddressFromURIString(address) ⇒ system.actorSelection(RootActorPath(address) / "user" / "receptionist")
+    val initialContacts: Seq[ActorPath] = contactPoints.map {
+      case AddressFromURIString(address) ⇒ RootActorPath(address) / "user" / "receptionist"
     }
-    system.actorOf(ClusterClient.props(initialContacts.toSet), "clusterClient")
+    system.actorOf(ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts.toSet)), "clusterClient")
   }
 
   def office(officeName: String) =

@@ -1,8 +1,8 @@
 package pl.newicom.dddd.cluster
 
 import akka.actor._
-import akka.cluster.sharding.{ClusterSharding, ShardRegion}
-import akka.cluster.client.ClusterReceptionistExtension
+import akka.cluster.client.ClusterClientReceptionist
+import akka.cluster.sharding.ClusterSharding
 import akka.cluster.sharding.ShardRegion.Passivate
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, PassivationConfig}
 import pl.newicom.dddd.aggregate.BusinessEntity
@@ -42,7 +42,7 @@ trait ShardingSupport {
           roleOverride = None,
           rememberEntries = false)
 
-        ClusterReceptionistExtension(system).registerService(region.get)
+        ClusterClientReceptionist(system).registerService(region.get)
 
       }
 

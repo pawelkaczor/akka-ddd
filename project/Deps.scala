@@ -3,14 +3,28 @@ import Keys._
 
 object Deps {
 
-  val AkkaVersion = "2.4-SNAPSHOT"
-  val AkkaHttpVersion = "1.0-RC2"
+  object Version {
+    val Akka       = "2.4-M1"
+    val AkkaHttp   = "1.0-RC2"
+    
+    val EventStoreClient      = "2.0.3-M1"
+    val EventStoreAkkaJournal = "2.0.2-M1"
+    
+    val json4s     = "3.2.11"
+    
+    val PostgresqlSlickExt = "0.8.2"
+    val H2Driver           = "1.3.170"
+
+    // test
+    val ScalaTest  = "2.2.4"
+    val ScalaCheck = "1.11.6"
+  }
 
   object Akka {
     val actor             = apply("actor")
-    val httpCore          = "com.typesafe.akka" %% "akka-http-core-experimental" % AkkaHttpVersion
-    val httpScala         = "com.typesafe.akka" %% "akka-http-scala-experimental" % AkkaHttpVersion
-    val httpTestKit       = "com.typesafe.akka" %% "akka-http-testkit-scala-experimental" % AkkaHttpVersion % "test"
+    val httpCore          = "com.typesafe.akka" %% "akka-http-core-experimental" % Version.AkkaHttp
+    val httpScala         = "com.typesafe.akka" %% "akka-http-scala-experimental" % Version.AkkaHttp
+    val httpTestKit       = "com.typesafe.akka" %% "akka-http-testkit-scala-experimental" % Version.AkkaHttp % "test"
     val http              = Seq(httpCore, httpScala, httpTestKit)
     val slf4j             = apply("slf4j")
     val persistence       = apply("persistence-experimental")
@@ -19,7 +33,7 @@ object Deps {
     val testkit           = apply("testkit")
     val multiNodeTestkit  = apply("multi-node-testkit")
 
-    private def apply(moduleName: String) = "com.typesafe.akka" %% s"akka-$moduleName" % AkkaVersion
+    private def apply(moduleName: String) = "com.typesafe.akka" %% s"akka-$moduleName" % Version.Akka
   }
 
   object Json {
@@ -30,17 +44,17 @@ object Deps {
     val native = apply("native")
     val ext = apply("ext")
 
-    private def apply(moduleName: String) = "org.json4s" %% s"json4s-$moduleName" % "3.2.11"
+    private def apply(moduleName: String) = "org.json4s" %% s"json4s-$moduleName" % Version.json4s
   }
 
   object Eventstore {
-    val client = "pl.newicom.dddd" %% "eventstore-client" % "2.0.2-SNAPSHOT"
-    val akkaJournal = "pl.newicom.dddd" %% "akka-persistence-eventstore" % "2.0.2-SNAPSHOT"
+    val client = "pl.newicom.dddd" %% "eventstore-client" % Version.EventStoreClient
+    val akkaJournal = "pl.newicom.dddd" %% "akka-persistence-eventstore" % Version.EventStoreAkkaJournal
   }
 
   object SqlDb {
-    val `slick-for-pg` = "com.github.tminglei" %% "slick-pg" % "0.8.2" exclude("org.slf4j", "slf4j-simple")
-    val testDriver = "com.h2database" % "h2" % "1.3.170" % "test"
+    val `slick-for-pg` = "com.github.tminglei" %% "slick-pg" % Version.PostgresqlSlickExt exclude("org.slf4j", "slf4j-simple")
+    val testDriver = "com.h2database" % "h2" % Version.H2Driver % "test"
 
     def prod = `slick-for-pg`
 
@@ -48,7 +62,7 @@ object Deps {
   }
 
   object TestFrameworks {
-    val scalaTest = "org.scalatest" %% "scalatest" % "2.2.4"
-    val scalaCheck = "org.scalacheck" %% "scalacheck" % "1.11.6"
+    val scalaTest = "org.scalatest" %% "scalatest" % Version.ScalaTest
+    val scalaCheck = "org.scalacheck" %% "scalacheck" % Version.ScalaCheck
   }
 }

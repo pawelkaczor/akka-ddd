@@ -1,7 +1,7 @@
 package pl.newicom.dddd.cluster
 
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
-import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonManager}
+import akka.cluster.singleton.{ClusterSingletonProxySettings, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonManager}
 import pl.newicom.dddd.actor.CreationSupport
 
 class SingletonManagerFactory(implicit system: ActorSystem) extends CreationSupport {
@@ -10,17 +10,20 @@ class SingletonManagerFactory(implicit system: ActorSystem) extends CreationSupp
 
   override def createChild(props: Props, name: String): ActorRef = {
     val singletonManagerName: String = s"singletonOf$name"
-    system.actorOf(ClusterSingletonManager.props(
-      singletonProps = props,
-      singletonName = name,
-      terminationMessage = PoisonPill,
-      role = None),
+    val managerSettings = ClusterSingletonManagerSettings(system).withSingletonName(name)
+    system.actorOf(
+      ClusterSingletonManager.props(
+        singletonProps = props,
+        terminationMessage = PoisonPill,
+        managerSettings
+      ),
       name = singletonManagerName)
 
-    system.actorOf(ClusterSingletonProxy.props(
-      singletonPath = s"/user/$singletonManagerName/$name",
-      role = None),
+    val proxySettings = ClusterSingletonProxySettings(system)
+    system.actorOf(
+      ClusterSingletonProxy.props(
+        singletonPath = s"/user/$singletonManagerName/$name",
+        proxySettings),
       name = s"${name}Proxy")
   }
-
 }
