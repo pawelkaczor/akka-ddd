@@ -2,20 +2,18 @@ import Deps._
 import Deps.TestFrameworks._
 import sbt.Keys._
 import sbtrelease.ReleasePlugin._
+import java.net.URL
 
 name := "akka-ddd"
 
 version in ThisBuild := "1.0.2-M1"
-
 organization in ThisBuild := "pl.newicom.dddd"
-
 scalaVersion in ThisBuild := "2.11.6"
 
-scalacOptions in ThisBuild := Seq("-encoding", "utf8", "-feature", "-language:postfixOps")
-
-resolvers in ThisBuild ++= Seq("Akka Snapshot Repository" at "http://repo.akka.io/snapshots/", "Sonatype Snapshots Nexus" at "https://oss.sonatype.org/content/repositories/snapshots")
-
+scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-feature", "-language:postfixOps")
 publishMavenStyle in ThisBuild := true
+homepage          in ThisBuild := Some(new URL("http://github.com/pawelkaczor/akka-ddd"))
+licenses          in ThisBuild := ("Apache2", new URL("http://raw.githubusercontent.com/pawelkaczor/akka-ddd/master/LICENSE.md")) :: Nil
 
 lazy val root = (project in file("."))
   .aggregate(`akka-ddd-messaging`, `akka-ddd-core`, `akka-ddd-write-front`, `view-update`, `view-update-sql`, `akka-ddd-test`, `eventstore-akka-persistence`, `http-support`, `akka-ddd-scheduling`)
