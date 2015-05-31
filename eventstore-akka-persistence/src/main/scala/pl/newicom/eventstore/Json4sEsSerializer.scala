@@ -10,7 +10,8 @@ import akka.persistence.eventstore.snapshot.EventStoreSnapshotStore.SnapshotEven
 import akka.persistence.{PersistentRepr, SnapshotMetadata}
 import akka.serialization.{Serialization, SerializationExtension}
 import akka.util.ByteString
-import eventstore.{Content, ContentType, Event, EventData}
+import eventstore.Content._
+import eventstore._
 import org.joda.time.DateTime
 import org.json4s.Extraction.decompose
 import org.json4s.JsonAST.{JField, JObject, JString}
@@ -18,16 +19,19 @@ import org.json4s._
 import org.json4s.ext.{JodaTimeSerializers, UUIDSerializer}
 import org.json4s.native.Serialization.{read, write}
 import org.json4s.reflect.TypeInfo
-import pl.newicom.dddd.aggregate.EntityId
+import pl.newicom.dddd.aggregate.{DomainEvent, EntityId}
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.delivery.protocol.alod.{Processed => AlodProcessed}
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.eventstore.Json4sEsSerializer._
 
+import scala.util.Success
+
 class Json4sEsSerializer(system: ExtendedActorSystem) extends EventStoreSerializer {
 
   def identifier = Identifier
+  lazy val serialization: Serialization = SerializationExtension(system)
 
   val defaultFormats: Formats = DefaultFormats + ActorRefSerializer + new SnapshotSerializer(system) ++ JodaTimeSerializers.all + UUIDSerializer +
     new FullTypeHints(List(
@@ -59,13 +63,10 @@ class Json4sEsSerializer(system: ExtendedActorSystem) extends EventStoreSerializ
   }
 
 
-  override def toPayloadAndMetadata(e: AnyRef) = e match {
-    case em: EventMessage => (em.event,
-      em.withMetaData(Map("id" -> em.id, "timestamp" -> em.timestamp)).metadata)
-    case _ => super.toPayloadAndMetadata(e)
-  }
+  def toPayloadAndMetadata(em: EventMessage): (DomainEvent, Option[MetaData]) =
+    (em.event, em.withMetaData(Map("id" -> em.id, "timestamp" -> em.timestamp)).metadata)
 
-  override def fromPayloadAndMetadata(payload: AnyRef, maybeMetadata: Option[AnyRef]): AnyRef = {
+  def fromPayloadAndMetadata(payload: AnyRef, maybeMetadata: Option[AnyRef]): AnyRef = {
     if (maybeMetadata.isDefined) {
       val metadata = maybeMetadata.get.asInstanceOf[MetaData]
       val id: EntityId = metadata.get("id")
@@ -76,19 +77,50 @@ class Json4sEsSerializer(system: ExtendedActorSystem) extends EventStoreSerializ
     }
   }
 
-  override def toEvent(x: AnyRef) = x match {
+
+  def toEvent(x: AnyRef) = x match {
+    case x: PersistentRepr => {
+      x.payload match {
+        case em: EventMessage =>
+          val (event, md) = toPayloadAndMetadata(em)
+          EventData(
+            eventType = classFor(event).getName,
+            data = Content(ByteString(toBinary(x.withPayload(event))), ContentType.Json),
+            metadata = md.fold(Empty) {
+              m => serialization.serialize(m).flatMap(ba => Success(Content(ba))).getOrElse(Empty)
+            }
+          )
+        case _ =>
+          EventData(
+            eventType = classFor(x).getName,
+            data = Content(ByteString(toBinary(x)), ContentType.Json))
+      }
+    }
+
     case x: SnapshotEvent => EventData(
-      eventType = x.getClass.getName,
+      eventType = classFor(x).getName,
       data = Content(ByteString(toBinary(x)), ContentType.Json))
 
     case _ => sys.error(s"Cannot serialize $x, SnapshotEvent expected")
   }
 
-  override def fromEvent(event: Event, manifest: Class[_]) = {
+  def fromEvent(event: Event, manifest: Class[_]) = {
     val clazz = Class.forName(event.data.eventType)
-    val result = fromBinary(event.data.data.value.toArray, clazz)
-    if (manifest.isInstance(result)) result
-    else sys.error(s"Cannot deserialize event as $manifest, event: $event")
+    val result = fromBinary(event.data.data.value.toArray, manifest)
+    if (manifest.isInstance(result)) {
+      result match {
+        case pr: PersistentRepr =>
+          val mdByteString = event.data.metadata.value
+          val metadata = if (mdByteString.isEmpty) None else Some(fromBinary(mdByteString.toArray, None))
+          pr.withPayload(fromPayloadAndMetadata(pr.payload.asInstanceOf[AnyRef], metadata))
+        case _ => result
+      }
+    } else sys.error(s"Cannot deserialize event as $manifest, event: $event")
+  }
+
+  def classFor(x: AnyRef) = x match {
+    case x: PersistentRepr => classOf[PersistentRepr]
+    case _                 => x.getClass
   }
 
   def contentType = ContentType.Json

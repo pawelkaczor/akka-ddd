@@ -6,7 +6,7 @@ import java.net.URL
 
 name := "akka-ddd"
 
-version in ThisBuild := "1.0.2-M1"
+version in ThisBuild := "1.0.3-M1"
 organization in ThisBuild := "pl.newicom.dddd"
 scalaVersion in ThisBuild := "2.11.6"
 
@@ -27,7 +27,7 @@ lazy val `akka-ddd-messaging` = project
     commonSettings,
     libraryDependencies ++= Json.`4s` ++ Seq(
       Akka.actor,
-      "com.github.nscala-time" %% "nscala-time" % "1.4.0"
+      "com.github.nscala-time" %% "nscala-time" % "2.0.0"
     )
   )
 

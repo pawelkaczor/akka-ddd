@@ -8,7 +8,7 @@ object Deps {
     val AkkaHttp   = "1.0-RC2"
     
     val EventStoreClient      = "2.0.3-M1"
-    val EventStoreAkkaJournal = "2.0.2-M1"
+    val EventStoreAkkaJournal = "2.0.3-M1"
     
     val json4s     = "3.2.11"
     
