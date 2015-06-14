@@ -17,7 +17,7 @@ object Deps {
 
     // test
     val ScalaTest  = "2.2.4"
-    val ScalaCheck = "1.11.6"
+    val ScalaCheck = "1.12.3"
   }
 
   object Akka {
