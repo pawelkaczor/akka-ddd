@@ -11,6 +11,7 @@ import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.office.Office._
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.ValueChanged
 import pl.newicom.dddd.test.dummy.DummySaga
+import pl.newicom.dddd.test.dummy.DummySaga.EventApplied
 import pl.newicom.dddd.test.support.TestConfig
 import pl.newicom.dddd.utils.UUIDSupport.uuid10
 
@@ -43,7 +44,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
     "not process previously processed events" in {
       // Given
       val probe = TestProbe()
-      system.eventStream.subscribe(probe.ref, classOf[ValueChanged])
+      system.eventStream.subscribe(probe.ref, classOf[EventApplied])
 
       val em1 = toEventMessage(ValueChanged(processId, 1, 1L))
 
@@ -52,7 +53,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
       sagaOffice ! em1
 
       // Then
-      probe.expectMsgClass(classOf[ValueChanged])
+      probe.expectMsgClass(classOf[EventApplied])
       probe.expectNoMsg(1.seconds)
     }
   }

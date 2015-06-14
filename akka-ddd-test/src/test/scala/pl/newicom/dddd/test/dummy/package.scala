@@ -7,7 +7,7 @@ import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
 package object dummy {
 
-  implicit val dummyOffice = OfficeInfo[DummyAggregateRoot](new JsonSerializationHints {
+  implicit val dummyOffice: OfficeInfo[DummyAggregateRoot] = OfficeInfo[DummyAggregateRoot](new JsonSerializationHints {
     def typeHints = FullTypeHints(List(
       classOf[DummyCreated],
       classOf[NameChanged],

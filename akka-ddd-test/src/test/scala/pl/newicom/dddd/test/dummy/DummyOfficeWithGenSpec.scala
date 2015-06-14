@@ -9,7 +9,6 @@ import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig._
 import DummyOfficeWithGenSpec._
-
 import scala.concurrent.duration.{Duration, _}
 
 object DummyOfficeWithGenSpec {
@@ -32,12 +31,12 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](Some(testSys
   implicit def create: Gen[CreateDummy] = for {
     name <- Gen.alphaStr
     description <- Gen.alphaStr
-    value <- Gen.numStr
+    value <- Gen.choose(1, 1000)
   } yield {
     CreateDummy(dummyId, name, description, value)
   }
   implicit def changeName: Gen[ChangeName] = for { name <- Gen.alphaStr } yield ChangeName(dummyId, name)
-  implicit def generateValue: Gen[GenerateValue] = aggregateIdGen.flatMap(GenerateValue(_))
+  implicit def generateValue: Gen[GenerateValue] = _aggregateIdGen.flatMap(GenerateValue(_))
 
   "Dummy office" should {
     /**
@@ -106,13 +105,13 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](Some(testSys
     /**
      * Gen.map can be used to modify generated command.
      */
-    "reject null value" in {
+    "reject negative value" in {
       when {
-        a [CreateDummy] map (_ copy(value = null))
+        a [CreateDummy] map (_ copy(value = -1))
         // alternatively:
-        //arbitraryOf[CreateDummy](_ copy(value = null))
+        //arbitraryOf[CreateDummy](_ copy(value = -1))
       }
-      .expectException[RuntimeException]("null value not allowed")
+      .expectException[RuntimeException]("negative value not allowed")
     }
   }
 

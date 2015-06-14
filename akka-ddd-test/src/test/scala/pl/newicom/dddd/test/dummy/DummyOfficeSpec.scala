@@ -28,7 +28,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
   "Dummy office" should {
     "create Dummy" in {
       when {
-        CreateDummy(dummyId, "dummy name", "dummy description", "dummy value")
+        CreateDummy(dummyId, "dummy name", "dummy description", 100)
       }
       .expect { c =>
         DummyCreated(c.id, c.name, c.description, c.value)
@@ -37,7 +37,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
 
     "update Dummy's name" in {
       given {
-        CreateDummy(dummyId, "dummy name", "dummy description", "dummy value")
+        CreateDummy(dummyId, "dummy name", "dummy description", 100)
       }
       .when {
         ChangeName(dummyId, "some other dummy name")
@@ -49,7 +49,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
 
     "handle subsequent Update command" in {
       given(
-        CreateDummy(dummyId, "dummy name", "dummy description", "dummy value"),
+        CreateDummy(dummyId, "dummy name", "dummy description", 100),
         ChangeName(dummyId, "some other dummy name")
       )
       .when {
@@ -60,11 +60,11 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
       }
     }
 
-    "reject null value" in {
+    "reject negative value" in {
       when {
-        CreateDummy(dummyId, "dummy name", "dummy description", value = null)
+        CreateDummy(dummyId, "dummy name", "dummy description", value = -1)
       }
-      .expectException[RuntimeException]("null value not allowed")
+      .expectException[RuntimeException]("negative value not allowed")
     }
 
   }

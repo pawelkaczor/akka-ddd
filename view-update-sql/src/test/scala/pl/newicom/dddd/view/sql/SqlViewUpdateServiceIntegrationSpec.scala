@@ -52,13 +52,13 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
 
       // When
       when {
-        CreateDummy(aggregateId, "name", "description", "value")
+        CreateDummy(aggregateId, "name", "description", 100)
       }
       // Then
       .expect { c =>
         DummyCreated(c.id, c.name, c.description, c.value)
       }
-      probe.expectMsg(ViewUpdated(DummyCreated(aggregateId, "name", "description", "value")))
+      probe.expectMsg(ViewUpdated(DummyCreated(aggregateId, "name", "description", 100)))
 
     }
   }
