@@ -21,7 +21,10 @@ object OfficeSpec {
   def sys(arClass: Class[_]) = ActorSystem(s"${arClass.getSimpleName}OfficeSpec_$uuid7")
 }
 
-abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_system: Option[ActorSystem] = None)(implicit arClassTag: ClassTag[A])
+/**
+ * @param shareAggregateRoot if set to true, the same AR instance will be used in all tests, default is false
+ */
+abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_system: Option[ActorSystem] = None, val shareAggregateRoot: Boolean = false)(implicit arClassTag: ClassTag[A])
   extends GivenWhenThenTestFixture(_system.getOrElse(sys(arClassTag.runtimeClass))) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
 
   val logger = getLogger(getClass)
@@ -35,10 +38,12 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory](_sys
 
   private var _officeUnderTest: ActorRef = null
 
-  implicit var aggregateIdGen: Gen[EntityId] = null
+  implicit var _aggregateIdGen: Gen[EntityId] = null
+
+  val testSuiteId = uuid10
 
   before {
-    aggregateIdGen = Gen.const[EntityId](domain + "-" + uuid10)
+    _aggregateIdGen = Gen.const[EntityId](domain + (if (shareAggregateRoot) testSuiteId else uuid10))
   }
 
   after {
