@@ -133,17 +133,17 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
     for (i <- 1 to expectedNumberOfEvents) {
       sagaProbe.expectMsgClass(classOf[EventApplied])
     }
-    Thread.sleep(500)
   }
 
   def expectNoUnconfirmedMessages(sagaManager: ActorRef): Unit = {
     expectNumberOfUnconfirmedMessages(sagaManager, 0)
   }
 
-  def expectNumberOfUnconfirmedMessages(sagaManager: ActorRef, expectedNumberOfMessages: Int): Unit = {
+  def expectNumberOfUnconfirmedMessages(sagaManager: ActorRef, expectedNumberOfMessages: Int): Unit = within(3.seconds) {
     sagaManager ! "snap"
-    sagaManager ! GetNumberOfUnconfirmed
-    expectMsg(expectedNumberOfMessages)
-    Thread.sleep(500)
+    awaitAssert {
+      sagaManager ! GetNumberOfUnconfirmed
+      expectMsg(expectedNumberOfMessages)
+    }
   }
 }
