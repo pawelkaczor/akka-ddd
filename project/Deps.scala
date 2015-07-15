@@ -5,7 +5,7 @@ object Deps {
 
   object Version {
     val Akka       = "2.4-M1"
-    val AkkaHttp   = "1.0-RC2"
+    val AkkaHttp   = "1.0"
     
     val EventStoreClient      = "2.0.3-M1"
     val EventStoreAkkaJournal = "2.0.3-M1"
@@ -22,10 +22,9 @@ object Deps {
 
   object Akka {
     val actor             = apply("actor")
-    val httpCore          = "com.typesafe.akka" %% "akka-http-core-experimental" % Version.AkkaHttp
-    val httpScala         = "com.typesafe.akka" %% "akka-http-scala-experimental" % Version.AkkaHttp
-    val httpTestKit       = "com.typesafe.akka" %% "akka-http-testkit-scala-experimental" % Version.AkkaHttp % "test"
-    val http              = Seq(httpCore, httpScala, httpTestKit)
+    val httpCore          = "com.typesafe.akka" %% "akka-http-experimental" % Version.AkkaHttp
+    val httpTestKit       = "com.typesafe.akka" %% "akka-http-testkit-experimental" % Version.AkkaHttp % "test"
+    val http              = Seq(httpCore, httpTestKit)
     val slf4j             = apply("slf4j")
     val persistence       = apply("persistence-experimental")
     val clusterTools      = apply("cluster-tools")
