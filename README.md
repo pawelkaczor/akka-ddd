@@ -17,6 +17,7 @@ libraryDependencies += "pl.newicom.dddd" %% "view-update-sql"             % "1.0
                        "pl.newicom.dddd" %% "view-update"                 % "1.0.4-M2",
                        "pl.newicom.dddd" %% "akka-ddd-messaging"          % "1.0.4-M2",
                        "pl.newicom.dddd" %% "akka-ddd-scheduling"         % "1.0.4-M2",
+                       "pl.newicom.dddd" %% "akka-ddd-write-front"        % "1.0.4-M2",
                        "pl.newicom.dddd" %% "akka-ddd-test"               % "1.0.4-M2",
                        "pl.newicom.dddd" %% "http-support"                % "1.0.4-M2",
                        "pl.newicom.dddd" %% "akka-ddd-core"               % "1.0.4-M2"
