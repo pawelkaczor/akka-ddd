@@ -1,7 +1,7 @@
 package pl.newicom.dddd.scheduling
 
 import akka.actor.ActorPath
-import akka.persistence.Recover
+import akka.persistence.Recovery
 import org.json4s.JsonAST.JString
 import org.json4s.{CustomSerializer, FullTypeHints}
 import pl.newicom.dddd.actor.PassivationConfig
@@ -45,7 +45,7 @@ class Scheduler(val pc: PassivationConfig, businessUnit: String) extends Aggrega
   override def persistenceId = s"${schedulingOffice.name}-$businessUnit"
 
   // Skip recovery
-  override def preStart() = self ! Recover(toSequenceNr = 0L)
+  override def recovery = Recovery(toSequenceNr = 0L)
 
   // Disable automated recovery on restart
   override def preRestart(reason: Throwable, message: Option[Any]) = ()

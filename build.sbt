@@ -6,9 +6,9 @@ import java.net.URL
 
 name := "akka-ddd"
 
-version in ThisBuild := "1.0.4-M2"
+version in ThisBuild := "1.0.4"
 organization in ThisBuild := "pl.newicom.dddd"
-scalaVersion in ThisBuild := "2.11.6"
+scalaVersion in ThisBuild := "2.11.7"
 
 scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-feature", "-language:postfixOps")
 publishMavenStyle in ThisBuild := true
@@ -27,7 +27,7 @@ lazy val `akka-ddd-messaging` = project
     commonSettings,
     libraryDependencies ++= Json.`4s` ++ Seq(
       Akka.actor,
-      "com.github.nscala-time" %% "nscala-time" % "2.0.0"
+      "com.github.nscala-time" %% "nscala-time" % "2.2.0"
     )
   )
 
@@ -66,7 +66,7 @@ lazy val `view-update-sql` = project
     parallelExecution in IntegrationTest := false,
     libraryDependencies ++= Seq(
       SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.testkit % "test",
-      "ch.qos.logback" % "logback-classic" % "1.1.2" % "test", scalaCheck % "test"
+      "ch.qos.logback" % "logback-classic" % "1.1.3" % "test", scalaCheck % "test"
 
     ))
   .dependsOn(`view-update`, `akka-ddd-test` % "test->compile;test->test")
@@ -83,7 +83,7 @@ lazy val `akka-ddd-test` = project
     libraryDependencies ++= Seq(
       Akka.testkit, Akka.multiNodeTestkit, scalaCheck, scalaTest,
       "org.iq80.leveldb"            % "leveldb"          % "0.7",
-      "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.7",
+      "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8",
       "commons-io" % "commons-io" % "2.4"
     ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence` % "test->compile")
@@ -110,11 +110,11 @@ lazy val `akka-ddd-scheduling` = project
     commonSettings,
     libraryDependencies ++= Seq(
       Akka.testkit % "test", scalaCheck % "test",
-      "ch.qos.logback" % "logback-classic" % "1.1.2" % "test"
+      "ch.qos.logback" % "logback-classic" % "1.1.3" % "test"
     ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence`, `akka-ddd-test` % "test->compile;test->test")
 
-lazy val commonSettings: Seq[Setting[_]] = Publish.settings ++ releaseSettings ++ Seq(
+lazy val commonSettings: Seq[Setting[_]] = Publish.settings ++ Seq(
   updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true),
   licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
   startYear := Some(2014)

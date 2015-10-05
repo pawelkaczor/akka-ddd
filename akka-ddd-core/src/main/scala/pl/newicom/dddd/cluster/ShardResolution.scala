@@ -9,16 +9,16 @@ import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution.EntityIdResolver
 
 object ShardResolution {
-  type ShardResolutionStrategy = EntityIdResolver => ShardResolver
+  type ShardResolutionStrategy = EntityIdResolver => ExtractShardId
 }
 
 trait ShardResolution[A] extends EntityIdResolution[A] {
 
   def shardResolutionStrategy: ShardResolutionStrategy
 
-  def shardResolver: ShardResolver = shardResolutionStrategy(entityIdResolver)
+  def shardResolver: ExtractShardId = shardResolutionStrategy(entityIdResolver)
 
-  val idExtractor: IdExtractor = {
+  val idExtractor: ExtractEntityId = {
     case em: EntityMessage => (entityIdResolver(em), em)
     case c: Command => (entityIdResolver(c), CommandMessage(c))
   }

@@ -19,10 +19,10 @@ class SingletonManagerFactory(implicit system: ActorSystem) extends CreationSupp
       ),
       name = singletonManagerName)
 
-    val proxySettings = ClusterSingletonProxySettings(system)
+    val proxySettings = ClusterSingletonProxySettings(system).withSingletonName(name)
     system.actorOf(
       ClusterSingletonProxy.props(
-        singletonPath = s"/user/$singletonManagerName/$name",
+        singletonManagerPath = s"/user/$singletonManagerName",
         proxySettings),
       name = s"${name}Proxy")
   }

@@ -4,20 +4,20 @@ import Keys._
 object Deps {
 
   object Version {
-    val Akka       = "2.4-M1"
+    val Akka       = "2.4.0"
     val AkkaHttp   = "1.0"
     
-    val EventStoreClient      = "2.0.3-M1"
-    val EventStoreAkkaJournal = "2.0.3-M1"
+    val EventStoreClient      = "2.1.1"
+    val EventStoreAkkaJournal = "2.1.0"
     
-    val json4s     = "3.2.11"
+    val json4s     = "3.3.0"
     
-    val PostgresqlSlickExt = "0.8.2"
-    val H2Driver           = "1.3.170"
+    val PostgresqlSlickExt = "0.8.2" // Slick 2.1.0
+    val H2Driver           = "1.4.189"
 
     // test
     val ScalaTest  = "2.2.4"
-    val ScalaCheck = "1.12.3"
+    val ScalaCheck = "1.12.5"
   }
 
   object Akka {
@@ -26,7 +26,7 @@ object Deps {
     val httpTestKit       = "com.typesafe.akka" %% "akka-http-testkit-experimental" % Version.AkkaHttp % "test"
     val http              = Seq(httpCore, httpTestKit)
     val slf4j             = apply("slf4j")
-    val persistence       = apply("persistence-experimental")
+    val persistence       = apply("persistence")
     val clusterTools      = apply("cluster-tools")
     val clusterSharding   = apply("cluster-sharding")
     val testkit           = apply("testkit")
@@ -47,8 +47,8 @@ object Deps {
   }
 
   object Eventstore {
-    val client = "pl.newicom.dddd" %% "eventstore-client" % Version.EventStoreClient
-    val akkaJournal = "pl.newicom.dddd" %% "akka-persistence-eventstore" % Version.EventStoreAkkaJournal
+    val client = "com.geteventstore" %% "eventstore-client" % Version.EventStoreClient
+    val akkaJournal = "com.geteventstore" %% "akka-persistence-eventstore" % Version.EventStoreAkkaJournal
   }
 
   object SqlDb {

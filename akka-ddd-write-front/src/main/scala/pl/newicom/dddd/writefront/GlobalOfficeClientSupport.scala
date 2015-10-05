@@ -14,7 +14,7 @@ trait GlobalOfficeClientSupport {
 
   private lazy val clusterClient: ActorRef = {
     val initialContacts: Seq[ActorPath] = contactPoints.map {
-      case AddressFromURIString(address) ⇒ RootActorPath(address) / "user" / "receptionist"
+      case AddressFromURIString(address) ⇒ RootActorPath(address) / "system" / "receptionist"
     }
     system.actorOf(ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts.toSet)), "clusterClient")
   }
@@ -24,7 +24,7 @@ trait GlobalOfficeClientSupport {
 
   class OfficeClient(officeName: String) extends Actor {
     override def receive: Receive = {
-      case msg => clusterClient forward ClusterClient.Send(s"/user/sharding/$officeName", msg, localAffinity = true)
+      case msg => clusterClient forward ClusterClient.Send(s"/system/sharding/$officeName", msg, localAffinity = true)
     }
   }
 

@@ -65,7 +65,7 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
   override def receiveCommand: Receive = receiveDeliveryReceipt orElse receiveEvent orElse receiveUnexpected
 
   def deliverMsg(office: ActorPath, msg: Message): Unit = {
-    deliver(office, deliveryId => {
+    deliver(office)(deliveryId => {
       msg.withMetaAttribute(DeliveryId, deliveryId)
     })
   }

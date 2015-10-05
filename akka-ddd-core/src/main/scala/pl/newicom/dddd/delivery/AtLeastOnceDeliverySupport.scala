@@ -35,7 +35,7 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
         log.warning(s"No entityId. Skipping $em")
       } else {
         val message = em.asInstanceOf[Message]
-        deliver(destination(message), deliveryIdToMessage(message))
+        deliver(destination(message))(deliveryIdToMessage(message))
       }
 
     case receipt: Delivered =>

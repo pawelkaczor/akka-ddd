@@ -128,6 +128,7 @@ class Json4sEsSerializer(system: ExtendedActorSystem) extends EventStoreSerializ
   object ActorRefSerializer extends CustomSerializer[ActorRef](format => (
     {
       case JString(s) => system.provider.resolveActorRef(s)
+      case JNull => null
     },
     {
       case x: ActorRef => JString(Serialization.serializedActorPath(x))

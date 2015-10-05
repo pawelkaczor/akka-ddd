@@ -23,7 +23,7 @@ trait ReliablePublisher extends PersistentActor with EventPublisher with AtLeast
   override def warnAfterNumberOfUnconfirmedAttempts = 15
 
   override def publish(em: DomainEventMessage) {
-    deliver(target, deliveryId => em.withMetaAttribute(DeliveryId, deliveryId))
+    deliver(target)(deliveryId => em.withMetaAttribute(DeliveryId, deliveryId))
   }
 
   abstract override def receiveRecover: Receive = {
