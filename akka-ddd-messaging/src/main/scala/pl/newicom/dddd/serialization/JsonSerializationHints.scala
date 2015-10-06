@@ -9,9 +9,11 @@ trait JsonSerializationHints {
 
   def ++ (formats: Formats): Formats = formats ++ serializers + typeHints
 
-  def ++ (other: JsonSerializationHints): JsonSerializationHints = new Tuple2(typeHints, serializers) with JsonSerializationHints {
-    override def typeHints: TypeHints = _1 + other.typeHints
-    override def serializers: List[Serializer[_]] = _2 ++ other.serializers
+  def ++ (other: JsonSerializationHints): JsonSerializationHints = (typeHints, serializers) match {
+    case (myTypeHints, mySerializers) => new JsonSerializationHints {
+      override def typeHints: TypeHints = myTypeHints + other.typeHints
+      override def serializers: List[Serializer[_]] = mySerializers ++ other.serializers
+    }
   }
 }
 
