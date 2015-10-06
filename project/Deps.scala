@@ -1,23 +1,25 @@
 import sbt._
-import Keys._
 
 object Deps {
 
   object Version {
-    val Akka       = "2.4.0"
-    val AkkaHttp   = "1.0"
+    val Akka                  = "2.4.0"
+    val AkkaHttp              = "1.0"
     
     val EventStoreClient      = "2.1.1"
     val EventStoreAkkaJournal = "2.1.0"
     
-    val json4s     = "3.3.0"
+    val json4s                = "3.3.0"
     
-    val PostgresqlSlickExt = "0.8.2" // Slick 2.1.0
-    val H2Driver           = "1.4.189"
+    val PostgresqlSlickExt    = "0.8.2" // Slick 2.1.0
+    val H2Driver              = "1.4.189"
 
     // test
-    val ScalaTest  = "2.2.4"
-    val ScalaCheck = "1.12.5"
+    val ScalaTest             = "2.2.4"
+    val ScalaCheck            = "1.12.5"
+
+    val LogbackClassic        = "1.1.3"
+    val nScalaTime            = "2.2.0"
   }
 
   object Akka {
@@ -40,20 +42,20 @@ object Deps {
   }
 
   object Json4s {
-    val native = apply("native")
-    val ext = apply("ext")
+    val native  = apply("native")
+    val ext     = apply("ext")
 
     private def apply(moduleName: String) = "org.json4s" %% s"json4s-$moduleName" % Version.json4s
   }
 
   object Eventstore {
-    val client = "com.geteventstore" %% "eventstore-client" % Version.EventStoreClient
-    val akkaJournal = "com.geteventstore" %% "akka-persistence-eventstore" % Version.EventStoreAkkaJournal
+    val client        = "com.geteventstore" %% "eventstore-client" % Version.EventStoreClient
+    val akkaJournal   = "com.geteventstore" %% "akka-persistence-eventstore" % Version.EventStoreAkkaJournal
   }
 
   object SqlDb {
     val `slick-for-pg` = "com.github.tminglei" %% "slick-pg" % Version.PostgresqlSlickExt exclude("org.slf4j", "slf4j-simple")
-    val testDriver = "com.h2database" % "h2" % Version.H2Driver % "test"
+    val testDriver     = "com.h2database" % "h2" % Version.H2Driver % "test"
 
     def prod = `slick-for-pg`
 
@@ -61,7 +63,12 @@ object Deps {
   }
 
   object TestFrameworks {
-    val scalaTest = "org.scalatest" %% "scalatest" % Version.ScalaTest
-    val scalaCheck = "org.scalacheck" %% "scalacheck" % Version.ScalaCheck
+    val scalaTest     = "org.scalatest" %% "scalatest" % Version.ScalaTest
+    val scalaCheck    = "org.scalacheck" %% "scalacheck" % Version.ScalaCheck
   }
+
+  val levelDB         = Seq("org.iq80.leveldb" % "leveldb" % "0.7", "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8")
+  val commonIO        = "commons-io" % "commons-io" % "2.4"
+  val logbackClassic  = "ch.qos.logback" % "logback-classic" % Version.LogbackClassic
+  val nscalaTime      = "com.github.nscala-time" %% "nscala-time" % Version.nScalaTime
 }

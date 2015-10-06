@@ -10,7 +10,7 @@ version in ThisBuild := "1.0.5-SNAPSHOT"
 organization in ThisBuild := "pl.newicom.dddd"
 scalaVersion in ThisBuild := "2.11.7"
 
-scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-feature", "-language:postfixOps")
+scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-deprecation", "-feature", "-language:postfixOps")
 publishMavenStyle in ThisBuild := true
 homepage          in ThisBuild := Some(new URL("http://github.com/pawelkaczor/akka-ddd"))
 licenses          in ThisBuild := ("Apache2", new URL("http://raw.githubusercontent.com/pawelkaczor/akka-ddd/master/LICENSE.md")) :: Nil
@@ -22,14 +22,13 @@ lazy val root = (project in file("."))
     publishArtifact := false
   )
 
+
 lazy val `akka-ddd-messaging` = project
   .settings(
     commonSettings,
-    libraryDependencies ++= Json.`4s` ++ Seq(
-      Akka.actor,
-      "com.github.nscala-time" %% "nscala-time" % "2.2.0"
-    )
+    libraryDependencies ++= Json.`4s` ++ Seq(Akka.actor, nscalaTime)
   )
+
 
 lazy val `akka-ddd-core` = project
   .settings(
@@ -41,6 +40,7 @@ lazy val `akka-ddd-core` = project
     ))
   .dependsOn(`akka-ddd-messaging`)
 
+
 lazy val `akka-ddd-write-front` = project
   .settings(
     commonSettings,
@@ -50,10 +50,12 @@ lazy val `akka-ddd-write-front` = project
     ))
   .dependsOn(`akka-ddd-messaging`, `http-support`)
 
+
 lazy val `view-update` = project
   .settings(
     commonSettings
   ).dependsOn(`akka-ddd-messaging`, `eventstore-akka-persistence`)
+
 
 lazy val `view-update-sql` = project
   .configs(IntegrationTest)
@@ -66,10 +68,11 @@ lazy val `view-update-sql` = project
     parallelExecution in IntegrationTest := false,
     libraryDependencies ++= Seq(
       SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.testkit % "test",
-      "ch.qos.logback" % "logback-classic" % "1.1.3" % "test", scalaCheck % "test"
+      logbackClassic % "test", scalaCheck % "test"
 
     ))
   .dependsOn(`view-update`, `akka-ddd-test` % "test->compile;test->test")
+
 
 lazy val `akka-ddd-test` = project
   .configs(IntegrationTest)
@@ -80,23 +83,21 @@ lazy val `akka-ddd-test` = project
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
     parallelExecution in IntegrationTest := false,
-    libraryDependencies ++= Seq(
-      Akka.testkit, Akka.multiNodeTestkit, scalaCheck, scalaTest,
-      "org.iq80.leveldb"            % "leveldb"          % "0.7",
-      "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8",
-      "commons-io" % "commons-io" % "2.4"
+    libraryDependencies ++= levelDB ++ Seq(
+      Akka.testkit, Akka.multiNodeTestkit, scalaCheck, scalaTest, commonIO
     ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence` % "test->compile")
+
 
 lazy val `eventstore-akka-persistence` = project
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(
+    libraryDependencies ++= Json.`4s` ++ Seq(
       Eventstore.client, Eventstore.akkaJournal,
-      Json4s.native, Json4s.ext,
       Akka.slf4j, Akka.persistence
     ))
   .dependsOn(`akka-ddd-messaging`)
+
 
 lazy val `http-support` = project
   .settings(
@@ -105,20 +106,23 @@ lazy val `http-support` = project
     libraryDependencies ++= Json.`4s` ++ Akka.http
   )
 
+
 lazy val `akka-ddd-scheduling` = project
   .settings(
     commonSettings,
     libraryDependencies ++= Seq(
       Akka.testkit % "test", scalaCheck % "test",
-      "ch.qos.logback" % "logback-classic" % "1.1.3" % "test"
+      logbackClassic % "test"
     ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence`, `akka-ddd-test` % "test->compile;test->test")
+
 
 lazy val commonSettings: Seq[Setting[_]] = Publish.settings ++ Seq(
   updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true),
   licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
   startYear := Some(2014)
 )
+
 
 lazy val IntegrationTest = config("it") extend Test
 
