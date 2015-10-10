@@ -1,4 +1,4 @@
-package pl.newicom.eventstore
+package pl.newicom.eventstore.json
 
 /**
  * Base64 encoder

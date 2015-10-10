@@ -6,12 +6,12 @@ import eventstore.EventNumber._
 import eventstore._
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
-
 import scala.util.Success
-
 
 trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializationSupport with ActorLogging {
   this: Actor =>
+
+  override def system = context.system
 
   def subscribe(stream: pl.newicom.dddd.messaging.event.EventStream, fromPositionExclusive: Option[Long]): ActorRef = {
     val streamId = StreamNameResolver.streamId(stream)

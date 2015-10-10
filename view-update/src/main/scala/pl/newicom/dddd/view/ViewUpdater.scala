@@ -19,6 +19,8 @@ object ViewUpdater {
 class ViewUpdater(esConn: ActorRef, val streamId: EventStream.Id, val viewHandler: ViewHandler)
   extends Actor with EventstoreSerializationSupport with ActorLogging {
 
+  override def system = context.system
+
   @scala.throws[Exception](classOf[Exception])
   override def preStart(): Unit = {
     val lastEvNum: Option[Exact] = lastEventNumber.map(l => Exact(l.toInt))
