@@ -27,7 +27,6 @@ object SqlViewUpdateServiceIntegrationSpec {
   case class ViewUpdated(event: AnyRef)
 }
 
-
 class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot] with SqlViewStoreTestSupport{
 
   "SqlViewUpdateService" should {
@@ -35,7 +34,8 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
       // Given
       val probe = TestProbe()
       probe.ignoreMsg {
-        case ViewUpdated(DummyCreated(id, _, _, _)) if !id.equals(aggregateId) => true
+        case ViewUpdated(DummyCreated(id, _, _, _)) => !id.equals(aggregateId)
+        case ViewUpdated(_) => true
       }
       system.eventStream.subscribe(probe.ref, classOf[ViewUpdated])
 
