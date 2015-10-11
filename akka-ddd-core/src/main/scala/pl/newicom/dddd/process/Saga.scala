@@ -12,7 +12,6 @@ import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.office.OfficeInfo
 import pl.newicom.dddd.scheduling.ScheduleEvent
-import pl.newicom.dddd.serialization.NoSerializationHints
 
 abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A] {
   import scala.concurrent.duration._
@@ -27,8 +26,6 @@ abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A]
 abstract class SagaConfig[A <: Saga](val bpsName: String) extends OfficeInfo[A] {
 
   def name = bpsName
-
-  def serializationHints = NoSerializationHints
 
   /**
    * Correlation ID identifies process instance. It is used to route EventMessage

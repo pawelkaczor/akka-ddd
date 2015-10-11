@@ -1,7 +1,6 @@
 import Deps._
 import Deps.TestFrameworks._
 import sbt.Keys._
-import sbtrelease.ReleasePlugin._
 import java.net.URL
 
 name := "akka-ddd"
@@ -26,6 +25,7 @@ lazy val root = (project in file("."))
 lazy val `akka-ddd-messaging` = project
   .settings(
     commonSettings,
+    scalacOptions ++= Seq("-language:implicitConversions"),
     libraryDependencies ++= Json.`4s` ++ Seq(Akka.actor, nscalaTime)
   )
 
@@ -48,7 +48,7 @@ lazy val `akka-ddd-write-front` = project
     libraryDependencies ++= Seq(
       Akka.clusterTools
     ))
-  .dependsOn(`akka-ddd-messaging`, `http-support`)
+  .dependsOn(`http-support`)
 
 
 lazy val `view-update` = project
@@ -103,8 +103,8 @@ lazy val `http-support` = project
   .settings(
     commonSettings,
     scalacOptions ++= Seq("-language:implicitConversions"),
-    libraryDependencies ++= Json.`4s` ++ Akka.http
-  )
+    libraryDependencies ++= Akka.http
+  ).dependsOn(`akka-ddd-messaging`)
 
 
 lazy val `akka-ddd-scheduling` = project

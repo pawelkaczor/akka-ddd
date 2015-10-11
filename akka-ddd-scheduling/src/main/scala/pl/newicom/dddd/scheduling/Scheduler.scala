@@ -1,33 +1,12 @@
 package pl.newicom.dddd.scheduling
 
-import akka.actor.ActorPath
 import akka.persistence.Recovery
-import org.json4s.JsonAST.JString
-import org.json4s.{CustomSerializer, FullTypeHints}
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.eventhandling.EventPublisher
-import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.scheduling.Scheduler.SchedulerState
-import pl.newicom.dddd.serialization.JsonSerializationHints
 
 object Scheduler {
-
-  //
-  // Serialization hints
-  //
-  object ActorPathSerializer extends CustomSerializer[ActorPath](format => (
-    { case JString(s) => ActorPath.fromString(s) },
-    { case x: ActorPath => JString(x.toSerializationFormat) }
-    ))
-
-  val serializationHints = new JsonSerializationHints {
-    def typeHints = FullTypeHints(List(
-      classOf[EventScheduled],
-      classOf[EventMessage]
-    ))
-    def serializers = List(ActorPathSerializer)
-  }
 
   //
   // State

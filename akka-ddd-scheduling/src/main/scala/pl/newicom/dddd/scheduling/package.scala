@@ -7,7 +7,6 @@ package object scheduling {
 
   implicit val schedulingOffice: OfficeInfo[SchedulingOffice] = new OfficeInfo[SchedulingOffice] {
     def name: String = "deadlines"
-    def serializationHints = Scheduler.serializationHints
   }
 
   def currentDeadlinesStream(businessUnit: String) = ClerkEventStream("currentDeadlines", businessUnit)

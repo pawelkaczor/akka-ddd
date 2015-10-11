@@ -1,21 +1,21 @@
 package pl.newicom.eventstore.json
 
 import java.nio.charset.Charset
-
 import akka.actor._
 import akka.persistence.eventstore.snapshot.EventStoreSnapshotStore.SnapshotEvent.Snapshot
 import akka.persistence.{PersistentRepr, SnapshotMetadata}
 import akka.serialization.{Serialization, SerializationExtension}
 import org.json4s.Extraction.decompose
 import org.json4s.JsonAST.{JField, JObject, JString}
-import org.json4s.ext.{JodaTimeSerializers, UUIDSerializer}
 import org.json4s.native.Serialization.{read, write}
 import org.json4s.reflect.TypeInfo
-import org.json4s.{DefaultFormats, Formats, FullTypeHints, _}
+import org.json4s.{Formats, FullTypeHints, _}
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.delivery.protocol.alod.{Processed => AlodProcessed}
 import pl.newicom.dddd.messaging.MetaData
-import pl.newicom.dddd.serialization.{NoSerializationHints, JsonSerializationHints}
+import pl.newicom.dddd.scheduling.EventScheduled
+import pl.newicom.dddd.serialization.{JsonSerHints, JsonExtraSerHints}
+import pl.newicom.dddd.serialization.JsonSerHints._
 
 /**
  * The reason for using Extension mechanism is that
@@ -26,18 +26,19 @@ import pl.newicom.dddd.serialization.{NoSerializationHints, JsonSerializationHin
  */
 class JsonSerializerExtensionImpl(system: ExtendedActorSystem) extends Extension {
 
+  val extraHints = JsonExtraSerHints(
+    typeHints =
+      new FullTypeHints(
+        List(classOf[MetaData], classOf[Processed], classOf[AlodProcessed], classOf[PersistentRepr], classOf[EventScheduled])
+      ),
+    serializers =
+      List(ActorRefSerializer, new SnapshotJsonSerializer(system))
+  )
+
   val UTF8 = Charset.forName("UTF-8")
 
-  val defaultFormats: Formats = DefaultFormats +
-    ActorRefSerializer + new SnapshotJsonSerializer(system) ++ JodaTimeSerializers.all + UUIDSerializer +
-    new FullTypeHints(List(
-      classOf[MetaData],
-      classOf[Processed],
-      classOf[AlodProcessed],
-      classOf[PersistentRepr]))
-
-  def fromBinary[A](bytes: Array[Byte], clazz: Class[A], hints: JsonSerializationHints = NoSerializationHints): A = {
-    implicit val formats: Formats = hints ++ defaultFormats
+  def fromBinary[A](bytes: Array[Byte], clazz: Class[A], hints: JsonSerHints): A = {
+    implicit val formats: Formats = hints ++ extraHints
     implicit val manifest: Manifest[A] = Manifest.classType(clazz)
     try {
       read(new String(bytes, UTF8))
@@ -48,8 +49,8 @@ class JsonSerializerExtensionImpl(system: ExtendedActorSystem) extends Extension
     }
   }
 
-  def toBinary(o: AnyRef, hints: JsonSerializationHints = NoSerializationHints) = {
-    implicit val formats: Formats = hints ++ defaultFormats
+  def toBinary(o: AnyRef, hints: JsonSerHints) = {
+    implicit val formats: Formats = hints ++ extraHints
     write(o).getBytes(UTF8)
   }
 
@@ -69,7 +70,13 @@ object JsonSerializerExtension extends ExtensionId[JsonSerializerExtensionImpl] 
   override def createExtension(system: ExtendedActorSystem) = new JsonSerializerExtensionImpl(system)
   override def lookup(): ExtensionId[_ <: Extension] = JsonSerializerExtension
   override def get(system: ActorSystem) = super.get(system)
+
 }
+
+object ActorPathSerializer extends CustomSerializer[ActorPath](format => (
+  { case JString(s) => ActorPath.fromString(s) },
+  { case x: ActorPath => JString(x.toSerializationFormat) }
+  ))
 
 case class SnapshotJsonSerializer(sys: ActorSystem) extends Serializer[Snapshot] {
   val Clazz = classOf[Snapshot]
