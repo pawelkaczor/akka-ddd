@@ -27,6 +27,9 @@ object SqlViewUpdateServiceIntegrationSpec {
   case class ViewUpdated(event: AnyRef)
 }
 
+/**
+ * Requires View Store and Event Store (with projections enabled!) to be up and running.
+ */
 class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot] with SqlViewStoreTestSupport{
 
   "SqlViewUpdateService" should {
