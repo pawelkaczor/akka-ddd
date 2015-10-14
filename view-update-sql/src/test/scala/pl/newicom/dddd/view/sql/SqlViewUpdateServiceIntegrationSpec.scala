@@ -10,10 +10,12 @@ import pl.newicom.dddd.messaging.event.DomainEventMessage
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{CreateDummy, DummyCreated}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, _}
 import pl.newicom.dddd.test.support.OfficeSpec
+import pl.newicom.dddd.view.sql.Projection.ProjectionAction
 import pl.newicom.dddd.view.sql.SqlViewUpdateServiceIntegrationSpec._
+import slick.dbio.DBIOAction.successful
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.slick.jdbc.JdbcBackend
 
 object SqlViewUpdateServiceIntegrationSpec {
   implicit val sys: ActorSystem = ActorSystem("SqlViewUpdateServiceSpec")
@@ -46,8 +48,8 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
         new SqlViewUpdateService with SqlViewStoreConfiguration {
           def config = SqlViewUpdateServiceIntegrationSpec.this.config
           def configuration = List(SqlViewUpdateConfig("test-view", dummyOffice, new Projection {
-            def consume(em: DomainEventMessage)(implicit s: JdbcBackend.Session): Unit = {
-              system.eventStream.publish(ViewUpdated(em.event))
+            def consume(em: DomainEventMessage): ProjectionAction = {
+              successful(system.eventStream.publish(ViewUpdated(em.event)))
             }
           }))
         }
@@ -68,13 +70,10 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
 
   lazy val viewMetadataDao = new ViewMetadataDao()
 
-  override def dropSchema(implicit s: JdbcBackend.Session): Unit = {
-    viewMetadataDao.dropSchema
-  }
+  override def dropSchema = viewMetadataDao.dropSchema
 
-  override def createSchema(implicit s: JdbcBackend.Session): Unit = {
-    viewMetadataDao.createSchema
-  }
+  override def createSchema = viewMetadataDao.createSchema()
+
 
   override def config: Config = system.settings.config
 }

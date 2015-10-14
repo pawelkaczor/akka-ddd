@@ -20,7 +20,7 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
 
   def configuration: Seq[Configuration]
 
-  def viewHandler(config: Configuration): ViewHandler
+  def viewHandler(config: Configuration)(implicit ec: ExecutionContext): ViewHandler
 
   def ensureViewStoreAvailable(implicit ec: ExecutionContext): Future[Unit]
 

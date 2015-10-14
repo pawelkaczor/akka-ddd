@@ -2,9 +2,10 @@ package pl.newicom.dddd.view.sql
 
 import org.scalatest.{Suite, BeforeAndAfterAll}
 import org.slf4j.LoggerFactory.getLogger
+import slick.dbio.DBIO
 
-import scala.slick.driver.H2Driver
-import scala.slick.jdbc.JdbcBackend
+import slick.driver.H2Driver
+import scala.concurrent.ExecutionContext.Implicits.global
 
 trait SqlViewStoreTestSupport extends SqlViewStoreConfiguration with BeforeAndAfterAll {
   this: Suite =>
@@ -13,19 +14,16 @@ trait SqlViewStoreTestSupport extends SqlViewStoreConfiguration with BeforeAndAf
 
   implicit val profile = H2Driver
 
-  def dropSchema(implicit s: JdbcBackend.Session)
-  def createSchema(implicit s: JdbcBackend.Session)
+  def dropSchema: DBIO[Unit]
+  def createSchema: DBIO[Unit]
 
   override def beforeAll() {
-    import scala.slick.jdbc.JdbcBackend._
 
-    viewStore withSession { implicit session: Session =>
-      try {
-        dropSchema(session)
-      } catch {
-        case ex: Exception => // ignore
-      }
-      createSchema(session)
+    viewStore.run {
+      dropSchema.cleanUp ({
+        case _ => createSchema
+      }, keepFailure = false)
+
     }
 
   }
