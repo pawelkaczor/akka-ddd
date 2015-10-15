@@ -1,6 +1,5 @@
 package pl.newicom.dddd.view.sql
 
-import slick.dbio.DBIOAction.successful
 import slick.driver.JdbcProfile
 import slick.jdbc.meta.MTable.getTables
 
@@ -19,10 +18,10 @@ class ViewMetadataDao(implicit val profile: JdbcProfile, ex: ExecutionContext) e
   }
 
   def insertOrUpdate(viewId: String, lastEventNr: Long) =
-    by_view_id(viewId).result.filter(_.isEmpty).cleanUp {
-      case Some(viewNotFoundError) =>
-        viewMetadata.forceInsert(ViewMetadataRecord(None, viewId, lastEventNr))
+    by_view_id(viewId).result.headOption.flatMap {
       case None =>
+        viewMetadata.forceInsert(ViewMetadataRecord(None, viewId, lastEventNr))
+      case Some(view) =>
         viewMetadata.filter(_.viewId === viewId).map(v => v.lastEventNr).update(lastEventNr)
     }
 
@@ -31,16 +30,17 @@ class ViewMetadataDao(implicit val profile: JdbcProfile, ex: ExecutionContext) e
     by_view_id(viewId).result.headOption.map(_.map(_.lastEventNr))
 
 
-  def dropSchema =
-    viewMetadata.schema.drop
+  def ensureSchemaDropped =
+    getTables(viewMetadataTableName).headOption.flatMap {
+      case Some(table) => viewMetadata.schema.drop.map(_ => ())
+      case None => DBIO.successful(())
+    }
 
-  def createSchema() =
-    getTables(viewMetadataTableName)
-      .filter(_.isEmpty)
-      .cleanUp({
-        case Some(tableNotFoundError) => viewMetadata.schema.create
-        case None => successful(())
-      }, keepFailure = false).map(_ => ())
+  def ensureSchemaCreated =
+    getTables(viewMetadataTableName).headOption.flatMap {
+        case Some(table) => DBIO.successful(())
+        case None => viewMetadata.schema.create.map(_ => ())
+    }
 }
 
 trait SqlViewMetadataSchema {

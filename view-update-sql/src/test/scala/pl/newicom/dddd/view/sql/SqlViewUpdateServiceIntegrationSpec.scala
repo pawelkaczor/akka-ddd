@@ -70,9 +70,9 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
 
   lazy val viewMetadataDao = new ViewMetadataDao()
 
-  override def dropSchema = viewMetadataDao.dropSchema
+  override def ensureSchemaDropped = viewMetadataDao.ensureSchemaDropped
 
-  override def createSchema = viewMetadataDao.createSchema()
+  override def ensureSchemaCreated = viewMetadataDao.ensureSchemaCreated
 
 
   override def config: Config = system.settings.config

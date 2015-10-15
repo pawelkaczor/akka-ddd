@@ -48,9 +48,9 @@ class ViewMetadataDaoSpec extends WordSpecLike with Matchers with SqlViewStoreTe
     }
   }
 
-  override def dropSchema = dao.dropSchema
+  override def ensureSchemaDropped = dao.ensureSchemaDropped
 
 
-  override def createSchema = dao.createSchema
+  override def ensureSchemaCreated = dao.ensureSchemaCreated
 
 }
