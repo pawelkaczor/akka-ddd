@@ -7,12 +7,21 @@ import org.slf4j.LoggerFactory.getLogger
 import slick.dbio.DBIO
 import slick.driver.H2Driver
 
+import scala.concurrent.ExecutionContext
+
 trait SqlViewStoreTestSupport extends SqlViewStoreConfiguration with BeforeAndAfterAll with ScalaFutures {
   this: Suite =>
 
   val log = getLogger(getClass)
 
   implicit val profile = H2Driver
+
+  implicit class ViewStoreAction[A](a: DBIO[A])(implicit ex: ExecutionContext) {
+    private val future = viewStore.run(a)
+
+    def run(): Unit = future.map(_ => ()).futureValue
+    def result: A = future.futureValue
+  }
 
   def ensureSchemaDropped: DBIO[Unit]
   def ensureSchemaCreated: DBIO[Unit]

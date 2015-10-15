@@ -14,11 +14,11 @@ class ViewMetadataDao(implicit val profile: JdbcProfile, ex: ExecutionContext) e
   private val by_view_id = viewMetadata.findBy(_.viewId)
 
   def byViewId(viewId: String) = {
-    by_view_id(viewId).result
+    by_view_id(viewId).result.headOption
   }
 
   def insertOrUpdate(viewId: String, lastEventNr: Long) =
-    by_view_id(viewId).result.headOption.flatMap {
+    byViewId(viewId).flatMap {
       case None =>
         viewMetadata.forceInsert(ViewMetadataRecord(None, viewId, lastEventNr))
       case Some(view) =>
