@@ -13,6 +13,7 @@ import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.view.sql.Projection.ProjectionAction
 import pl.newicom.dddd.view.sql.SqlViewUpdateServiceIntegrationSpec._
 import slick.dbio.DBIOAction.successful
+import slick.dbio.Effect.All
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -48,7 +49,7 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
         new SqlViewUpdateService with SqlViewStoreConfiguration {
           def config = SqlViewUpdateServiceIntegrationSpec.this.config
           def configuration = List(SqlViewUpdateConfig("test-view", dummyOffice, new Projection {
-            def consume(em: DomainEventMessage): ProjectionAction = {
+            def consume(em: DomainEventMessage): ProjectionAction[All] = {
               successful(system.eventStream.publish(ViewUpdated(em.event)))
             }
           }))
