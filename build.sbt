@@ -61,7 +61,7 @@ lazy val `view-update-sql` = project
   .configs(IntegrationTest)
   .settings(
     commonSettings,
-    scalacOptions ++= Seq("-language:existentials"),
+    scalacOptions ++= Seq("-language:existentials", "-language:implicitConversions"),
     inConfig(IntegrationTest)(Defaults.testTasks),
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
