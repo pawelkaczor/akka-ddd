@@ -11,7 +11,7 @@ object Deps {
     
     val json4s                = "3.3.0"
     
-    val PostgresqlSlickExt    = "0.8.2" // Slick 2.1.0
+    val PostgresqlSlickExt    = "0.10.0" // Slick 3.1.0
     val H2Driver              = "1.4.189"
 
     // test

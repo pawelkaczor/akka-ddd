@@ -2,7 +2,7 @@ package pl.newicom.dddd.view.sql
 
 import com.typesafe.config.Config
 
-import scala.slick.jdbc.JdbcBackend._
+import slick.jdbc.JdbcBackend._
 
 trait SqlViewStoreConfiguration {
   def config: Config

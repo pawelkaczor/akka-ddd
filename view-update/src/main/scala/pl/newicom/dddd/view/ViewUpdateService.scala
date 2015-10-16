@@ -14,15 +14,15 @@ object ViewUpdateService {
 
 abstract class ViewUpdateService extends Actor with ActorLogging {
 
-  import context.dispatcher
-
   type Configuration <: ViewUpdateConfig
+
+  implicit val ec: ExecutionContext = context.dispatcher
 
   def configuration: Seq[Configuration]
 
   def viewHandler(config: Configuration): ViewHandler
 
-  def ensureViewStoreAvailable(implicit ec: ExecutionContext): Future[Unit]
+  def ensureViewStoreAvailable: Future[Unit]
 
   def onUpdateStart(): Unit = {
     // override

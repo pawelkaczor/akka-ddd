@@ -1,10 +1,10 @@
 package pl.newicom.dddd.view.sql
 
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.{Config, ConfigFactory}
 import org.scalactic.Equality
 import org.scalatest._
 
-import scala.slick.jdbc.JdbcBackend
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class ViewMetadataDaoSpec extends WordSpecLike with Matchers with SqlViewStoreTestSupport {
 
@@ -20,42 +20,30 @@ class ViewMetadataDaoSpec extends WordSpecLike with Matchers with SqlViewStoreTe
 
   val dao = new ViewMetadataDao()
 
-  import dao.profile.simple._
-
   "ViewMetadataDao" should {
     "insert new entry if view does not exist" in {
       // When
-      viewStore withSession { implicit s: Session =>
-        dao.insertOrUpdate("test view", 0)
-      }
+      dao.insertOrUpdate("test view", 0).run()
 
       // Then
-      viewStore withSession { implicit s: Session =>
-        dao.byViewId("test view") should not be 'empty
-      }
+      dao.byViewId("test view").result should not be 'empty
     }
   }
 
   "ViewMetadataDao" should {
     "insert & update entry" in {
       // When
-      viewStore withSession { implicit s: Session =>
-        dao.insertOrUpdate("test view", 0)
-        dao.insertOrUpdate("test view", 1)
-      }
+      dao.insertOrUpdate("test view", 0).run()
+      dao.insertOrUpdate("test view", 1).run()
 
       // Then
-      viewStore withSession { implicit s: Session =>
-        dao.byViewId("test view").get should equal (ViewMetadataRecord(Some(1), "test view", 1))
-      }
+      dao.byViewId("test view").result.get should equal (ViewMetadataRecord(Some(1), "test view", 1))
     }
   }
 
-  override def dropSchema(implicit s: JdbcBackend.Session): Unit =
-    dao.dropSchema
+  override def ensureSchemaDropped = dao.ensureSchemaDropped
 
 
-  override def createSchema(implicit s: JdbcBackend.Session): Unit =
-    dao.createSchema
+  override def ensureSchemaCreated = dao.ensureSchemaCreated
 
 }

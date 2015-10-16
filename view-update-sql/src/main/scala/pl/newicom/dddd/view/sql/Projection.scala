@@ -1,11 +1,16 @@
 package pl.newicom.dddd.view.sql
 
 import pl.newicom.dddd.messaging.event.DomainEventMessage
+import pl.newicom.dddd.view.sql.Projection.ProjectionAction
+import slick.dbio.Effect.All
+import slick.dbio.{DBIOAction, Effect, NoStream}
 
-import scala.slick.jdbc.JdbcBackend
+object Projection {
+  type ProjectionAction[E <: Effect] = DBIOAction[Unit, NoStream, E]
+}
 
-trait Projection {
+trait Projection extends DBActionHelpers {
 
-  def consume(event: DomainEventMessage)(implicit session: JdbcBackend.Session)
+  def consume(event: DomainEventMessage): ProjectionAction[All]
 
 }
