@@ -15,7 +15,8 @@
    - docker
 
  install:
-  - sudo apt-get install httpie -qq
+  - sudo apt-get update -qq
+  - sudo apt-get install -y -qq httpie
 
  before_script:
   - docker run --name ecommerce-event-store -d -p 2113:2113 -p 1113:1113 newion/eventstore:3.0.1
