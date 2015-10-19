@@ -1,5 +1,23 @@
  language: scala
+
  scala:
    - "2.11.7"
+
  jdk:
    - oraclejdk8
+
+ script:
+  - sbt test it:test
+
+ sudo: required
+
+ services:
+   - docker
+
+ install:
+  - sudo apt-get install httpie -qq
+
+ before_script:
+  - docker run --name ecommerce-event-store -d -p 2113:2113 -p 1113:1113 newion/eventstore:3.0.1
+  - docker run --name ecommerce-view-store -d -p 5432:5432 postgres
+  - docker ps -a
