@@ -31,7 +31,7 @@ object SqlViewUpdateServiceIntegrationSpec {
 }
 
 /**
- * Requires View Store and Event Store (with projections enabled!) to be up and running.
+ * Requires Event Store (with projections enabled!) to be up and running.
  */
 class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot] with SqlViewStoreTestSupport{
 
