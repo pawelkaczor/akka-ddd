@@ -1,14 +1,21 @@
 package pl.newicom.dddd.view
 
+import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy._
 import akka.actor._
-import pl.newicom.dddd.view.ViewUpdateInitializer.ViewUpdatingInitializationException
-import pl.newicom.dddd.view.ViewUpdateService.{EnsureViewStoreAvailable, Start}
+import akka.stream.ActorMaterializer
+import eventstore.EsConnection
+import pl.newicom.dddd.view.ViewUpdateInitializer.ViewUpdateInitException
+import pl.newicom.dddd.view.ViewUpdateFactory.ViewUpdate
+import pl.newicom.dddd.view.ViewUpdateService.{ViewUpdateConfigured, EnsureViewStoreAvailable, ViewUpdateInitiated}
+import pl.newicom.eventstore.EventstoreSerializationSupport
+import akka.pattern.pipe
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object ViewUpdateService {
-  case class Start(eventStoreConnection: ActorRef)
+  case class ViewUpdateInitiated(esConnection: EsConnection)
+  case class ViewUpdateConfigured(viewUpdates: Seq[ViewUpdate])
   object EnsureViewStoreAvailable
 }
 
@@ -18,25 +25,27 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
 
   implicit val ec: ExecutionContext = context.dispatcher
 
-  def configuration: Seq[Configuration]
+  implicit val materializer = ActorMaterializer()
+
+  def configurations: Seq[Configuration]
 
   def viewHandler(config: Configuration): ViewHandler
 
   def ensureViewStoreAvailable: Future[Unit]
 
-  def onUpdateStart: Future[Unit] = {
+  def onViewUpdateInitiated: Future[Unit] = {
     // override
     Future.successful(())
   }
   
   /**
-   * Restart ViewUpdateInitializer until it successfully obtains connection to ES or target database
+   * Restart ViewUpdateInitializer until it successfully obtains connection to event store and view store
    * During normal processing escalate all exceptions so that feeding is restarted
    */
   override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
     case _: ActorKilledException               => Stop
     case _: ActorInitializationException       => Stop
-    case _: ViewUpdatingInitializationException => Restart
+    case _: ViewUpdateInitException            => Restart
     case _                                     => Escalate
   }
 
@@ -47,15 +56,30 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
   }
 
   override def receive: Receive = {
-    case Start(esConn) =>
-      onUpdateStart.onSuccess {
-        case _ => configuration.foreach {
-            config => context.actorOf(ViewUpdater.props(esConn, config.officeInfo, viewHandler(config)))
-        }
+    case ViewUpdateInitiated(esConn) =>
+      val factory = new ViewUpdateFactory with EventstoreSerializationSupport {
+        def esConnection = esConn
+        def system       = context.system
       }
+      onViewUpdateInitiated.flatMap(_ =>
+        Future.sequence(
+          configurations.map { config =>
+            factory.runnableViewUpdate(config.officeInfo, viewHandler(config))
+          }
+        ).map { viewUpdates =>
+          ViewUpdateConfigured(viewUpdates)
+        }
+      ) pipeTo self
+
+    case ViewUpdateConfigured(viewUpdates) =>
+      viewUpdates.foreach(_.runnable.run())
+
+    case Failure(ex) =>
+      throw ex
+
     case EnsureViewStoreAvailable =>
-      import akka.pattern.pipe
       ensureViewStoreAvailable pipeTo sender()
+
     case unexpected =>
       throw new RuntimeException(s"Unexpected message received: $unexpected")
   }
