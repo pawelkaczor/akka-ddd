@@ -10,6 +10,7 @@ import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.DomainEventMessage
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{CreateDummy, DummyCreated}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, _}
+import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.view.sql.Projection.ProjectionAction
 import pl.newicom.dddd.view.sql.SqlViewUpdateServiceIntegrationSpec._
@@ -23,7 +24,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 object SqlViewUpdateServiceIntegrationSpec {
-  implicit val sys: ActorSystem = ActorSystem("SqlViewUpdateServiceSpec")
 
   implicit def dummyFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
@@ -45,7 +45,11 @@ object SqlViewUpdateServiceIntegrationSpec {
 /**
  * Requires Event Store (with projections enabled!) to be up and running.
  */
-class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot] with SqlViewStoreTestSupport{
+class SqlViewUpdateServiceIntegrationSpec
+  extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("SqlViewUpdateServiceIntegrationSpec")))
+  with SqlViewStoreTestSupport {
+
+  def sys = system
 
   "SqlViewUpdateService" should {
     "propagate events from event store to configured projection" in {
@@ -56,9 +60,9 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
         case ViewUpdated(DummyCreated(id, _, _, _)) => !id.equals(aggregateId)
         case ViewUpdated(_) => true
       }
-      system.eventStream.subscribe(probe.ref, classOf[ViewUpdated])
+      sys.eventStream.subscribe(probe.ref, classOf[ViewUpdated])
 
-      system.actorOf(Props(
+      sys.actorOf(Props(
         new SqlViewUpdateService with SqlViewStoreConfiguration {
           def config = SqlViewUpdateServiceIntegrationSpec.this.config
           def vuConfigs = List(SqlViewUpdateConfig("test-view", dummyOffice, new Projection {
@@ -69,7 +73,7 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
             def consume(em: DomainEventMessage): ProjectionAction[All] = {
               shouldFail = !shouldFail
               failIfRequired("Projection failed (test)") >>
-                PublishAction(system.eventStream, ViewUpdated(em.event))
+                PublishAction(sys.eventStream, ViewUpdated(em.event))
             }
           }))
         }
@@ -95,5 +99,6 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
   override def ensureSchemaCreated = viewMetadataDao.ensureSchemaCreated
 
 
-  override def config: Config = system.settings.config
+  override def config: Config = sys.settings.config
+
 }

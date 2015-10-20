@@ -48,7 +48,7 @@ class ViewUpdateInitializer(updateService: ActorRef) extends Actor with ActorLog
       throw new ViewUpdateInitException(ex)
 
     case _ =>
-      updateService ! ViewUpdateService.ViewUpdateInitiated(esExtension.connection)
+      updateService ! ViewUpdateService.InitiateViewUpdate(esExtension.connection)
 
   }
 

@@ -15,12 +15,12 @@ import pl.newicom.eventstore.{StreamNameResolver, EventstoreSerializationSupport
 import akka.pattern.pipe
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 object ViewUpdateService {
   object EnsureViewStoreAvailable
 
-  case class ViewUpdateInitiated(esConnection: EsConnection)
+  case class InitiateViewUpdate(esCon: EsConnection)
+  case class ViewUpdateInitiated(esCon: EsConnection)
 
   case class ViewUpdateConfigured(viewUpdate: ViewUpdate)
 
@@ -45,7 +45,7 @@ abstract class ViewUpdateService extends Actor with EventstoreSerializationSuppo
 
   implicit val ec: ExecutionContext = context.dispatcher
 
-  implicit val materializer = ActorMaterializer()
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   def vuConfigs: Seq[VUConfig]
 
@@ -53,11 +53,12 @@ abstract class ViewUpdateService extends Actor with EventstoreSerializationSuppo
 
   def ensureViewStoreAvailable: Future[Unit]
 
-  def onViewUpdateInitiated: Future[Unit] = {
-    // override
-    Future.successful(())
-  }
-  
+  /**
+   * Overridable initialization logic
+   */
+  def onViewUpdateInit(esCon: EsConnection): Future[ViewUpdateInitiated] =
+    Future.successful(ViewUpdateInitiated(esCon))
+
   /**
    * Restart ViewUpdateInitializer until it successfully obtains connection to event store and view store
    * During normal processing escalate all exceptions so that feeding is restarted
@@ -76,18 +77,12 @@ abstract class ViewUpdateService extends Actor with EventstoreSerializationSuppo
   }
 
   override def receive: Receive = {
+    case InitiateViewUpdate(esCon) =>
+      onViewUpdateInit(esCon) pipeTo self
+
     case ViewUpdateInitiated(esCon) =>
       log.debug("Initiated.")
-      onViewUpdateInitiated.onComplete {
-        case Success(_) => vuConfigs
-          .map { vuConfig =>
-            viewUpdate(esCon, vuConfig)
-          }.foreach { vu =>
-            vu pipeTo self
-          }
-        case scala.util.Failure(ex) =>
-          self ! Failure(ex)
-      }
+      vuConfigs.map(viewUpdate(esCon, _)).foreach(_.pipeTo(self))
 
     case vu @ ViewUpdate(_, _, runnable) =>
         log.debug(s"Starting: $vu")
