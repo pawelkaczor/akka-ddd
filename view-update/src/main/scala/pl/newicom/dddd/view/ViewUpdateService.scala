@@ -4,7 +4,7 @@ import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy._
 import akka.actor._
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Source, Sink, RunnableGraph}
+import akka.stream.scaladsl.{Keep, Source, Sink, RunnableGraph}
 import eventstore.EventNumber.Exact
 import eventstore._
 import pl.newicom.dddd.messaging.event.OfficeEventStream
@@ -31,7 +31,7 @@ object ViewUpdateService {
 
   case class EventReceived(eventData: EventData, eventNr: Long, alreadyProcessed: Boolean)
 
-  case class ViewUpdate(officeInfo: OfficeInfo[_], lastEventNr: Option[Long], runnable: RunnableGraph[Unit]) {
+  case class ViewUpdate(officeInfo: OfficeInfo[_], lastEventNr: Option[Long], runnable: RunnableGraph[Future[Unit]]) {
     override def toString =  s"ViewUpdate(officeName = ${officeInfo.name}, lastEventNr = $lastEventNr)"
   }
 
@@ -77,12 +77,13 @@ abstract class ViewUpdateService extends Actor with EventstoreSerializationSuppo
 
   override def receive: Receive = {
     case ViewUpdateInitiated(esCon) =>
+      log.debug("Initiated.")
       onViewUpdateInitiated.onComplete {
         case Success(_) => vuConfigs
           .map { vuConfig =>
             viewUpdate(esCon, vuConfig)
           }.foreach { vu =>
-            vu.pipeTo(self)
+            vu pipeTo self
           }
         case scala.util.Failure(ex) =>
           self ! Failure(ex)
@@ -90,7 +91,7 @@ abstract class ViewUpdateService extends Actor with EventstoreSerializationSuppo
 
     case vu @ ViewUpdate(_, _, runnable) =>
         log.debug(s"Starting: $vu")
-        runnable.run() 
+        runnable.run() pipeTo self
 
     case Failure(ex) =>
       throw ex
@@ -118,9 +119,7 @@ abstract class ViewUpdateService extends Actor with EventstoreSerializationSuppo
             !_.alreadyProcessed
           }.mapAsync(1) {
             event => handler.handle(toDomainEventMessage(event.eventData).get, event.eventNr)
-          }.to {
-            Sink.ignore
-          }
+          }.toMat(Sink.ignore)(Keep.right)
       )
     }
   }
