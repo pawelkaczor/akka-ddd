@@ -8,12 +8,12 @@ import scala.concurrent.Future
 abstract class SqlViewUpdateService(implicit val profile: JdbcProfile) extends ViewUpdateService with FutureHelpers {
   this: SqlViewStoreConfiguration =>
 
-  type Configuration = SqlViewUpdateConfig
+  type VUConfig = SqlViewUpdateConfig
 
   override def ensureViewStoreAvailable: Future[Unit] = {
     viewStore.run(profile.defaultTables).mapToUnit
   }
 
-  override def viewHandler(vuConfig: Configuration) = new SqlViewHandler(config, vuConfig)
+  override def viewHandler(vuConfig: VUConfig) = new SqlViewHandler(config, vuConfig)
 
 }

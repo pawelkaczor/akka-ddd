@@ -48,7 +48,7 @@ class SqlViewUpdateServiceIntegrationSpec extends OfficeSpec[DummyAggregateRoot]
       system.actorOf(Props(
         new SqlViewUpdateService with SqlViewStoreConfiguration {
           def config = SqlViewUpdateServiceIntegrationSpec.this.config
-          def configurations = List(SqlViewUpdateConfig("test-view", dummyOffice, new Projection {
+          def vuConfigs = List(SqlViewUpdateConfig("test-view", dummyOffice, new Projection {
             def consume(em: DomainEventMessage): ProjectionAction[All] = {
               successful(system.eventStream.publish(ViewUpdated(em.event)))
             }
