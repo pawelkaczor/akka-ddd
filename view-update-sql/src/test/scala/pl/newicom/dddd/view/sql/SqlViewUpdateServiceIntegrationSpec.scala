@@ -48,20 +48,14 @@ class SqlViewUpdateServiceIntegrationSpec
   extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("SqlViewUpdateServiceIntegrationSpec")))
   with SqlViewStoreTestSupport {
 
-  def sys = system
-
   "SqlViewUpdateService" should {
     "propagate events from event store to configured projection" in {
       // Given
       var shouldFail = false
       val probe = TestProbe()
-      probe.ignoreMsg {
-        case ViewUpdated(DummyCreated(_, _, _, _)) => false
-        case ViewUpdated(_) => true
-      }
-      sys.eventStream.subscribe(probe.ref, classOf[ViewUpdated])
+      system.eventStream.subscribe(probe.ref, classOf[ViewUpdated])
 
-      sys.actorOf(Props(
+      system.actorOf(Props(
         new SqlViewUpdateService with SqlViewStoreConfiguration {
           def config = SqlViewUpdateServiceIntegrationSpec.this.config
           def vuConfigs = List(SqlViewUpdateConfig("test-view", dummyOffice, new Projection {
@@ -77,7 +71,7 @@ class SqlViewUpdateServiceIntegrationSpec
               else {
                 shouldFail = !shouldFail
                 failIfRequired("Projection failed (test)") >>
-                    PublishAction(sys.eventStream, ViewUpdated(event))
+                    PublishAction(system.eventStream, ViewUpdated(event))
               }
             }
           }))
@@ -104,6 +98,6 @@ class SqlViewUpdateServiceIntegrationSpec
   override def ensureSchemaCreated = viewMetadataDao.ensureSchemaCreated
 
 
-  override def config: Config = sys.settings.config
+  override def config: Config = system.settings.config
 
 }
