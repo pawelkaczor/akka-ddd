@@ -1,6 +1,6 @@
 package pl.newicom.dddd.view.sql
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.Props
 import akka.event.EventStream
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
@@ -8,7 +8,7 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.DomainEventMessage
-import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{CreateDummy, DummyCreated}
+import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{DummyEvent, CreateDummy, DummyCreated}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, _}
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
 import pl.newicom.dddd.test.support.OfficeSpec
@@ -31,15 +31,14 @@ object SqlViewUpdateServiceIntegrationSpec {
       override def inactivityTimeout: Duration = it
     }
 
-  case class ViewUpdated(event: AnyRef)
+  case class ViewUpdated(event: DummyEvent)
 
-  case class PublishAction(eventStream: EventStream, event: EventStream#Event) extends SynchronousDatabaseAction[Unit, NoStream, DatabaseComponent, Effect] {
+  case class PublishAction(eventStream: EventStream, event: ViewUpdated) extends SynchronousDatabaseAction[Unit, NoStream, DatabaseComponent, Effect] {
     def getDumpInfo = DumpInfo("success", "unit")
     def run(ctx: DatabaseComponent#Context): Unit = {
       eventStream.publish(event)
     }
   }
-
 }
 
 /**
@@ -57,7 +56,7 @@ class SqlViewUpdateServiceIntegrationSpec
       var shouldFail = false
       val probe = TestProbe()
       probe.ignoreMsg {
-        case ViewUpdated(DummyCreated(id, _, _, _)) => !id.equals(aggregateId)
+        case ViewUpdated(DummyCreated(_, _, _, _)) => false
         case ViewUpdated(_) => true
       }
       sys.eventStream.subscribe(probe.ref, classOf[ViewUpdated])
@@ -71,9 +70,15 @@ class SqlViewUpdateServiceIntegrationSpec
               if (shouldFail) failed(new RuntimeException(msg)) else successful(())
 
             def consume(em: DomainEventMessage): ProjectionAction[All] = {
-              shouldFail = !shouldFail
-              failIfRequired("Projection failed (test)") >>
-                PublishAction(sys.eventStream, ViewUpdated(em.event))
+              val event = em.event.asInstanceOf[DummyEvent]
+              val ignore = !aggregateId.equals(event.id)
+              if (ignore)
+                successful(())
+              else {
+                shouldFail = !shouldFail
+                failIfRequired("Projection failed (test)") >>
+                    PublishAction(sys.eventStream, ViewUpdated(event))
+              }
             }
           }))
         }
