@@ -32,11 +32,14 @@ object DummyAggregateRoot {
   //
   // Events
   //
-  case class DummyCreated(id: EntityId, name: String, description: String, value: Int)
-  case class NameChanged(id: EntityId, name: String)
-  case class DescriptionChanged(id: EntityId, description: String)
-  case class ValueChanged(id: EntityId, value: Int, dummyVersion: Long)
-  case class ValueGenerated(id: EntityId, value: Int, confirmationToken: UUID)
+  sealed trait DummyEvent {
+    def id: EntityId
+  }
+  case class DummyCreated(id: EntityId, name: String, description: String, value: Int) extends DummyEvent
+  case class NameChanged(id: EntityId, name: String) extends DummyEvent
+  case class DescriptionChanged(id: EntityId, description: String) extends DummyEvent
+  case class ValueChanged(id: EntityId, value: Int, dummyVersion: Long) extends DummyEvent
+  case class ValueGenerated(id: EntityId, value: Int, confirmationToken: UUID) extends DummyEvent
 
   case class CandidateValue(value: Int, confirmationToken: UUID)
 

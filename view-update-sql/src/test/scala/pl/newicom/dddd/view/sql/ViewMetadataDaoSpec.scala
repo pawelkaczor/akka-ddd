@@ -1,14 +1,15 @@
 package pl.newicom.dddd.view.sql
 
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 import org.scalactic.Equality
 import org.scalatest._
+import pl.newicom.dddd.test.support.TestConfig
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class ViewMetadataDaoSpec extends WordSpecLike with Matchers with SqlViewStoreTestSupport {
 
-  def config: Config = ConfigFactory.load()
+  def config: Config = TestConfig.config
 
   implicit val _ = new Equality[ViewMetadataRecord] {
     def areEqual(a: ViewMetadataRecord, b: Any): Boolean =

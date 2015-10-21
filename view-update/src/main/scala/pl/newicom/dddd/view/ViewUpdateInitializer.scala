@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 object ViewUpdateInitializer {
   object Started
-  class ViewUpdatingInitializationException(cause: Throwable) extends Exception(cause)
+  class ViewUpdateInitException(cause: Throwable) extends Exception(cause)
 }
 
 class ViewUpdateInitializer(updateService: ActorRef) extends Actor with ActorLogging {
@@ -45,10 +45,10 @@ class ViewUpdateInitializer(updateService: ActorRef) extends Actor with ActorLog
       } yield "OK").pipeTo(self)
 
     case Failure(ex) =>
-      throw new ViewUpdatingInitializationException(ex)
+      throw new ViewUpdateInitException(ex)
 
     case _ =>
-      updateService ! ViewUpdateService.Start(esExtension.actor)
+      updateService ! ViewUpdateService.InitiateViewUpdate(esExtension.connection)
 
   }
 
