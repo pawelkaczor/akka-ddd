@@ -24,7 +24,7 @@ abstract class SqlViewUpdateService(implicit val profile: JdbcProfile) extends V
     }
 
   def onViewUpdateInit: DBIO[Unit] =
-    successful(())
+    new ViewMetadataDao().ensureSchemaCreated
 
 
   override def viewHandler(vuConfig: VUConfig) =
