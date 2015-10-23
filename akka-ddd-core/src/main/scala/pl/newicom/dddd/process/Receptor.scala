@@ -73,10 +73,10 @@ abstract class Receptor extends AtLeastOnceDeliverySupport {
 
   override lazy val persistenceId: String = s"Receptor-${config.stimuliSource.officeName}-${self.path.hashCode}"
 
-  var inFlightCallback: InFlightMessagesCallback = null
+  var inFlightCallback: Option[InFlightMessagesCallback] = None
 
   override def recoveryCompleted(): Unit =
-    inFlightCallback = subscribe(config.stimuliSource, lastSentDeliveryId)
+    inFlightCallback = Some(subscribe(config.stimuliSource, lastSentDeliveryId))
 
   override def receiveCommand: Receive =
     receiveEvent.orElse(deliveryStateReceive).orElse {
@@ -92,9 +92,7 @@ abstract class Receptor extends AtLeastOnceDeliverySupport {
   }
 
   override def deliveryStateUpdated(deliveryState: DeliveryState): Unit =
-    if (inFlightCallback != null) {
-      inFlightCallback.onChanged(deliveryState.unconfirmedNumber)
-    }
+    inFlightCallback.foreach(_.onChanged(deliveryState.unconfirmedNumber))
 
   override def metaDataProvider(em: EventMessage): Option[MetaData] = None
 
