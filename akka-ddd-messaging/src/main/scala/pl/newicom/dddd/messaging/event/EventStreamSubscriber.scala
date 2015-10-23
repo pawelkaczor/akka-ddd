@@ -1,28 +1,34 @@
 package pl.newicom.dddd.messaging.event
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.Actor
 import pl.newicom.dddd.messaging.MetaData
+import pl.newicom.dddd.messaging.event.EventStreamSubscriber._
+
+object EventStreamSubscriber {
+
+  case class EventReceived(em: EventMessage, position: Long)
+
+  trait InFlightMessagesCallback {
+    def onChanged(messagesInFlight: Int)
+  }
+}
 
 trait EventStreamSubscriber {
   this: Actor =>
 
   /**
-   * Subscribes this actor to given event stream.
+   * Subscribes this actor (the subscriber) to given event stream.
+   * The subscriber will receive events as [[EventReceived]] messages.
+   *
    * @param fromPositionExclusive if provided Subscriber will be receiving events
    *                              from given position (exclusively)
+   *
+   * @return callback that the subscriber should invoke whenever number of messages in flight is changed.
+   *         This information could be used by event publisher to control the number of emitted events.
    */
-  def subscribe(stream: EventStream, fromPositionExclusive: Option[Long]): ActorRef
+  def subscribe(stream: EventStream, fromPositionExclusive: Option[Long]): InFlightMessagesCallback
 
-  /**
-   * Logic of receiving event messages from event stream.
-   * Should call [[eventReceived]] with event message enriched with metadata obtained
-   * from given metadata provider once the event is received from the stream.
-   */
-  def receiveEvent(metaDataProvider: EventMessage => Option[MetaData]): Receive
 
-  /**
-   * Called whenever event has been received from the stream.
-   */
-  def eventReceived(em: EventMessage, position: Long): Unit
+  def metaDataProvider(em: EventMessage): Option[MetaData]
 
 }

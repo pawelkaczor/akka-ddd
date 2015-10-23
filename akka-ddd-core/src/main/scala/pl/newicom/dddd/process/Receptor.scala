@@ -2,7 +2,8 @@ package pl.newicom.dddd.process
 
 import akka.actor.ActorPath
 import pl.newicom.dddd.aggregate.EntityId
-import pl.newicom.dddd.delivery.AtLeastOnceDeliverySupport
+import pl.newicom.dddd.delivery.{DeliveryState, AtLeastOnceDeliverySupport}
+import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{InFlightMessagesCallback, EventReceived}
 import pl.newicom.dddd.messaging.event._
 import pl.newicom.dddd.messaging.{Message, MetaData}
 import pl.newicom.dddd.office.OfficeInfo
@@ -72,20 +73,29 @@ abstract class Receptor extends AtLeastOnceDeliverySupport {
 
   override lazy val persistenceId: String = s"Receptor-${config.stimuliSource.officeName}-${self.path.hashCode}"
 
+  var inFlightCallback: InFlightMessagesCallback = null
+
   override def recoveryCompleted(): Unit =
-    subscribe(config.stimuliSource, lastSentDeliveryId)
+    inFlightCallback = subscribe(config.stimuliSource, lastSentDeliveryId)
 
   override def receiveCommand: Receive =
-    receiveEvent(metaDataProvider).orElse(deliveryStateReceive).orElse {
+    receiveEvent.orElse(deliveryStateReceive).orElse {
       case other =>
         log.warning(s"RECEIVED: $other")
     }
 
-  override def eventReceived(em: EventMessage, position: Long): Unit =
-    config.transduction.lift(em).foreach { msg =>
-      deliver(msg, deliveryId = position)
+  def receiveEvent: Receive = {
+    case EventReceived(em, position) =>
+      config.transduction.lift(em).foreach { msg =>
+        deliver(msg, deliveryId = position)
+      }
+  }
+
+  override def deliveryStateUpdated(deliveryState: DeliveryState): Unit =
+    if (inFlightCallback != null) {
+      inFlightCallback.onChanged(deliveryState.unconfirmedNumber)
     }
 
-  def metaDataProvider(em: EventMessage): Option[MetaData] = None
+  override def metaDataProvider(em: EventMessage): Option[MetaData] = None
 
 }
