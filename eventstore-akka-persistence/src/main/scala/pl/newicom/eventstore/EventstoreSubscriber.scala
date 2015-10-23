@@ -63,7 +63,7 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializ
     }
 
     val sink = Sink.actorRef(self, onCompleteMessage = Kill)
-    val triggerSource = Source.actorRef(bufferSize, OverflowStrategy.fail)
+    val triggerSource = Source.actorRef(bufferSize, OverflowStrategy.dropNew)
 
     val triggerActor = flow.toMat(sink)(Keep.both).runWith(triggerSource)
 
