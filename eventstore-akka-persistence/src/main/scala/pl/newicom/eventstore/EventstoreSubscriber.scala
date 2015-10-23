@@ -1,54 +1,73 @@
 package pl.newicom.eventstore
 
-import akka.actor.Status.Failure
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor._
+import akka.stream.scaladsl._
+import akka.stream.{ActorMaterializer, OverflowStrategy}
 import eventstore.EventNumber._
 import eventstore._
-import pl.newicom.dddd.messaging.MetaData
-import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
-import scala.util.Success
+import eventstore.pipeline.TickGenerator.{Tick, Trigger}
+import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{InFlightMessagesCallback, EventReceived}
+import pl.newicom.dddd.messaging.event.{EventStream, _}
+
+class DemandController(triggerActor: ActorRef, bufferSize: Int, initialDemand: Int = 1) extends InFlightMessagesCallback {
+
+  increaseDemand(initialDemand)
+
+  def onChanged(messagesInFlight: Int): Unit = {
+    increaseDemand(bufferSize - messagesInFlight)
+  }
+
+  private def increaseDemand(increaseValue: Int): Unit =
+    for (i <- 1 to increaseValue)
+      triggerActor ! Tick(null)
+}
 
 trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializationSupport with ActorLogging {
   this: Actor =>
 
   override def system = context.system
 
-  def subscribe(stream: pl.newicom.dddd.messaging.event.EventStream, fromPositionExclusive: Option[Long]): ActorRef = {
-    val streamId = StreamNameResolver.streamId(stream)
-    log.debug(s"Subscribing to $streamId from position $fromPositionExclusive (exclusive)")
+  def bufferSize: Int = 10
 
-    context.actorOf(
-      StreamSubscriptionActor.props(
-        EventStoreExtension(context.system).actor,
-        self,
-        streamId,
-        fromPositionExclusive.map(l => Exact(l.toInt)),
-        resolveLinkTos = true),
-      s"subscription-${streamId.value}")
-  }
+  implicit val actorMaterializer = ActorMaterializer()
 
-  def eventReceived(eventData: EventData, eventNumber: Int, metaDataProvider: EventMessage => Option[MetaData]): Unit = {
-    toEventMessage(eventData) match {
-      case Success(em) =>
-        eventReceived(em.withMetaData(metaDataProvider(em)), eventNumber)
-      case scala.util.Failure(cause) =>
-        throw cause
+  def subscribe(stream: EventStream, fromPosExcl: Option[Long]): InFlightMessagesCallback = {
+
+    def eventSource: Source[EventReceived, Unit] = {
+      def withMetaData(eventData: EventData): EventMessage = {
+        val em = toEventMessage(eventData).get
+        em.withMetaData(metaDataProvider(em))
+      }
+      val streamId = StreamNameResolver.streamId(stream)
+      log.debug(s"Subscribing to $streamId from position $fromPosExcl (exclusive)")
+      Source(
+        EsConnection(system).streamPublisher(
+          streamId,
+          fromPosExcl.map(l => Exact(l.toInt)),
+          resolveLinkTos = true
+        )
+      ).map {
+        case EventRecord(_, number, eventData, _) =>
+          EventReceived(withMetaData(eventData), number.value)
+        case ResolvedEvent(EventRecord(_, _, eventData, _), linkEvent) =>
+          EventReceived(withMetaData(eventData), linkEvent.number.value)
+      }
     }
-  }
 
-  def receiveEvent(metaDataProvider: EventMessage => Option[MetaData]): Receive = {
-    case EventRecord(streamId, number, eventData, _) =>
-      eventReceived(eventData, number.value, metaDataProvider)
-      
-    case ResolvedEvent(EventRecord(streamId, _, eventData, _), linkEvent) =>
-      eventReceived(eventData, linkEvent.number.value, metaDataProvider)
+   def flow: Flow[Trigger, EventReceived, Unit] = Flow() { implicit b =>
+      import FlowGraph.Implicits._
+      val zip = b.add(ZipWith((msg: EventReceived, trigger: Trigger) => msg))
 
-    case Failure(NotAuthenticated) =>
-      log.error("Invalid credentials")
-      throw new RuntimeException("Invalid credentials")
+      eventSource ~> zip.in0
+      (zip.in1, zip.out)
+    }
 
-    case LiveProcessingStarted =>
-      log.debug("Live processing started")
+    val sink = Sink.actorRef(self, onCompleteMessage = Kill)
+    val triggerSource = Source.actorRef(bufferSize, OverflowStrategy.fail)
+
+    val triggerActor = flow.toMat(sink)(Keep.both).runWith(triggerSource)
+
+    new DemandController(triggerActor, bufferSize)
   }
 
 }
