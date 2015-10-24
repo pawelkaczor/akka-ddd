@@ -5,6 +5,7 @@ import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
 import akka.persistence._
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.{EntityMessage, Message}
+import pl.newicom.dddd.persistence.SaveSnapshotRequest
 
 case class DeliveryStateSnapshot(state: DeliveryState, alodSnapshot: AtLeastOnceDeliverySnapshot)
 
@@ -53,7 +54,7 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
     case receipt: Delivered =>
       persist(receipt)(updateState)
 
-    case "snap" =>
+    case SaveSnapshotRequest =>
       val snapshot = new DeliveryStateSnapshot(deliveryState, getDeliverySnapshot)
       log.debug(s"Saving snapshot: $snapshot")
       saveSnapshot(snapshot)

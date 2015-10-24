@@ -9,6 +9,7 @@ import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
 import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, registerSaga}
+import pl.newicom.dddd.persistence.SaveSnapshotRequest
 import pl.newicom.dddd.test.dummy
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, CreateDummy, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaConfig, EventApplied}
@@ -142,7 +143,7 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
   }
 
   def expectNumberOfUnconfirmedMessages(sagaManager: ActorRef, expectedNumberOfMessages: Int): Unit = within(3.seconds) {
-    sagaManager ! "snap"
+    sagaManager ! SaveSnapshotRequest
     awaitAssert {
       sagaManager ! GetNumberOfUnconfirmed
       expectMsg(expectedNumberOfMessages)
