@@ -36,7 +36,7 @@ lazy val `akka-ddd-core` = project
     scalacOptions ++= Seq("-language:implicitConversions"),
     publishArtifact in Test := true,
     libraryDependencies ++= Seq(
-      Akka.clusterTools, Akka.clusterSharding, Akka.persistence, Akka.slf4j
+      Akka.clusterTools, Akka.clusterSharding, Akka.persistence, Akka.contributions, Akka.slf4j
     ))
   .dependsOn(`akka-ddd-messaging`)
 

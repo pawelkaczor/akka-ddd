@@ -31,6 +31,7 @@ object Deps {
     val persistence       = apply("persistence")
     val clusterTools      = apply("cluster-tools")
     val clusterSharding   = apply("cluster-sharding")
+    val contributions     = apply("contrib")
     val testkit           = apply("testkit")
     val multiNodeTestkit  = apply("multi-node-testkit")
 

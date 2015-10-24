@@ -1,12 +1,15 @@
 package pl.newicom.dddd.process
 
 import akka.actor.ActorPath
+import akka.contrib.pattern.ReceivePipeline
+import akka.persistence.PersistentActor
 import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.delivery.AtLeastOnceDeliverySupport
 import pl.newicom.dddd.messaging.event._
 import pl.newicom.dddd.messaging.{Message, MetaData}
 import pl.newicom.dddd.office.OfficeInfo
 import pl.newicom.dddd.process.ReceptorConfig.{ReceiverResolver, StimuliSource, Transduction}
+import pl.newicom.dddd.persistence.{RegularSnapshottingConfig, RegularSnapshotting, ForgettingParticularEvents}
 
 object ReceptorConfig {
   type Transduction = PartialFunction[EventMessage, Message]
@@ -61,10 +64,16 @@ case class ReceptorBuilder(
   def propagateTo(_receiver: ActorPath) = route({case _ => _receiver})
 }
 
-abstract class Receptor extends AtLeastOnceDeliverySupport {
+trait ReceptorPersistencePolicy extends ReceivePipeline with ForgettingParticularEvents with RegularSnapshotting {
+  this: PersistentActor =>
+}
+
+abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersistencePolicy {
   this: EventStreamSubscriber =>
 
   def config: ReceptorConfig
+
+  val snapshottingConfig = RegularSnapshottingConfig(receiveEvent((_) => None), 10)
 
   def deadLetters = context.system.deadLetters.path
 
