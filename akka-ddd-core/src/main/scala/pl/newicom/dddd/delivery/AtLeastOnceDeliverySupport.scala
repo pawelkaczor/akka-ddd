@@ -64,6 +64,7 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
 
     case f @ SaveSnapshotFailure(metadata, reason) =>
       log.error(s"$f")
+      throw reason
 
   }
 
