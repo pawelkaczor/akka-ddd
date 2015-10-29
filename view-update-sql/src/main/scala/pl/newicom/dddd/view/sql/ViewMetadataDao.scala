@@ -5,7 +5,7 @@ import slick.jdbc.meta.MTable.getTables
 
 import scala.concurrent.ExecutionContext
 
-case class ViewMetadataRecord(id: Option[Long], viewId: String, lastEventNr: Long)
+case class ViewMetadataRecord(id: Long, viewId: String, lastEventNr: Long)
 
 class ViewMetadataDao(implicit val profile: JdbcProfile, ex: ExecutionContext) extends SqlViewMetadataSchema {
 
@@ -20,7 +20,7 @@ class ViewMetadataDao(implicit val profile: JdbcProfile, ex: ExecutionContext) e
   def insertOrUpdate(viewId: String, lastEventNr: Long) =
     byViewId(viewId).flatMap {
       case None =>
-        viewMetadata.forceInsert(ViewMetadataRecord(None, viewId, lastEventNr))
+        viewMetadata.forceInsert(ViewMetadataRecord(0, viewId, lastEventNr))
       case Some(view) =>
         viewMetadata.filter(_.viewId === viewId).map(v => v.lastEventNr).update(lastEventNr)
     }
@@ -54,7 +54,7 @@ trait SqlViewMetadataSchema {
   protected val viewMetadataTableName = "view_metadata"
 
   protected class ViewMetadata(tag: Tag) extends Table[ViewMetadataRecord](tag, viewMetadataTableName) {
-    def id = column[Option[Long]]("ID", O.PrimaryKey, O.AutoInc)
+    def id = column[Long]("ID", O.PrimaryKey, O.AutoInc)
     def viewId = column[String]("VIEW_ID")
     def lastEventNr = column[Long]("LAST_EVENT_NR")
     def * = (id, viewId, lastEventNr) <> (ViewMetadataRecord.tupled, ViewMetadataRecord.unapply)

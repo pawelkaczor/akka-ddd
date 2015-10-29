@@ -14,7 +14,7 @@ class ViewMetadataDaoSpec extends WordSpecLike with Matchers with SqlViewStoreTe
   implicit val _ = new Equality[ViewMetadataRecord] {
     def areEqual(a: ViewMetadataRecord, b: Any): Boolean =
       b match {
-        case b_rec: ViewMetadataRecord => a.copy(id = Some(-1)) == b_rec.copy(id = Some(-1))
+        case b_rec: ViewMetadataRecord => a.copy(id = -1) == b_rec.copy(id = -1)
         case _ => false
       }
   }
@@ -38,7 +38,7 @@ class ViewMetadataDaoSpec extends WordSpecLike with Matchers with SqlViewStoreTe
       dao.insertOrUpdate("test view", 1).run()
 
       // Then
-      dao.byViewId("test view").result.get should equal (ViewMetadataRecord(Some(1), "test view", 1))
+      dao.byViewId("test view").result.get should equal (ViewMetadataRecord(1, "test view", 1))
     }
   }
 
