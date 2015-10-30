@@ -11,5 +11,6 @@
     </root>
     <logger name="slick" level="INFO"/>
     <logger name="slick.jdbc.JdbcBackend.statement" level="DEBUG"/>
+    <logger name="com.zaxxer" level="INFO"/>
     <logger name="eventstore.tcp.ConnectionActor" level="INFO" />
 </configuration>

@@ -66,8 +66,8 @@ lazy val `view-update-sql` = project
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
     parallelExecution in IntegrationTest := false,
-    libraryDependencies ++= Seq(
-      SqlDb.prod, scalaTest % "test", SqlDb.testDriver, Akka.testkit % "test",
+    libraryDependencies ++= SqlDb() ++ Seq(
+      scalaTest % "test", Akka.testkit % "test",
       logbackClassic % "test", scalaCheck % "test"
 
     ))

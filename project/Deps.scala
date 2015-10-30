@@ -10,7 +10,8 @@ object Deps {
     val EventStoreAkkaJournal = "2.1.0"
     
     val json4s                = "3.3.0"
-    
+
+    val Slick                 = "3.1.0"
     val PostgresqlSlickExt    = "0.10.0" // Slick 3.1.0
     val H2Driver              = "1.4.189"
 
@@ -55,11 +56,10 @@ object Deps {
 
   object SqlDb {
     val `slick-for-pg` = "com.github.tminglei" %% "slick-pg" % Version.PostgresqlSlickExt exclude("org.slf4j", "slf4j-simple")
+    val connectionPool = "com.typesafe.slick" %% "slick-hikaricp" % Version.Slick
     val testDriver     = "com.h2database" % "h2" % Version.H2Driver % "test"
 
-    def prod = `slick-for-pg`
-
-    def apply() = Seq(`slick-for-pg`, testDriver)
+    def apply() = Seq(`slick-for-pg`, connectionPool, testDriver)
   }
 
   object TestFrameworks {
