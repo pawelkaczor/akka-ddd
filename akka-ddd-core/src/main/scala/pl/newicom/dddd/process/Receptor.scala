@@ -74,7 +74,7 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
 
   def config: ReceptorConfig
 
-  val snapshottingConfig = RegularSnapshottingConfig(receiveEvent((_) => None), 10)
+  val snapshottingConfig = RegularSnapshottingConfig(receiveEvent, 1000)
 
   def deadLetters = context.system.deadLetters.path
 
