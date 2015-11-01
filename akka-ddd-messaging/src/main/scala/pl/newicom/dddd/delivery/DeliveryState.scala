@@ -23,6 +23,8 @@ sealed trait DeliveryState {
    */
   def lastSentOpt: Option[Long]
 
+  def unconfirmedNumber: Int
+
 }
 
 case object InitialState extends DeliveryState {
@@ -36,21 +38,26 @@ case object InitialState extends DeliveryState {
 
   def lastSentOpt = None
 
+  def unconfirmedNumber = 0
+
 }
 
-case class DeliveryInProgressState(lastSent: Long, unconfirmed: SortedMap[Long, Long]) extends DeliveryState {
+case class DeliveryInProgressState(lastSent: Long, size: Int, unconfirmed: SortedMap[Long, Long]) extends DeliveryState {
 
   def this(internalDeliveryId: Long, deliveryId: Long) =
-    this(deliveryId, SortedMap(deliveryId -> internalDeliveryId))
+    this(deliveryId, 1, SortedMap(deliveryId -> internalDeliveryId))
 
   def internalDeliveryId(deliveryId: Long) =
     unconfirmed.get(deliveryId)
 
   def withSent(internalDeliveryId: Long, deliveryId: Long) =
-    new DeliveryInProgressState(deliveryId, unconfirmed.updated(deliveryId, internalDeliveryId))
+    new DeliveryInProgressState(deliveryId, size + 1, unconfirmed.updated(deliveryId, internalDeliveryId))
 
   def withDelivered(deliveryId: Long) =
-    copy(unconfirmed = unconfirmed - deliveryId)
+    copy(size = size - 1, unconfirmed = unconfirmed - deliveryId)
 
   def lastSentOpt = Some(lastSent)
+
+  def unconfirmedNumber = size
+
 }

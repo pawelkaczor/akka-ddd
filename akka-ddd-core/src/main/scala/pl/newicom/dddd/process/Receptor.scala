@@ -4,7 +4,8 @@ import akka.actor.ActorPath
 import akka.contrib.pattern.ReceivePipeline
 import akka.persistence.PersistentActor
 import pl.newicom.dddd.aggregate.EntityId
-import pl.newicom.dddd.delivery.AtLeastOnceDeliverySupport
+import pl.newicom.dddd.delivery.{DeliveryState, AtLeastOnceDeliverySupport}
+import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{InFlightMessagesCallback, EventReceived}
 import pl.newicom.dddd.messaging.event._
 import pl.newicom.dddd.messaging.{Message, MetaData}
 import pl.newicom.dddd.office.OfficeInfo
@@ -81,20 +82,27 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
 
   override lazy val persistenceId: String = s"Receptor-${config.stimuliSource.officeName}-${self.path.hashCode}"
 
+  var inFlightCallback: Option[InFlightMessagesCallback] = None
+
   override def recoveryCompleted(): Unit =
-    subscribe(config.stimuliSource, lastSentDeliveryId)
+    inFlightCallback = Some(subscribe(config.stimuliSource, lastSentDeliveryId))
 
   override def receiveCommand: Receive =
-    receiveEvent(metaDataProvider).orElse(deliveryStateReceive).orElse {
+    receiveEvent.orElse(deliveryStateReceive).orElse {
       case other =>
         log.warning(s"RECEIVED: $other")
     }
 
-  override def eventReceived(em: EventMessage, position: Long): Unit =
-    config.transduction.lift(em).foreach { msg =>
-      deliver(msg, deliveryId = position)
-    }
+  def receiveEvent: Receive = {
+    case EventReceived(em, position) =>
+      config.transduction.lift(em).foreach { msg =>
+        deliver(msg, deliveryId = position)
+      }
+  }
 
-  def metaDataProvider(em: EventMessage): Option[MetaData] = None
+  override def deliveryStateUpdated(deliveryState: DeliveryState): Unit =
+    inFlightCallback.foreach(_.onChanged(deliveryState.unconfirmedNumber))
+
+  override def metaDataProvider(em: EventMessage): Option[MetaData] = None
 
 }
