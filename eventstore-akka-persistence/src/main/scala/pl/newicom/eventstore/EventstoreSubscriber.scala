@@ -27,7 +27,7 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializ
 
   override def system = context.system
 
-  def bufferSize: Int = 10
+  def bufferSize: Int = 20
 
   implicit val actorMaterializer = ActorMaterializer()
 
