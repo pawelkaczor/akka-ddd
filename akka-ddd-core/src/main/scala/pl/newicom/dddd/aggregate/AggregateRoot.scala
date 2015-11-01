@@ -74,7 +74,7 @@ trait AggregateRoot[S <: AggregateState]
     persist(new EventMessage(event).causedBy(commandMessage)) {
       persisted =>
         {
-          log.info("Event persisted: {}", event)
+          log.debug("Event persisted: {}", event)
           updateState(persisted)
           handle(_sender, toDomainEventMessage(persisted))
         }
