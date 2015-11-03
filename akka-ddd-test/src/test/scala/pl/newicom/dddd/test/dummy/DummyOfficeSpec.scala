@@ -12,9 +12,12 @@ import pl.newicom.dddd.test.support.TestConfig.testSystem
 import scala.concurrent.duration.{Duration, _}
 
 object DummyOfficeSpec {
+
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot with LocalPublisher)
+      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot with LocalPublisher {
+        override def valueGenerator: Int = -1 // not allowed
+      })
       override def inactivityTimeout: Duration = it
     }
 }
@@ -26,6 +29,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
   def dummyId = aggregateId
 
   "Dummy office" should {
+
     "create Dummy" in {
       when {
         CreateDummy(dummyId, "dummy name", "dummy description", 100)
@@ -65,6 +69,17 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
         CreateDummy(dummyId, "dummy name", "dummy description", value = -1)
       }
       .expectException[RuntimeException]("negative value not allowed")
+    }
+
+
+    "reject negative generated value" in {
+        given {
+          CreateDummy(dummyId, "dummy name", "dummy description", 100)
+        }
+        .when {
+          GenerateValue(dummyId)
+        }
+        .expectException[RuntimeException]("negative value not allowed")
     }
 
   }
