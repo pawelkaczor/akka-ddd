@@ -33,11 +33,10 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
   }
 
   def updateState(msg: Any): Unit = msg match {
-    case em: EntityMessage =>
-      if (em.entityId == null) {
-        log.warning(s"No entityId. Skipping $em")
+    case message: Message with EntityMessage =>
+      if (message.entityId == null) {
+        log.warning(s"No entityId. Skipping $message")
       } else {
-        val message = em.asInstanceOf[Message]
         deliver(destination(message))(deliveryIdToMessage(message))
       }
 
