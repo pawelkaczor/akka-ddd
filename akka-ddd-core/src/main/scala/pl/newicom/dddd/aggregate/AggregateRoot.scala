@@ -29,7 +29,13 @@ trait AggregateRoot[S <: AggregateState]
   type AggregateRootFactory = PartialFunction[DomainEvent, S]
   private var stateOpt: Option[S] = None
   private var _lastCommandMessage: Option[CommandMessage] = None
+
+  // If an aggregate root actor collaborates with another actor while processing the command
+  // (using CollaborationSupport trait), result of calling sender() after a message from collaborator
+  // has been received will be a reference to the collaborator actor (instead of a reference to the command sender).
+  // Thus we need to keep track of command sender as a variable.
   private var _sender: ActorRef = null
+
   val factory: AggregateRootFactory
 
   override def persistenceId: String = id
