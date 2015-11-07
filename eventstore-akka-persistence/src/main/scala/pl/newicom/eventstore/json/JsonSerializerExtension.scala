@@ -32,7 +32,7 @@ class JsonSerializerExtensionImpl(system: ExtendedActorSystem) extends Extension
         List(classOf[MetaData], classOf[Processed], classOf[AlodProcessed], classOf[PersistentRepr], classOf[EventScheduled])
       ),
     serializers =
-      List(ActorRefSerializer, new SnapshotJsonSerializer(system))
+      List(ActorRefSerializer, ActorPathSerializer, new SnapshotJsonSerializer(system))
   )
 
   val UTF8 = Charset.forName("UTF-8")
