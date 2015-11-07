@@ -6,6 +6,7 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.eventhandling.LocalPublisher
+import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOffice._
 import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
 import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, registerSaga}
@@ -57,7 +58,7 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
 
   val sagaProbe = TestProbe()
   system.eventStream.subscribe(sagaProbe.ref, classOf[EventApplied])
-  ignoreMsg({ case Processed(_) => true })
+  ignoreMsg({ case EventMessage(_, Processed(_)) => true })
 
   "SagaManager" should {
 
