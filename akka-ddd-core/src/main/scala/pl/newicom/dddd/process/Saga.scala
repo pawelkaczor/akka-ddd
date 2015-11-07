@@ -73,7 +73,7 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
 
   def receiveDeliveryReceipt: Receive = {
     case receipt: Delivered =>
-      persist(receipt)(updateState)
+      persist(new EventMessage(receipt))(updateState)
   }
 
   def schedule(event: DomainEvent, deadline: DateTime, correlationId: EntityId = sagaId): Unit = {
@@ -114,13 +114,13 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
   def applyEvent: PartialFunction[DomainEvent, Unit]
 
   private def updateState(msg: Any): Unit = msg match {
-    case em: EventMessage =>
-      messageProcessed(em)
-      applyEvent.applyOrElse(em.event, (e: DomainEvent) => ())
-    case receipt: Delivered =>
+    case EventMessage(_, receipt: Delivered) =>
       confirmDelivery(receipt.deliveryId)
       log.debug(s"Delivery of message confirmed (receipt: $receipt)")
       applyEvent.applyOrElse(receipt, (e: DomainEvent) => ())
+    case em: EventMessage =>
+      messageProcessed(em)
+      applyEvent.applyOrElse(em.event, (e: DomainEvent) => ())
   }
 
   private def acknowledgeEvent(em: Message) {
