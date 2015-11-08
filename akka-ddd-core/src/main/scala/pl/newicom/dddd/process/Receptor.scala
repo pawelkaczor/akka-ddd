@@ -78,9 +78,11 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
 
   def deadLetters = context.system.deadLetters.path
 
-  def destination(msg: Message) = config.receiverResolver.applyOrElse(msg, (any: Message) => deadLetters)
+  def destination(msg: Message): ActorPath =
+    config.receiverResolver.applyOrElse(msg, (any: Message) => deadLetters)
 
-  override lazy val persistenceId: String = s"Receptor-${config.stimuliSource.officeName}-${self.path.hashCode}"
+  override lazy val persistenceId: String =
+    s"Receptor-${config.stimuliSource.officeName}-${self.path.hashCode}"
 
   var inFlightCallback: Option[InFlightMessagesCallback] = None
 

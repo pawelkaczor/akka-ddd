@@ -9,7 +9,7 @@ import eventstore.pipeline.TickGenerator.{Tick, Trigger}
 import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{InFlightMessagesCallback, EventReceived}
 import pl.newicom.dddd.messaging.event.{EventStream, _}
 
-class DemandController(triggerActor: ActorRef, bufferSize: Int, initialDemand: Int = 1) extends InFlightMessagesCallback {
+class DemandController(triggerActor: ActorRef, bufferSize: Int, initialDemand: Int = 20) extends InFlightMessagesCallback {
 
   increaseDemand(initialDemand)
 
