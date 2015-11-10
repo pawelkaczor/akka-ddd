@@ -9,7 +9,7 @@ object DeadlinesReceptor {
     .reactToStream(currentDeadlinesStream(businessUnit))
     .applyTransduction {
       case em @ EventMessage(_, EventScheduled(metadata, event)) =>
-        new EventMessage(event)
+        EventMessage(event)
           .withCorrelationId(em.correlationId.get)
           .withMetaAttribute("target", metadata.target.toSerializationFormat)
     }

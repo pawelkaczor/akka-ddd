@@ -34,7 +34,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
   def processId = uuid10
   val sagaOffice = office[DummySaga]
 
-  after {
+  override def afterAll() {
     if (sagaOffice != null) {
       ensureActorTerminated(sagaOffice)
     }
@@ -61,7 +61,6 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
   "Saga" should {
     "acknowledge previously processed events" in {
       // Given
-      val sagaOffice = office[DummySaga]
       val em1 = toEventMessage(ValueChanged(processId, 1, 1L))
 
       // When/Then
@@ -74,7 +73,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
   }
 
   def toEventMessage(e: ValueChanged): EventMessage = {
-    new EventMessage(e).withMetaData(Map(
+    EventMessage(e).withMetaData(Map(
       CorrelationId -> processId,
       DeliveryId -> 1L
     ))

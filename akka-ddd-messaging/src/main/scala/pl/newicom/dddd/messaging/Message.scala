@@ -11,36 +11,35 @@ object MetaData {
   val CausationId         = "causationId"
   val CorrelationId       = "correlationId"
   val SessionId           = "sessionId"
+
+  def empty: MetaData = MetaData(Map.empty)
 }
 
-class MetaData(var metadata: Map[String, Any] = Map.empty) extends Serializable {
+case class MetaData(content: Map[String, Any]) extends Serializable {
 
-  def withMetaData(metadata: Option[MetaData]): MetaData = {
-    if (metadata.isDefined) withMetaData(metadata.get.metadata) else this
+  def mergeWithMetadata(metadata: Option[MetaData]): MetaData = {
+    metadata.map(_.content).map(addContent).getOrElse(this)
   }
 
-  def withMetaData(metadata: Map[String, Any], clearExisting: Boolean = false): MetaData = {
-    if (clearExisting) {
-      this.metadata = Map.empty
-    }
-    new MetaData(this.metadata ++ metadata)
+  def addContent(content: Map[String, Any]): MetaData = {
+    copy(content = this.content ++ content)
   }
 
-  def contains(attrName: String) = metadata.contains(attrName)
+  def contains(attrName: String) = content.contains(attrName)
 
   def get[B](attrName: String) = tryGet[B](attrName).get
 
-  def tryGet[B](attrName: String): Option[B] = metadata.get(attrName).asInstanceOf[Option[B]]
+  def tryGet[B](attrName: String): Option[B] = content.get(attrName).asInstanceOf[Option[B]]
 
   def exceptDeliveryAttributes: Option[MetaData] = {
-    val resultMap = this.metadata.filterKeys(a => !a.startsWith("_"))
+    val resultMap = this.content.filterKeys(a => !a.startsWith("_"))
     if (resultMap.isEmpty) None else Some(new MetaData(resultMap))
   }
 
-  override def toString: String = metadata.toString()
+  override def toString: String = content.toString()
 }
 
-abstract class Message(var metadata: Option[MetaData] = None) extends Serializable {
+trait Message extends Serializable {
 
   def id: String
 
@@ -55,13 +54,16 @@ abstract class Message(var metadata: Option[MetaData] = None) extends Serializab
   }
 
   def withMetaData(metadata: Option[MetaData]): MessageImpl = {
-    if (metadata.isDefined) withMetaData(metadata.get.metadata) else this.asInstanceOf[MessageImpl]
+    copyWithMetaData(this.metadata.map(_.mergeWithMetadata(metadata)).orElse(metadata))
   }
 
-  def withMetaData(metadata: Map[String, Any], clearExisting: Boolean = false): MessageImpl = {
-    this.metadata = Some(this.metadata.getOrElse(new MetaData()).withMetaData(metadata))
-    this.asInstanceOf[MessageImpl]
+  def withMetaData(metadataContent: Map[String, Any]): MessageImpl = {
+    withMetaData(Some(MetaData(metadataContent)))
   }
+
+  def copyWithMetaData(m: Option[MetaData]): MessageImpl
+
+  def metadata: Option[MetaData]
 
   def withMetaAttribute(attrName: Any, value: Any): MessageImpl = withMetaData(Map(attrName.toString -> value))
 
@@ -72,7 +74,7 @@ abstract class Message(var metadata: Option[MetaData] = None) extends Serializab
   def tryGetMetaAttribute[B](attrName: Any): Option[B] = if (metadata.isDefined) metadata.get.tryGet[B](attrName.toString) else None
 
   def deliveryReceipt(result: Try[Any] = Success("OK")): Receipt = {
-    if (deliveryId.isDefined) alod.Processed(deliveryId.get, result) else Processed(result)
+    deliveryId.map(id => alod.Processed(id, result)).getOrElse(Processed(result))
   }
 
   def withDeliveryId(deliveryId: Long) = withMetaAttribute(DeliveryId, deliveryId)
