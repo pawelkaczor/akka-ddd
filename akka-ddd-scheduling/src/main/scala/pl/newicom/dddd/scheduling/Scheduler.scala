@@ -11,7 +11,7 @@ object Scheduler {
   //
   // State
   //
-  case class SchedulerState() extends AggregateState {
+  case class SchedulerState() extends AggregateState[SchedulerState] {
     override def apply = {
       case e: EventScheduled => this
     }

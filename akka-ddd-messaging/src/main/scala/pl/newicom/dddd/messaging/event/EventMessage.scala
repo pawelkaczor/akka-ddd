@@ -18,7 +18,7 @@ class EventMessage(
     val timestamp: DateTime = new DateTime)
   extends Message with EntityMessage {
 
-  type MessageImpl = EventMessage
+  type MessageImpl <: EventMessage
 
   override def entityId = tryGetMetaAttribute[String](CorrelationId).orNull
   override def payload = event

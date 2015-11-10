@@ -12,8 +12,8 @@ import pl.newicom.dddd.messaging.{Deduplication, Message}
 import scala.concurrent.duration.{Duration, _}
 import scala.util.{Failure, Success, Try}
 
-trait AggregateState {
-  type StateMachine = PartialFunction[DomainEvent, AggregateState]
+trait AggregateState[T <: AggregateState[T]] {
+  type StateMachine = PartialFunction[DomainEvent, T]
   def apply: StateMachine
 }
 
@@ -22,7 +22,7 @@ abstract class AggregateRootActorFactory[A <: AggregateRoot[_]] extends Business
   def inactivityTimeout: Duration = 1.minute
 }
 
-trait AggregateRoot[S <: AggregateState]
+trait AggregateRoot[S <: AggregateState[S]]
   extends BusinessEntity with GracefulPassivation with PersistentActor
   with EventHandler with Deduplication with ActorLogging {
 
@@ -72,7 +72,7 @@ trait AggregateRoot[S <: AggregateState]
   def updateState(em: EventMessage) {
     val event = em.event
     val nextState = if (initialized) state.apply(event) else factory.apply(event)
-    stateOpt = Option(nextState.asInstanceOf[S])
+    stateOpt = Option(nextState)
     messageProcessed(em)
   }
 
@@ -87,9 +87,9 @@ trait AggregateRoot[S <: AggregateState]
     }
   }
 
-  def toDomainEventMessage(persisted: EventMessage) =
+  def toDomainEventMessage(persisted: EventMessage): DomainEventMessage =
     new DomainEventMessage(persisted, AggregateSnapshotId(id, lastSequenceNr))
-      .withMetaData(persisted.metadata).asInstanceOf[DomainEventMessage]
+      .withMetaData(persisted.metadata)
 
   /**
    * Event handler, not invoked during recovery.

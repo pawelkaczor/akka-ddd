@@ -11,6 +11,8 @@ case class DomainEventMessage(
     override val timestamp: DateTime = new DateTime)
   extends EventMessage(event, id, timestamp) {
 
+  override type MessageImpl = DomainEventMessage
+
   override def entityId = aggregateId
 
   def this(em: EventMessage, s: AggregateSnapshotId) = this(s, em.event, em.id, em.timestamp)
