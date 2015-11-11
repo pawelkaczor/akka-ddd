@@ -1,6 +1,7 @@
 package pl.newicom.dddd.aggregate
 
 import akka.actor._
+import akka.contrib.pattern.ReceivePipeline
 import akka.persistence._
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
@@ -24,7 +25,7 @@ abstract class AggregateRootActorFactory[A <: AggregateRoot[_]] extends Business
 
 trait AggregateRoot[S <: AggregateState[S]]
   extends BusinessEntity with GracefulPassivation with PersistentActor
-  with EventHandler with Deduplication with ActorLogging {
+  with EventHandler with ReceivePipeline with Deduplication with ActorLogging {
 
   type AggregateRootFactory = PartialFunction[DomainEvent, S]
   private var stateOpt: Option[S] = None
@@ -41,8 +42,6 @@ trait AggregateRoot[S <: AggregateState[S]]
   override def persistenceId: String = id
   override def id = self.path.name
 
-
-  override def receive: Receive = receiveDuplicate(commandDuplicated).orElse(receiveCommand)
 
   override def receiveCommand: Receive = {
     case cm: CommandMessage =>
@@ -100,9 +99,11 @@ trait AggregateRoot[S <: AggregateState[S]]
 
   def initialized = stateOpt.isDefined
 
-  def state = if (initialized) stateOpt.get else throw new AggregateRootNotInitializedException
+  def state =
+    if (initialized) stateOpt.get else throw new AggregateRootNotInitializedException
 
-  def acknowledgeCommand(result: Any) = acknowledgeCommandProcessed(commandMessage, Success(result))
+  def acknowledgeCommand(result: Any) =
+    acknowledgeCommandProcessed(commandMessage, Success(result))
 
   def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("OK")) {
     val deliveryReceipt = msg.deliveryReceipt(result)
@@ -110,7 +111,8 @@ trait AggregateRoot[S <: AggregateState[S]]
     log.debug(s"Delivery receipt (for received command) sent ($deliveryReceipt)")
   }
 
-  private def commandDuplicated(msg: Message) = acknowledgeCommandProcessed(msg)
+  def handleDuplicated(msg: Message) =
+    acknowledgeCommandProcessed(msg)
 
 
 }

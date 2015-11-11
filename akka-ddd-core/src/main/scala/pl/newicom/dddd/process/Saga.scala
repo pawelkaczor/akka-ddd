@@ -1,6 +1,7 @@
 package pl.newicom.dddd.process
 
 import akka.actor.{ActorLogging, ActorPath, Props}
+import akka.contrib.pattern.ReceivePipeline
 import akka.persistence.{AtLeastOnceDelivery, PersistentActor, RecoveryCompleted}
 import org.joda.time.DateTime
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
@@ -36,7 +37,7 @@ abstract class SagaConfig[A <: Saga](val bpsName: String) extends OfficeInfo[A] 
 }
 
 trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
-  with Deduplication with AtLeastOnceDelivery with ActorLogging {
+  with AtLeastOnceDelivery with ReceivePipeline with Deduplication with ActorLogging {
 
   def sagaId = self.path.name
 
@@ -54,10 +55,6 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
    * Event message being processed. Not available during recovery
    */
   def eventMessage = _lastEventMessage.get
-
-  override def aroundReceive(receive: Receive, msg: Any): Unit = {
-    super.aroundReceive(receiveDuplicate(acknowledgeEvent).orElse(receive), msg)
-  }
 
   override def receiveCommand: Receive = receiveDeliveryReceipt orElse receiveEvent orElse receiveUnexpected
 
@@ -136,6 +133,9 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
   def handleUnexpectedEvent(em: EventMessage): Unit = {
     log.warning(s"Unhandled: $em") // unhandled event should be redelivered by SagaManager
   }
+
+  def handleDuplicated(m: Message) =
+    acknowledgeEvent(m)
 
   override def messageProcessed(m: Message): Unit = {
     _lastEventMessage = m match {
