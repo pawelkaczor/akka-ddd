@@ -23,13 +23,13 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
   implicit object TestSagaActorFactory extends SagaActorFactory[DummySaga] {
     override def props(pc: PassivationConfig): Props = {
       Props(new DummySaga(pc, None) {
-        override def actionApplied(em: EventMessage, action: SagaAction) = {
+        override def onEventReceived(em: EventMessage, action: SagaAction) = {
           action match {
             case RejectEvent =>
               system.eventStream.publish(em.event)
             case _ =>
           }
-          super.actionApplied(em, action)
+          super.onEventReceived(em, action)
         }
       })
     }
