@@ -44,7 +44,6 @@ trait EventMessage extends Message with EntityMessage {
   override def payload = event
 
   override def toString: String = {
-    val msgClass = getClass.getSimpleName
-    s"$msgClass(event = $event, id = $id, timestamp = $timestamp, metaData = $metadata)"
+    s"EventMessage(event = $event, id = $id, timestamp = $timestamp, metaData = $metadata)"
   }
 }

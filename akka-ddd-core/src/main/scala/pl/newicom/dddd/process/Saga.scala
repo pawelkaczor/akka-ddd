@@ -36,6 +36,12 @@ abstract class SagaConfig[A <: Saga](val bpsName: String) extends OfficeInfo[A] 
 
 }
 
+sealed trait SagaAction
+
+case object ProcessEvent extends SagaAction
+case object DropEvent extends SagaAction
+case object RejectEvent extends SagaAction
+
 trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
   with AtLeastOnceDelivery with ReceivePipeline with Deduplication with ActorLogging {
 
@@ -52,11 +58,34 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
   private var _lastEventMessage: Option[EventMessage] = None
 
   /**
-   * Event message being processed. Not available during recovery
+   * Event message being processed.
    */
   def eventMessage = _lastEventMessage.get
 
-  override def receiveCommand: Receive = receiveDeliveryReceipt orElse receiveEvent orElse receiveUnexpected
+  override def receiveCommand: Receive = {
+    case em @ EventMessage(_, event) =>
+      val action = receiveEvent.applyOrElse(event, (e: DomainEvent) => RejectEvent)
+      action match {
+        case ProcessEvent => raise(em)
+        case DropEvent => acknowledgeEvent(em)
+        case RejectEvent => // unhandled event should be redelivered by SagaManager
+      }
+      actionApplied(em, action)
+
+    case receipt: Delivered =>
+      persist(EventMessage(receipt))(updateState)
+  }
+
+  def actionApplied(em: EventMessage, sagaAction: SagaAction): Unit = {
+    sagaAction match {
+      case RejectEvent =>
+        log.warning(s"Event rejected: $em")
+      case DropEvent =>
+        log.debug(s"Event dropped: ${em.event}")
+      case ProcessEvent =>
+        log.debug(s"Event processed: ${em.event}")
+    }
+  }
 
   def deliverMsg(office: ActorPath, msg: Message): Unit = {
     deliver(office)(deliveryId => {
@@ -68,11 +97,6 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
     deliverMsg(office, CommandMessage(command).causedBy(eventMessage))
   }
 
-  def receiveDeliveryReceipt: Receive = {
-    case receipt: Delivered =>
-      persist(EventMessage(receipt))(updateState)
-  }
-
   def schedule(event: DomainEvent, deadline: DateTime, correlationId: EntityId = sagaId): Unit = {
     schedulingOffice.fold(throw new UnsupportedOperationException("Scheduling Office is not defined.")) { schOffice =>
       val command = ScheduleEvent("global", sagaOffice, deadline, event)
@@ -80,19 +104,19 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
     }
   }
 
+
   /**
    * Defines business process logic (state transitions).
-   * State transition happens when raise(event) is called.
+   * State transition happens when SagaAction.ProcessEvent is returned.
    * No state transition indicates the current event message could have been received out-of-order.
    */
-  def receiveEvent: Receive
+  def receiveEvent: PartialFunction[DomainEvent, SagaAction]
 
   override def receiveRecover: Receive = {
     case rc: RecoveryCompleted =>
       // do nothing
     case msg: Any =>
       updateState(msg)
-
   }
 
   /**
@@ -124,14 +148,6 @@ trait Saga extends BusinessEntity with GracefulPassivation with PersistentActor
     val deliveryReceipt = em.deliveryReceipt()
     sender() ! deliveryReceipt
     log.debug(s"Delivery receipt (for received event) sent ($deliveryReceipt)")
-  }
-
-  def receiveUnexpected: Receive = {
-    case em: EventMessage => handleUnexpectedEvent(em)
-  }
-
-  def handleUnexpectedEvent(em: EventMessage): Unit = {
-    log.warning(s"Unhandled: $em") // unhandled event should be redelivered by SagaManager
   }
 
   def handleDuplicated(m: Message) =

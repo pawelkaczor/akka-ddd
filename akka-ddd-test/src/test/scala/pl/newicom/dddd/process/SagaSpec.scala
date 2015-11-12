@@ -2,7 +2,7 @@ package pl.newicom.dddd.process
 
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, WordSpecLike}
+import org.scalatest.WordSpecLike
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaData._
@@ -18,14 +18,18 @@ import pl.newicom.dddd.utils.UUIDSupport.uuid10
 import scala.concurrent.duration._
 
 
-class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with ImplicitSender with BeforeAndAfterAll with BeforeAndAfter  {
+class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with ImplicitSender {
 
   implicit object TestSagaActorFactory extends SagaActorFactory[DummySaga] {
     override def props(pc: PassivationConfig): Props = {
       Props(new DummySaga(pc, None) {
-        override def receiveUnexpected: Receive = {
-          case em: EventMessage =>
-            system.eventStream.publish(em.event)
+        override def actionApplied(em: EventMessage, action: SagaAction) = {
+          action match {
+            case RejectEvent =>
+              system.eventStream.publish(em.event)
+            case _ =>
+          }
+          super.actionApplied(em, action)
         }
       })
     }
@@ -33,12 +37,6 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
 
   def processId = uuid10
   val sagaOffice = office[DummySaga]
-
-  override def afterAll() {
-    if (sagaOffice != null) {
-      ensureActorTerminated(sagaOffice)
-    }
-  }
 
   "Saga" should {
     "not process previously processed events" in {
