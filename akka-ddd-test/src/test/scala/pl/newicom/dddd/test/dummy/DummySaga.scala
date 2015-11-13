@@ -47,18 +47,11 @@ class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPat
 
   val initialState = DummyState(counter = 0)
 
-  def receiveEvent: ReceiveEvent = {
-    case DummyCreated(_, _, _, _) =>
-      ProcessEvent
-    case ValueChanged(_, value: Int, _) if state.counter + 1 == value =>
-      ProcessEvent
-  }
-
   def stateMachine: StateMachine = {
 
     case DummyState(counter) => {
 
-      case e @ ValueChanged(id, value, _) =>
+      case e @ ValueChanged(id, value, _) if state.counter + 1 == value =>
 
         context.system.eventStream.publish(EventApplied(e))
 

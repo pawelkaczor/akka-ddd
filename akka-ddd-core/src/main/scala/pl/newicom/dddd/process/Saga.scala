@@ -14,14 +14,15 @@ case object RejectEvent extends SagaAction
 trait SagaState[T <: SagaState[T]]
 
 trait SagaAbstractStateHandling {
+  type ReceiveEvent = PartialFunction[DomainEvent, SagaAction]
+
   def updateState(event: DomainEvent): Unit
+  def receiveEvent: ReceiveEvent
 }
 
 
 trait Saga extends SagaBase {
   this: SagaAbstractStateHandling =>
-
-  type ReceiveEvent = PartialFunction[DomainEvent, SagaAction]
 
   override def receiveRecover: Receive = {
     case rc: RecoveryCompleted =>

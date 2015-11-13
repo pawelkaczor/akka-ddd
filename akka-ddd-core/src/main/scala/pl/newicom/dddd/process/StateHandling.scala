@@ -5,7 +5,7 @@ import pl.newicom.dddd.aggregate.DomainEvent
 trait StateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
 
   type StateFunction = PartialFunction[DomainEvent, S]
-  type StateMachine  = PartialFunction[S, StateFunction]
+  type StateMachine = PartialFunction[S, StateFunction]
 
   private var stateOpt: Option[S] = None
 
@@ -23,4 +23,8 @@ trait StateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
     case _ => state
   }
 
+  def receiveEvent: ReceiveEvent = {
+    case e: DomainEvent if stateMachine.apply(state).isDefinedAt(e) =>
+      ProcessEvent
+  }
 }
