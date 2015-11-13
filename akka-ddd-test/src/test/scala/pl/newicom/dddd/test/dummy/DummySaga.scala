@@ -6,7 +6,7 @@ import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.process._
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{DummyCreated, ValueChanged}
-import pl.newicom.dddd.test.dummy.DummySaga.{EventApplied, DummyCommand}
+import pl.newicom.dddd.test.dummy.DummySaga.{DummyState, EventApplied, DummyCommand}
 
 object DummySaga {
 
@@ -31,6 +31,9 @@ object DummySaga {
   }
 
   case class EventApplied(e: DomainEvent)
+
+  case class DummyState(counter: Int) extends SagaState[DummyState]
+
 }
 
 /**
@@ -38,26 +41,34 @@ object DummySaga {
  * <code>DummyEvent</code> is received containing <code>value</code> equal to <code>counter + 1</code>
  * <code>DummySaga</code> publishes all applied events to local actor system bus.
  */
-class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPath]) extends Saga {
+class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPath]) extends Saga with StateHandling[DummyState] {
 
   override def persistenceId: String = s"DummySaga-$id"
 
-  var counter: Int = 0
+  val initialState = DummyState(counter = 0)
 
-  def applyEvent = {
-    case e @ ValueChanged(id, value, _) =>
-      counter = value
-      context.system.eventStream.publish(EventApplied(e))
-      if (dummyOffice.isDefined) {
-        deliverCommand(dummyOffice.get, DummyCommand(id, counter))
-      }
-  }
-
-  def receiveEvent: PartialFunction[DomainEvent, SagaAction] = {
+  def receiveEvent: ReceiveEvent = {
     case DummyCreated(_, _, _, _) =>
       ProcessEvent
-    case ValueChanged(_, value: Int, _) if counter + 1 == value =>
+    case ValueChanged(_, value: Int, _) if state.counter + 1 == value =>
       ProcessEvent
+  }
+
+  def stateMachine: StateMachine = {
+
+    case DummyState(counter) => {
+
+      case e @ ValueChanged(id, value, _) =>
+
+        context.system.eventStream.publish(EventApplied(e))
+
+        if (dummyOffice.isDefined) {
+          deliverCommand(dummyOffice.get, DummyCommand(id, counter))
+        }
+
+        DummyState(value)
+    }
+
   }
 
 }

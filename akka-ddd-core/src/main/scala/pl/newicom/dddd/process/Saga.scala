@@ -11,7 +11,24 @@ case object ProcessEvent extends SagaAction
 case object DropEvent extends SagaAction
 case object RejectEvent extends SagaAction
 
+trait SagaState[T <: SagaState[T]]
+
+trait SagaAbstractStateHandling {
+  def updateState(event: DomainEvent): Unit
+}
+
+
 trait Saga extends SagaBase {
+  this: SagaAbstractStateHandling =>
+
+  type ReceiveEvent = PartialFunction[DomainEvent, SagaAction]
+
+  override def receiveRecover: Receive = {
+    case rc: RecoveryCompleted =>
+      // do nothing
+    case msg: Any =>
+      _updateState(msg)
+  }
 
   override def receiveCommand: Receive = {
     case em @ EventMessage(_, event) =>
@@ -20,46 +37,32 @@ trait Saga extends SagaBase {
         case ProcessEvent =>
           persist(em) { persisted =>
             log.debug("Event message persisted: {}", persisted)
-            updateState(persisted)
+            _updateState(persisted)
             acknowledgeEvent(persisted)
           }
         case DropEvent =>
           acknowledgeEvent(em)
         case RejectEvent =>
-          // unhandled event should be redelivered by SagaManager
+          // rejected event should be redelivered by SagaManager
       }
       onEventReceived(em, action)
 
     case receipt: Delivered =>
-      persist(EventMessage(receipt))(updateState)
+      persist(EventMessage(receipt))(_updateState)
   }
 
-  /**
-    * Defines business process logic (state transitions).
-    */
-  def receiveEvent: PartialFunction[DomainEvent, SagaAction]
+  def receiveEvent: ReceiveEvent
 
-  /**
-    * Event handler called on state transition
-    */
-  def applyEvent: PartialFunction[DomainEvent, Unit]
-
-
-  override def receiveRecover: Receive = {
-    case rc: RecoveryCompleted =>
-      // do nothing
-    case msg: Any =>
-      updateState(msg)
-  }
-
-  private def updateState(msg: Any): Unit = msg match {
-    case EventMessage(_, receipt: Delivered) =>
-      confirmDelivery(receipt.deliveryId)
-      log.debug(s"Delivery of message confirmed (receipt: $receipt)")
-      applyEvent.applyOrElse(receipt, (e: DomainEvent) => ())
-    case em: EventMessage =>
-      messageProcessed(em)
-      applyEvent.applyOrElse(em.event, (e: DomainEvent) => ())
+  private def _updateState(msg: Any): Unit = {
+    msg match {
+      case EventMessage(_, receipt: Delivered) =>
+        confirmDelivery(receipt.deliveryId)
+        log.debug(s"Delivery of message confirmed (receipt: $receipt)")
+        updateState(receipt)
+      case em: EventMessage =>
+        messageProcessed(em)
+        updateState(em.event)
+    }
   }
 
   def onEventReceived(em: EventMessage, appliedAction: SagaAction): Unit = {

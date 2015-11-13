@@ -65,13 +65,13 @@ trait Message extends Serializable {
 
   def metadata: Option[MetaData]
 
-  def withMetaAttribute(attrName: Any, value: Any): MessageImpl = withMetaData(Map(attrName.toString -> value))
+  def withMetaAttribute(attrName: String, value: Any): MessageImpl = withMetaData(Map(attrName -> value))
 
-  def hasMetaAttribute(attrName: Any) = if (metadata.isDefined) metadata.get.contains(attrName.toString) else false
+  def hasMetaAttribute(attrName: String) = metadata.exists(_.contains(attrName))
 
-  def getMetaAttribute[B](attrName: Any) = tryGetMetaAttribute[B](attrName).get
+  def getMetaAttribute[B](attrName: String) = tryGetMetaAttribute[B](attrName).get
 
-  def tryGetMetaAttribute[B](attrName: Any): Option[B] = if (metadata.isDefined) metadata.get.tryGet[B](attrName.toString) else None
+  def tryGetMetaAttribute[B](attrName: String): Option[B] = if (metadata.isDefined) metadata.get.tryGet[B](attrName) else None
 
   def deliveryReceipt(result: Try[Any] = Success("OK")): Receipt = {
     deliveryId.map(id => alod.Processed(id, result)).getOrElse(Processed(result))
