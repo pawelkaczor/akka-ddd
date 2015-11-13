@@ -1,34 +1,9 @@
 package pl.newicom.dddd.process
 
-import akka.actor.Props
 import akka.persistence.RecoveryCompleted
-import pl.newicom.dddd.actor.{BusinessEntityActorFactory, PassivationConfig}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.alod._
 import pl.newicom.dddd.messaging.event.EventMessage
-import pl.newicom.dddd.office.OfficeInfo
-
-abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A] {
-  import scala.concurrent.duration._
-
-  def props(pc: PassivationConfig): Props
-  def inactivityTimeout: Duration = 1.minute
-}
-
-/**
- * @param bpsName name of Business Process Stream (bps)
- */
-abstract class SagaConfig[A <: Saga](val bpsName: String) extends OfficeInfo[A] {
-
-  def name = bpsName
-
-  /**
-   * Correlation ID identifies process instance. It is used to route EventMessage
-   * messages created by [[SagaManager]] to [[Saga]] instance,
-   */
-  def correlationIdResolver: PartialFunction[DomainEvent, EntityId]
-
-}
 
 sealed trait SagaAction
 
