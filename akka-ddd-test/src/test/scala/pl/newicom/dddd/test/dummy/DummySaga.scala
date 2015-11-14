@@ -45,9 +45,7 @@ class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPat
 
   override def persistenceId: String = s"DummySaga-$id"
 
-  val initialState = DummyState(counter = 0)
-
-  def stateMachine: StateMachine = {
+  startWith(DummyState(0)) {
 
     case DummyState(counter) => {
 

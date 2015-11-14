@@ -7,9 +7,9 @@ import pl.newicom.dddd.messaging.event.EventMessage
 
 sealed trait SagaAction
 
-case object ProcessEvent extends SagaAction
-case object DropEvent extends SagaAction
-case object RejectEvent extends SagaAction
+case class  RaiseEvent(e: DomainEvent)  extends SagaAction
+case object DropEvent                   extends SagaAction
+case object RejectEvent                 extends SagaAction
 
 trait SagaAbstractStateHandling {
   type ReceiveEvent = PartialFunction[DomainEvent, SagaAction]
@@ -34,8 +34,9 @@ trait Saga extends SagaBase {
     case em @ EventMessage(_, event) =>
       val action = receiveEvent(event)
       action match {
-        case ProcessEvent =>
-          persist(em) { persisted =>
+        case RaiseEvent(raisedEvent) =>
+          val raisedEventMsg = if (raisedEvent == event) em else EventMessage(raisedEvent)
+          persist(raisedEventMsg) { persisted =>
             log.debug("Event message persisted: {}", persisted)
             _updateState(persisted)
             acknowledgeEvent(persisted)
@@ -68,11 +69,11 @@ trait Saga extends SagaBase {
   def onEventReceived(em: EventMessage, appliedAction: SagaAction): Unit = {
     appliedAction match {
       case RejectEvent =>
-        log.warning(s"Event rejected: $em")
+        log.warning(s"Event message rejected: $em")
       case DropEvent =>
         log.debug(s"Event dropped: ${em.event}")
-      case ProcessEvent =>
-        log.debug(s"Event processed: ${em.event}")
+      case RaiseEvent(e) =>
+        log.debug(s"Event processed: $e")
     }
   }
 
