@@ -5,8 +5,9 @@ import akka.actor.ActorSystem
 
 object TestConfig {
   val config = ConfigFactory.parseString(
-    """akka.loggers = ["akka.testkit.TestEventListener"]
-      |akka.loglevel = DEBUG
+    """akka.loglevel = DEBUG
+      |akka.loggers = ["akka.event.slf4j.Slf4jLogger"]
+      |akka.logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
       |akka.log-config-on-start = "off"
       |akka.actor.debug.autoreceive = "on"
       |akka.persistence.journal.plugin = "akka.persistence.journal.inmem"

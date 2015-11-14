@@ -84,7 +84,7 @@ lazy val `akka-ddd-test` = project
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
     parallelExecution in IntegrationTest := false,
     libraryDependencies ++= levelDB ++ Seq(
-      Akka.testkit, Akka.multiNodeTestkit, scalaCheck, scalaTest, commonIO
+      Akka.testkit, Akka.multiNodeTestkit, scalaCheck, scalaTest, commonIO, logbackClassic % "test"
     ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence` % "test->compile")
 
