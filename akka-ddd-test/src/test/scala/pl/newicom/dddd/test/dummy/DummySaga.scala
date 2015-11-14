@@ -41,7 +41,7 @@ object DummySaga {
  * <code>DummyEvent</code> is received containing <code>value</code> equal to <code>counter + 1</code>
  * <code>DummySaga</code> publishes all applied events to local actor system bus.
  */
-class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPath]) extends Saga with StateHandling[DummyState] {
+class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPath]) extends ProcessManager[DummyState] {
 
   override def persistenceId: String = s"DummySaga-$id"
 

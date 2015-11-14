@@ -11,13 +11,12 @@ case object ProcessEvent extends SagaAction
 case object DropEvent extends SagaAction
 case object RejectEvent extends SagaAction
 
-trait SagaState[T <: SagaState[T]]
-
 trait SagaAbstractStateHandling {
   type ReceiveEvent = PartialFunction[DomainEvent, SagaAction]
 
-  def updateState(event: DomainEvent): Unit
   def receiveEvent: ReceiveEvent
+
+  def updateState(event: DomainEvent): Unit
 }
 
 
@@ -33,7 +32,7 @@ trait Saga extends SagaBase {
 
   override def receiveCommand: Receive = {
     case em @ EventMessage(_, event) =>
-      val action = receiveEvent.applyOrElse(event, (e: DomainEvent) => RejectEvent)
+      val action = receiveEvent(event)
       action match {
         case ProcessEvent =>
           persist(em) { persisted =>
