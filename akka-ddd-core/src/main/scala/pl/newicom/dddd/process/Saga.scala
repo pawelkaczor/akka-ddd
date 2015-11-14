@@ -72,7 +72,7 @@ trait Saga extends SagaBase {
       case DropEvent =>
         log.debug(s"Event dropped: ${em.event}")
       case RaiseEvent(e) =>
-        log.debug(s"Event processed: $e")
+        log.debug(s"Event raised: $e")
     }
   }
 
