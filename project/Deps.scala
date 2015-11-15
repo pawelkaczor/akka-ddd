@@ -4,10 +4,10 @@ object Deps {
 
   object Version {
     val Akka                  = "2.4.0"
-    val AkkaHttp              = "1.0"
+    val AkkaHttp              = "2.0-M1"
     
-    val EventStoreClient      = "2.1.1"
-    val EventStoreAkkaJournal = "2.1.0"
+    val EventStoreClient      = "2.1.3-SNAPSHOT"
+    val EventStoreAkkaJournal = "2.1.1-SNAPSHOT"
     
     val json4s                = "3.3.0"
 
