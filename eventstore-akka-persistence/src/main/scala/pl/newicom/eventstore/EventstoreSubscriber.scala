@@ -57,7 +57,7 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializ
    def flow: Flow[Trigger, EventReceived, Unit] = Flow.fromGraph(
      FlowGraph.create() { implicit b =>
         import FlowGraph.Implicits._
-        val zip = b.add(ZipWith((msg: EventReceived, trigger: Trigger) => msg))
+        val zip = b.add(ZipWith(Keep.left[EventReceived, Trigger]))
 
         eventSource ~> zip.in0
         FlowShape(zip.in1, zip.out)
