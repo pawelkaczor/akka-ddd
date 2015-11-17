@@ -9,7 +9,7 @@ import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
 import pl.newicom.dddd.aggregate.{Command, BusinessEntity, EntityId}
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
 import pl.newicom.dddd.office.LocalOffice._
-import pl.newicom.dddd.office.Office._
+import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.test.support.OfficeSpec.sys
 import pl.newicom.dddd.utils.UUIDSupport._
 

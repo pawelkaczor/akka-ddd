@@ -8,7 +8,7 @@ import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOffice._
-import pl.newicom.dddd.office.Office._
+import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.ValueChanged
 import pl.newicom.dddd.test.dummy.DummySaga
 import pl.newicom.dddd.test.dummy.DummySaga.EventApplied

@@ -8,11 +8,6 @@ object OfficeInfo {
       def name = ct.runtimeClass.getSimpleName
     }
 
-  def apply[A](_name: String): OfficeInfo[A] =
-    new OfficeInfo[A] {
-      def name = _name
-    }
-
 }
 
 trait OfficeInfo[A] {

@@ -3,7 +3,7 @@ package pl.newicom.dddd.process
 import akka.actor.{ActorPath, ActorRef, Props}
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
-import pl.newicom.dddd.office.{Office, OfficeFactory}
+import pl.newicom.dddd.office.OfficeFactory
 
 object SagaSupport {
 
@@ -27,7 +27,7 @@ object SagaSupport {
   def registerSaga[A <: Saga : SagaConfig : EntityIdResolution : OfficeFactory : BusinessEntityActorFactory]
     (implicit cs: CreationSupport, smf: SagaManagerFactory): (ActorRef, ActorRef) = {
     
-    val sagaOffice = Office.office[A]
+    val sagaOffice = OfficeFactory.office[A]
     (sagaOffice, registerSaga[A](sagaOffice))
   }
 
