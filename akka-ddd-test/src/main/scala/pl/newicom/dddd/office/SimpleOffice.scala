@@ -10,18 +10,18 @@ import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 import scala.concurrent.duration._
 
-object LocalOfficeActor {
+object SimpleOffice {
 
-  implicit def localOfficeActorFactory[A <: BusinessEntity: BusinessEntityActorFactory: EntityIdResolution : LocalOfficeId](implicit system: ActorSystem): OfficeFactory[A] = {
+  implicit def simpleOfficeFactory[A <: BusinessEntity: BusinessEntityActorFactory: EntityIdResolution : LocalOfficeId](implicit system: ActorSystem): OfficeFactory[A] = {
     new OfficeFactory[A] {
       override def getOrCreate(): ActorRef = {
-        system.actorOf(Props(new LocalOfficeActor[A]()), s"${officeId.id}_$uuid7")
+        system.actorOf(Props(new SimpleOffice[A]()), s"${officeId.id}_$uuid7")
       }
     }
   }
 }
 
-class LocalOfficeActor[A <: BusinessEntity: LocalOfficeId](
+class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
     inactivityTimeout: Duration = 1.minutes)(
     implicit caseIdResolution: EntityIdResolution[A],
     clerkFactory: BusinessEntityActorFactory[A])

@@ -7,7 +7,7 @@ import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.EventMessage
-import pl.newicom.dddd.office.LocalOfficeActor._
+import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.SagaOffice
 import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
 import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, registerSaga}

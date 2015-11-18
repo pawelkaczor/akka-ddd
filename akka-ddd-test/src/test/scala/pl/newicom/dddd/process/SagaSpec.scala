@@ -7,7 +7,7 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.event.EventMessage
-import pl.newicom.dddd.office.LocalOfficeActor._
+import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.test.dummy
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.ValueChanged

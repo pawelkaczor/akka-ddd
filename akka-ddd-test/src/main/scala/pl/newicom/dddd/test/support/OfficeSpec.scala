@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory.getLogger
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
 import pl.newicom.dddd.aggregate.{Command, BusinessEntity, EntityId}
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
-import pl.newicom.dddd.office.LocalOfficeActor._
+import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.test.support.OfficeSpec.sys
