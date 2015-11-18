@@ -23,12 +23,12 @@ abstract persistent, event sourced actor responsible for processing commands rec
 Implementation of AggregateRoot trait represents concrete business entity (i.e Reservation, Product, etc) 
 See example AR: [DummyAggregateRoot](akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyAggregateRoot.scala)
    
-- [Office](akka-ddd-core/src/main/scala/pl/newicom/dddd/office/Office.scala) - 
+- [Office](akka-ddd-core/src/main/scala/pl/newicom/dddd/office/OfficeFactory.scala) - 
 an actor that is used by the client to talk to Aggregate Roots of particular class. 
 See [Don't call me, call my office](http://pkaczor.blogspot.com/2014/04/reactive-ddd-with-akka-lesson-2.html) for explanation. 
-There are two office implementations: ["local"](akka-ddd-test/src/main/scala/pl/newicom/dddd/office/LocalOffice.scala) 
+There are two office implementations: ["simple"](akka-ddd-test/src/main/scala/pl/newicom/dddd/office/SimpleOffice.scala) 
 (used for testing) and ["global" / distributed](akka-ddd-core/src/main/scala/pl/newicom/dddd/cluster/ShardingSupport.scala) 
-(implemented on top of [Akka Sharding](http://doc.akka.io/docs/akka/current/scala/cluster-sharding.html))
+(implemented using [Akka Sharding](http://doc.akka.io/docs/akka/current/scala/cluster-sharding.html))
 
 - [Receptor](akka-ddd-core/src/main/scala/pl/newicom/dddd/process/Receptor.scala) - 
 allows one office to react on events occurred in another office. Receptor is capable of filtering input events received from configured event stream, transforming them into arbitrary output messages and routing output messages to configured fixed or dynamic (derived from the message) destination. To make configuration of these capabilities straightforward ReceptorBuilder provides simple DSL. [Here](https://github.com/pawelkaczor/ddd-leaven-akka-v2/blob/master/shipping/write-back/src/main/scala/ecommerce/shipping/PaymentReceptor.scala) you can find an example configuration of typical receptor that receives event from one office and sends command to another office. Actual logic of reading events from event stream is pluggable - [EventStreamSubscriber](akka-ddd-messaging/src/main/scala/pl/newicom/dddd/messaging/event/EventStreamSubscriber.scala) must be mixed into Receptor class. Ready to use [EventstoreSubscriber](eventstore-akka-persistence/src/main/scala/pl/newicom/eventstore/EventstoreSubscriber.scala) is provided by eventstore-akka-persistence module. 
@@ -48,7 +48,7 @@ Generic artifacts for building view update services that consume events from [Ev
 Sql (defult is Postgresql) specific implementation of view-update artifacts.
 
 ##### akka-ddd-test
-Allows easy creation of test of Aggregate Root implementations. Supports both "local" and "global" offices. See [DummyOfficeSpec](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyOfficeSpec.scala).
+Allows easy creation of test of Aggregate Root implementations. Supports both "simple" and "global" offices. See [DummyOfficeSpec](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyOfficeSpec.scala).
 
 ##### akka-ddd-write-front
 Artifacts for building http server with use of [Akka Http](http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/scala/http/index.html) and [Akka Cluster Client](http://doc.akka.io/docs/akka/current/scala/cluster-client.html) responsible for handling commands sent as json messages. Provides infrastructure for demarshalling commands and forwarding them to write-backend application.
