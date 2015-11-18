@@ -3,12 +3,13 @@ package pl.newicom.dddd.aggregate
 import akka.actor._
 import akka.contrib.pattern.ReceivePipeline
 import akka.persistence._
-import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation, PassivationConfig}
+import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation}
 import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{AggregateSnapshotId, DomainEventMessage, EventMessage}
-import pl.newicom.dddd.messaging.{Deduplication, Message}
+import pl.newicom.dddd.messaging.{CollaborationSupport, Deduplication, Message}
+import pl.newicom.dddd.office.LocalOfficeId
 
 import scala.concurrent.duration.{Duration, _}
 import scala.util.{Failure, Success, Try}
@@ -18,13 +19,12 @@ trait AggregateState[T <: AggregateState[T]] {
   def apply: StateMachine
 }
 
-abstract class AggregateRootActorFactory[A <: AggregateRoot[_]] extends BusinessEntityActorFactory[A] {
-  def props(pc: PassivationConfig): Props
+abstract class AggregateRootActorFactory[A <: AggregateRoot[_, A]: LocalOfficeId] extends BusinessEntityActorFactory[A] {
   def inactivityTimeout: Duration = 1.minute
 }
 
-trait AggregateRoot[S <: AggregateState[S]]
-  extends BusinessEntity with GracefulPassivation with PersistentActor
+abstract class AggregateRoot[S <: AggregateState[S], A <: AggregateRoot[S, A] : LocalOfficeId]
+  extends BusinessEntity with CollaborationSupport with GracefulPassivation with PersistentActor
   with EventHandler with ReceivePipeline with Deduplication with ActorLogging {
 
   type AggregateRootFactory = PartialFunction[DomainEvent, S]
@@ -39,7 +39,10 @@ trait AggregateRoot[S <: AggregateState[S]]
 
   val factory: AggregateRootFactory
 
-  override def persistenceId: String = id
+  def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
+
+  override def persistenceId = s"${officeId.clerkGlobalId(id)}"
+
   override def id = self.path.name
 
 

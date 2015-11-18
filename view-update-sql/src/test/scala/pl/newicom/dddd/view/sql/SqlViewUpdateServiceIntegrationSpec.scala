@@ -58,7 +58,7 @@ class SqlViewUpdateServiceIntegrationSpec
       system.actorOf(Props(
         new SqlViewUpdateService with SqlViewStoreConfiguration {
           def config = SqlViewUpdateServiceIntegrationSpec.this.config
-          def vuConfigs = List(SqlViewUpdateConfig("test-view", dummyOffice, new Projection {
+          def vuConfigs = List(SqlViewUpdateConfig("test-view", dummyOfficeId, new Projection {
 
             def failIfRequired(msg: String) =
               if (shouldFail) failed(new RuntimeException(msg)) else successful(())

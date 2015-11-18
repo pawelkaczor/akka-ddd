@@ -7,11 +7,12 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.event.EventMessage
-import pl.newicom.dddd.office.LocalOffice._
+import pl.newicom.dddd.office.LocalOfficeActor._
 import pl.newicom.dddd.office.OfficeFactory._
+import pl.newicom.dddd.test.dummy
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.ValueChanged
 import pl.newicom.dddd.test.dummy.DummySaga
-import pl.newicom.dddd.test.dummy.DummySaga.EventApplied
+import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaConfig, EventApplied}
 import pl.newicom.dddd.test.support.TestConfig
 import pl.newicom.dddd.utils.UUIDSupport.uuid10
 
@@ -20,9 +21,11 @@ import scala.concurrent.duration._
 
 class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with ImplicitSender {
 
+  implicit lazy val testSagaConfig = new DummySagaConfig("DummySaga")
+
   implicit object TestSagaActorFactory extends SagaActorFactory[DummySaga] {
     override def props(pc: PassivationConfig): Props = {
-      Props(new DummySaga(pc, None) {
+      Props(new DummySaga(pc, officeId, None) {
         override def onEventReceived(em: EventMessage, action: SagaAction) = {
           action match {
             case RejectEvent =>
@@ -36,7 +39,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
   }
 
   def processId = uuid10
-  val sagaOffice = office[DummySaga]
+  val sagaOffice = office[DummySaga].actor
 
   "Saga" should {
     "not process previously processed events" in {

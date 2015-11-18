@@ -13,7 +13,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 
 trait ReliablePublisher extends PersistentActor with EventPublisher with AtLeastOnceDelivery {
-  this: AggregateRoot[_] =>
+  this: AggregateRoot[_, _] =>
 
   implicit def system: ActorSystem = context.system
 

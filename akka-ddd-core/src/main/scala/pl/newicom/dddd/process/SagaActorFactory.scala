@@ -1,11 +1,12 @@
 package pl.newicom.dddd.process
 
-import akka.actor.Props
-import pl.newicom.dddd.actor.{PassivationConfig, BusinessEntityActorFactory}
+import pl.newicom.dddd.actor.BusinessEntityActorFactory
+import pl.newicom.dddd.office.LocalOfficeId
 
-abstract class SagaActorFactory[A <: Saga] extends BusinessEntityActorFactory[A] {
-  import scala.concurrent.duration._
+import scala.concurrent.duration._
 
-  def props(pc: PassivationConfig): Props
+abstract class SagaActorFactory[A <: Saga : LocalOfficeId] extends BusinessEntityActorFactory[A] {
+
   def inactivityTimeout: Duration = 1.minute
+  def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
 }

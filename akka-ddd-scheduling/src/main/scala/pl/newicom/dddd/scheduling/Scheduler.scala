@@ -18,10 +18,11 @@ object Scheduler {
   }
 }
 
-class Scheduler(val pc: PassivationConfig, businessUnit: String) extends AggregateRoot[SchedulerState] {
+class Scheduler(val pc: PassivationConfig) extends AggregateRoot[SchedulerState, Scheduler] {
   this: EventPublisher =>
 
-  override def persistenceId = s"${schedulingOffice.name}-$businessUnit"
+
+  override def officeId = schedulingOfficeId
 
   // Skip recovery
   override def recovery = Recovery(toSequenceNr = 0L)
@@ -36,7 +37,7 @@ class Scheduler(val pc: PassivationConfig, businessUnit: String) extends Aggrega
   override def handleCommand: Receive = {
     case ScheduleEvent(_, target, deadline, event) =>
       val metadata = ScheduledEventMetadata(
-        businessUnit,
+        businessUnit = id,
         target,
         deadline.withSecondOfMinute(0).withMillisOfSecond(0),
         deadline.getMillis)

@@ -6,8 +6,9 @@ import akka.stream.{ActorMaterializer, OverflowStrategy}
 import eventstore.EventNumber._
 import eventstore._
 import eventstore.pipeline.TickGenerator.{Tick, Trigger}
+import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
 import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{InFlightMessagesCallback, EventReceived}
-import pl.newicom.dddd.messaging.event.{EventStream, _}
 
 class DemandController(triggerActor: ActorRef, bufferSize: Int, initialDemand: Int = 20) extends InFlightMessagesCallback {
 
@@ -31,14 +32,14 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializ
 
   implicit val actorMaterializer = ActorMaterializer()
 
-  def subscribe(stream: EventStream, fromPosExcl: Option[Long]): InFlightMessagesCallback = {
+  def subscribe(observable: BusinessEntity, fromPosExcl: Option[Long]): InFlightMessagesCallback = {
 
     def eventSource: Source[EventReceived, Unit] = {
       def withMetaData(eventData: EventData): EventMessage = {
         val em = toEventMessage(eventData).get
         em.withMetaData(metaDataProvider(em))
       }
-      val streamId = StreamNameResolver.streamId(stream)
+      val streamId = StreamNameResolver.streamId(observable)
       log.debug(s"Subscribing to $streamId from position $fromPosExcl (exclusive)")
       Source(
         EsConnection(system).streamPublisher(

@@ -10,6 +10,7 @@ import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
+import pl.newicom.dddd.office.OfficeId
 import pl.newicom.dddd.scheduling.ScheduleEvent
 
 trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentActor
@@ -19,15 +20,16 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
 
   def sagaId = self.path.name
 
-  override def id = sagaId
+  def officeId: OfficeId
+  override def persistenceId: String = s"${officeId.clerkGlobalId(id)}"
 
-  override def persistenceId: String = sagaId
+  override def id = sagaId
 
   def currentEventMsg: EventMessage = _lastEventMessage.get
 
   def schedulingOffice: Option[ActorPath] = None
 
-  def sagaOffice: ActorPath = context.parent.path.parent
+  def officePath: ActorPath = context.parent.path.parent
 
   def deliverMsg(office: ActorPath, msg: Message): Unit = {
     deliver(office)(deliveryId => {
@@ -41,7 +43,7 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
 
   def schedule(event: DomainEvent, deadline: DateTime, correlationId: EntityId = sagaId): Unit = {
     schedulingOffice.fold(throw new UnsupportedOperationException("Scheduling Office is not defined.")) { schOffice =>
-      val command = ScheduleEvent("global", sagaOffice, deadline, event)
+      val command = ScheduleEvent("global", officePath, deadline, event)
       deliverMsg(schOffice, CommandMessage(command).withCorrelationId(correlationId))
     }
   }

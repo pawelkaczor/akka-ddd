@@ -7,8 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Keep, Source, Sink, RunnableGraph}
 import eventstore.EventNumber.Exact
 import eventstore._
-import pl.newicom.dddd.messaging.event.OfficeEventStream
-import pl.newicom.dddd.office.OfficeInfo
+import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.view.ViewUpdateInitializer.ViewUpdateInitException
 import pl.newicom.dddd.view.ViewUpdateService._
 import pl.newicom.eventstore.{StreamNameResolver, EventstoreSerializationSupport}
@@ -31,8 +30,8 @@ object ViewUpdateService {
 
   case class EventReceived(eventData: EventData, eventNr: Long, alreadyProcessed: Boolean)
 
-  case class ViewUpdate(officeInfo: OfficeInfo[_], lastEventNr: Option[Long], runnable: RunnableGraph[Future[Unit]]) {
-    override def toString =  s"ViewUpdate(officeName = ${officeInfo.name}, lastEventNr = $lastEventNr)"
+  case class ViewUpdate(office: BusinessEntity, lastEventNr: Option[Long], runnable: RunnableGraph[Future[Unit]]) {
+    override def toString =  s"ViewUpdate(officeId = ${office.id}, lastEventNr = $lastEventNr)"
   }
 
 }
@@ -101,10 +100,10 @@ abstract class ViewUpdateService extends Actor with EventstoreSerializationSuppo
 
   def viewUpdate(esCon: EsConnection, vuConfig: VUConfig): Future[ViewUpdate] = {
     val handler = viewHandler(vuConfig)
-    val officeInfo = vuConfig.officeInfo
+    val office = vuConfig.office
     handler.lastEventNumber.map { lastEvtNrOpt =>
-      ViewUpdate(officeInfo, lastEvtNrOpt,
-        eventSource(esCon, officeInfo, lastEvtNrOpt)
+      ViewUpdate(office, lastEvtNrOpt,
+        eventSource(esCon, office, lastEvtNrOpt)
           .map {
             case ResolvedEvent(EventRecord(_, _, eventData, _), linkEvent) =>
               EventReceived(eventData, linkEvent.number.value, lastEvtNrOpt)
@@ -119,8 +118,8 @@ abstract class ViewUpdateService extends Actor with EventstoreSerializationSuppo
     }
   }
 
-  def eventSource(esCon: EsConnection, oi: OfficeInfo[_], lastEvtNrOpt: Option[Long]): Source[Event, Unit] = { 
-    val streamId = StreamNameResolver.streamId(OfficeEventStream(oi))
+  def eventSource(esCon: EsConnection, office: BusinessEntity, lastEvtNrOpt: Option[Long]): Source[Event, Unit] = {
+    val streamId = StreamNameResolver.streamId(office)
     Source(
       esCon.streamPublisher(
         streamId,

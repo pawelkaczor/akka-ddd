@@ -4,6 +4,7 @@ import akka.actor.{ActorPath, Props}
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
+import pl.newicom.dddd.office.{LocalOfficeId, SagaConfig}
 import pl.newicom.dddd.process._
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{DummyCreated, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummyState, EventApplied, DummyCommand}
@@ -12,17 +13,20 @@ object DummySaga {
 
   implicit def defaultSagaIdResolution[A]: EntityIdResolution[A] = new EntityIdResolution[A]
 
-  implicit object DummySagaActorFactory extends SagaActorFactory[DummySaga] {
-    override def props(pc: PassivationConfig): Props = {
-      Props(new DummySaga(pc, None))
-    }
-  }
-
   class DummySagaConfig(bpsName: String) extends SagaConfig[DummySaga](bpsName) {
+
+    override val id = bpsName
+
     def correlationIdResolver = {
       case ValueChanged(pId, _, _) => pId
       case DummyCreated(pId, _, _, _) => pId
       case other => throw new scala.RuntimeException(s"unknown event: ${other.getClass.getName}")
+    }
+  }
+
+  implicit object DummySagaActorFactory extends SagaActorFactory[DummySaga] {
+    override def props(pc: PassivationConfig): Props = {
+      Props(new DummySaga(pc, officeId, None))
     }
   }
 
@@ -41,9 +45,9 @@ object DummySaga {
  * <code>DummyEvent</code> is received containing <code>value</code> equal to <code>counter + 1</code>
  * <code>DummySaga</code> publishes all applied events to local actor system bus.
  */
-class DummySaga(override val pc: PassivationConfig, dummyOffice: Option[ActorPath]) extends ProcessManager[DummyState] {
-
-  override def persistenceId: String = s"DummySaga-$id"
+class DummySaga(val pc: PassivationConfig,
+                val officeId: LocalOfficeId[DummySaga],
+                dummyOffice: Option[ActorPath]) extends ProcessManager[DummyState] {
 
   startWhen {
 

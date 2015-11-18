@@ -7,14 +7,14 @@ import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.EventMessage
-import pl.newicom.dddd.office.LocalOffice._
+import pl.newicom.dddd.office.LocalOfficeActor._
+import pl.newicom.dddd.office.SagaOffice
 import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
 import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, registerSaga}
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
-import pl.newicom.dddd.test.dummy
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, CreateDummy, ValueChanged}
-import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaConfig, EventApplied}
-import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga}
+import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
+import pl.newicom.dddd.test.dummy.{dummyOfficeId, DummyAggregateRoot, DummySaga}
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.eventstore.EventstoreSubscriber
@@ -41,10 +41,10 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
 
   def dummyId = aggregateId
 
-  implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummy.dummyOffice.name}-$dummyId")
+  implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
-  implicit val sagaManagerFactory: SagaManagerFactory = (sagaConfig, sagaOffice) => {
-    new SagaManager(sagaConfig, sagaOffice) with EventstoreSubscriber {
+  implicit val sagaManagerFactory: SagaManagerFactory[DummySaga] = (sagaOffice: SagaOffice[DummySaga]) => {
+    new SagaManager[DummySaga]()(sagaOffice) with EventstoreSubscriber {
       override def redeliverInterval = 1.seconds
       override def receiveCommand: Receive = myReceive.orElse(super.receiveCommand)
 
@@ -62,7 +62,8 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
 
   "SagaManager" should {
 
-    var sagaManager, sagaOffice: ActorRef = null
+    var sagaManager: ActorRef = null
+    var sagaOffice: SagaOffice[DummySaga] = null
 
     "deliver events to a saga office" in {
       // given

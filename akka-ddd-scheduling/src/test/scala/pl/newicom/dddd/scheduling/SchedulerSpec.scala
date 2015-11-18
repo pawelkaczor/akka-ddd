@@ -15,7 +15,9 @@ object SchedulerSpec {
 
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[Scheduler] =
     new AggregateRootActorFactory[Scheduler] {
-      override def props(pc: PassivationConfig): Props = Props(new Scheduler(pc, businessUnit) with LocalPublisher)
+      override def props(pc: PassivationConfig): Props = Props(new Scheduler(pc) with LocalPublisher {
+        override def id = businessUnit
+      })
       override def inactivityTimeout: Duration = it
     }
 

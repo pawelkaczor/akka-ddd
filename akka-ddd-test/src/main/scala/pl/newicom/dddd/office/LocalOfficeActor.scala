@@ -9,23 +9,22 @@ import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 import scala.concurrent.duration._
-import scala.reflect.ClassTag
 
-object LocalOffice {
+object LocalOfficeActor {
 
-  implicit def localOfficeFactory[A <: BusinessEntity: BusinessEntityActorFactory: EntityIdResolution : ClassTag](implicit system: ActorSystem): OfficeFactory[A] = {
+  implicit def localOfficeActorFactory[A <: BusinessEntity: BusinessEntityActorFactory: EntityIdResolution : LocalOfficeId](implicit system: ActorSystem): OfficeFactory[A] = {
     new OfficeFactory[A] {
-      override def getOrCreate: ActorRef = {
-        system.actorOf(Props(new LocalOffice[A]()), s"${officeName}_${uuid7}")
+      override def getOrCreate(): ActorRef = {
+        system.actorOf(Props(new LocalOfficeActor[A]()), s"${officeId.id}_$uuid7")
       }
     }
   }
 }
 
-class LocalOffice[A <: BusinessEntity](inactivityTimeout: Duration = 1.minutes)(
-  implicit ct: ClassTag[A],
-  caseIdResolution: EntityIdResolution[A],
-  clerkFactory: BusinessEntityActorFactory[A])
+class LocalOfficeActor[A <: BusinessEntity: LocalOfficeId](
+    inactivityTimeout: Duration = 1.minutes)(
+    implicit caseIdResolution: EntityIdResolution[A],
+    clerkFactory: BusinessEntityActorFactory[A])
   extends ActorContextCreationSupport with Actor with ActorLogging {
 
   override def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {

@@ -1,7 +1,8 @@
 package pl.newicom.dddd.writefront
 
 import akka.actor._
-import akka.cluster.client.{ClusterClientSettings, ClusterClient}
+import akka.cluster.client.{ClusterClient, ClusterClientSettings}
+import pl.newicom.dddd.office.OfficeId
 
 import scala.collection.mutable
 
@@ -19,12 +20,12 @@ trait GlobalOfficeClientSupport {
     system.actorOf(ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts.toSet)), "clusterClient")
   }
 
-  def office(officeName: String) =
-    officeClientMap.getOrElseUpdate(officeName, system.actorOf(Props(new OfficeClient(officeName))))
+  def officeActor(officeId: OfficeId): ActorRef =
+    officeClientMap.getOrElseUpdate(officeId.id, system.actorOf(Props(new OfficeClient(officeId))))
 
-  class OfficeClient(officeName: String) extends Actor {
+  class OfficeClient(officeId: OfficeId) extends Actor {
     override def receive: Receive = {
-      case msg => clusterClient forward ClusterClient.Send(s"/system/sharding/$officeName", msg, localAffinity = true)
+      case msg => clusterClient forward ClusterClient.Send(s"/system/sharding/${officeId.id}", msg, localAffinity = true)
     }
   }
 

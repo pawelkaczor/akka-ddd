@@ -2,19 +2,23 @@ package pl.newicom.eventstore
 
 import eventstore.EventStream.{Plain, System}
 import eventstore.{EventStream => ESEventStream}
-import pl.newicom.dddd.messaging.event.{ClerkEventStream, EventStream, OfficeEventStream}
+import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.office.{LocalOfficeId, RemoteOfficeId, SagaConfig}
 
 object StreamNameResolver {
 
-  def streamId(stream: EventStream): ESEventStream.Id = stream match {
+  def streamId(observable: BusinessEntity): ESEventStream.Id = observable match {
 
-    case OfficeEventStream(officeInfo) if officeInfo.isSagaOffice =>
-      Plain(s"${stream.officeName}")
+    case o: SagaConfig[_] =>
+      Plain(s"${o.id}")
 
-    case OfficeEventStream(officeInfo) =>
-      System(s"ce-${stream.officeName}")
+    case LocalOfficeId(id) =>
+      System(s"ce-$id")
 
-    case ClerkEventStream(officeName, clerkId) =>
-      Plain(s"$officeName-$clerkId")
+    case RemoteOfficeId(id) =>
+      System(s"ce-$id")
+
+    case clerk: BusinessEntity =>
+      Plain(s"${clerk.id}")
   }
 }
