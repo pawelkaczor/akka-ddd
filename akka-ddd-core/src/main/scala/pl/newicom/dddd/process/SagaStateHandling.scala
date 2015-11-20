@@ -13,10 +13,11 @@ trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
   type StateMachine  = PartialFunction[S, StateFunction]
 
   private var currentState: S = _
+  private var currentEvent: DomainEvent = _
   private var initiation: StateFunction = _
   private var stateMachine: StateMachine = _
 
-  def state = currentState
+  def state = Option(currentState).getOrElse(initiation(currentEvent))
 
   class SagaBuilder(init: StateFunction) {
     def andThen(sm: StateMachine)  = {
@@ -35,6 +36,7 @@ trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
   }
 
   def updateState(event: DomainEvent): Unit = {
+    currentEvent = event
     val oldState = Option(currentState)
     val inputState = oldState.getOrElse(initiation(event))
 
