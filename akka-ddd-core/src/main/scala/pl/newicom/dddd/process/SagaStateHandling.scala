@@ -37,8 +37,7 @@ trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
 
   def updateState(event: DomainEvent): Unit = {
     currentEvent = event
-    val oldState = Option(currentState)
-    val inputState = oldState.getOrElse(initiation(event))
+    val inputState = state
 
     def default: PartialFunction[DomainEvent, S] = {case _ => inputState} // accept delivery receipt
     currentState = stateMachine.applyOrElse[S, StateFunction](inputState, {case _ => default}).applyOrElse(event, default)
