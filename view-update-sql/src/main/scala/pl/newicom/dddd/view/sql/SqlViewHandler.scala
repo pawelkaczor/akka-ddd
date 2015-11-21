@@ -14,15 +14,17 @@ class SqlViewHandler(override val config: Config, override val vuConfig: SqlView
 
   private lazy val viewMetadataDao = new ViewMetadataDao
 
+  def viewMetadataId = ViewMetadataId(viewName, vuConfig.office.id)
+
   def handle(eventMessage: DomainEventMessage, eventNumber: Long): Future[Unit] =
     viewStore.run {
       sequence(vuConfig.projections.map(_.consume(eventMessage))) >>
-      viewMetadataDao.insertOrUpdate(viewName, eventNumber)
+      viewMetadataDao.insertOrUpdate(viewMetadataId, eventNumber)
     }.mapToUnit
 
   def lastEventNumber: Future[Option[Long]] =
     viewStore.run {
-      viewMetadataDao.lastEventNr(viewName)
+      viewMetadataDao.lastEventNr(viewMetadataId)
     }
 
 }

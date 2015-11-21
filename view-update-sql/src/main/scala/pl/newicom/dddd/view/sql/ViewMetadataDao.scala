@@ -5,29 +5,35 @@ import slick.jdbc.meta.MTable.getTables
 
 import scala.concurrent.ExecutionContext
 
-case class ViewMetadataRecord(id: Long, viewId: String, lastEventNr: Long)
+case class ViewMetadataRecord(viewId: String, streamId: String, lastEventNr: Long)
+case class ViewMetadataId(viewId: String, streamId: String)
 
 class ViewMetadataDao(implicit val profile: JdbcProfile, ex: ExecutionContext) extends SqlViewMetadataSchema {
 
   import profile.api._
 
-  private val by_view_id = viewMetadata.findBy(_.viewId)
+  private def by_pk(viewId: Rep[String], streamId: Rep[String]) = for {
+    result <- viewMetadata if result.viewId === viewId && result.streamId === streamId
+  } yield {
+    result
+  }
+  private val byPk = Compiled(by_pk _)
 
-  def byViewId(viewId: String) = {
-    by_view_id(viewId).result.headOption
+  def byId(id: ViewMetadataId) = {
+    byPk(id.viewId, id.streamId).result.headOption
   }
 
-  def insertOrUpdate(viewId: String, lastEventNr: Long) =
-    byViewId(viewId).flatMap {
+  def insertOrUpdate(id: ViewMetadataId, lastEventNr: Long) =
+    byId(id).flatMap {
       case None =>
-        viewMetadata.forceInsert(ViewMetadataRecord(0, viewId, lastEventNr))
+        viewMetadata.forceInsert(ViewMetadataRecord(id.viewId, id.streamId, lastEventNr))
       case Some(view) =>
-        viewMetadata.filter(_.viewId === viewId).map(v => v.lastEventNr).update(lastEventNr)
+        viewMetadata.filter(r => r.viewId === id.viewId && r.streamId === id.streamId).map(v => v.lastEventNr).update(lastEventNr)
     }
 
 
-  def lastEventNr(viewId: String) =
-    by_view_id(viewId).result.headOption.map(_.map(_.lastEventNr))
+  def lastEventNr(id: ViewMetadataId) =
+    byPk(id.viewId, id.streamId).result.headOption.map(_.map(_.lastEventNr))
 
 
   def ensureSchemaDropped =
@@ -54,10 +60,11 @@ trait SqlViewMetadataSchema {
   protected val viewMetadataTableName = "view_metadata"
 
   protected class ViewMetadata(tag: Tag) extends Table[ViewMetadataRecord](tag, viewMetadataTableName) {
-    def id = column[Long]("ID", O.PrimaryKey, O.AutoInc)
     def viewId = column[String]("VIEW_ID")
+    def streamId = column[String]("STREAM_ID")
     def lastEventNr = column[Long]("LAST_EVENT_NR")
-    def * = (id, viewId, lastEventNr) <> (ViewMetadataRecord.tupled, ViewMetadataRecord.unapply)
+    def pk = primaryKey("pk_view_metadata", (viewId, streamId))
+    def * = (viewId, streamId, lastEventNr) <> (ViewMetadataRecord.tupled, ViewMetadataRecord.unapply)
   }
 
 
