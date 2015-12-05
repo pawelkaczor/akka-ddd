@@ -9,7 +9,6 @@ import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.OfficeFactory._
-import pl.newicom.dddd.test.dummy
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.ValueChanged
 import pl.newicom.dddd.test.dummy.DummySaga
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaConfig, EventApplied}

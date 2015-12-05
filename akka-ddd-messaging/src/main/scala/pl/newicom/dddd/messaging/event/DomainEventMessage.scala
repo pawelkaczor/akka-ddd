@@ -8,7 +8,7 @@ import pl.newicom.dddd.utils.UUIDSupport._
 
 object DomainEventMessage {
   def apply(em: EventMessage, snapshotId: AggregateSnapshotId): DomainEventMessage =
-    DomainEventMessage(snapshotId, em.event, em.id, em.timestamp, None)
+    DomainEventMessage(snapshotId, em.event, em.id, em.timestamp, em.metadata)
 }
 
 case class DomainEventMessage(

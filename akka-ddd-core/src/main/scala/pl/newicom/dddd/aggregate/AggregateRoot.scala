@@ -1,18 +1,12 @@
 package pl.newicom.dddd.aggregate
 
-import akka.actor._
-import akka.contrib.pattern.ReceivePipeline
-import akka.persistence._
-import pl.newicom.dddd.actor.{BusinessEntityActorFactory, GracefulPassivation}
+import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
-import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
-import pl.newicom.dddd.messaging.event.{AggregateSnapshotId, DomainEventMessage, EventMessage}
-import pl.newicom.dddd.messaging.{CollaborationSupport, Deduplication, Message}
+import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOfficeId
 
 import scala.concurrent.duration.{Duration, _}
-import scala.util.{Failure, Success, Try}
 
 trait AggregateState[T <: AggregateState[T]] {
   type StateMachine = PartialFunction[DomainEvent, T]
@@ -23,99 +17,56 @@ abstract class AggregateRootActorFactory[A <: AggregateRoot[_, A]: LocalOfficeId
   def inactivityTimeout: Duration = 1.minute
 }
 
-abstract class AggregateRoot[S <: AggregateState[S], A <: AggregateRoot[S, A] : LocalOfficeId]
-  extends BusinessEntity with CollaborationSupport with GracefulPassivation with PersistentActor
-  with EventHandler with ReceivePipeline with Deduplication with ActorLogging {
+
+abstract class AggregateRoot[S <: AggregateState[S], A <: AggregateRoot[S, A] : LocalOfficeId] extends AggregateRootBase {
+
+  override def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
 
   type AggregateRootFactory = PartialFunction[DomainEvent, S]
-  private var stateOpt: Option[S] = None
-  private var _lastCommandMessage: Option[CommandMessage] = None
-
-  // If an aggregate root actor collaborates with another actor while processing the command
-  // (using CollaborationSupport trait), result of calling sender() after a message from collaborator
-  // has been received will be a reference to the collaborator actor (instead of a reference to the command sender).
-  // Thus we need to keep track of command sender as a variable.
-  private var _sender: ActorRef = null
 
   val factory: AggregateRootFactory
 
-  def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
+  private lazy val sm = StateManager(factory, onStateChanged = messageProcessed)
 
-  override def persistenceId = s"${officeId.clerkGlobalId(id)}"
+  def initialized = sm.initialized
 
-  override def id = self.path.name
-
+  def state = sm.state
 
   override def receiveCommand: Receive = {
-    case cm: CommandMessage =>
-      log.debug(s"Received: $cm")
-      _lastCommandMessage = Some(cm)
-      _sender = sender()
-      handleCommand.applyOrElse(cm.command, unhandled)
+    case cm: CommandMessage => handleCommand.applyOrElse(cm.command, unhandled)
   }
 
   override def receiveRecover: Receive = {
-    case em: EventMessage =>
-      updateState(em)
+    case em: EventMessage => sm.apply(em)
   }
-
-  override def preRestart(reason: Throwable, msgOpt: Option[Any]) {
-    acknowledgeCommandProcessed(commandMessage, Failure(reason))
-    super.preRestart(reason, msgOpt)
-  }
-
-  /**
-   * Command message being processed. Not available during recovery
-   */
-  def commandMessage = _lastCommandMessage.get
 
   def handleCommand: Receive
 
-  def updateState(em: EventMessage) {
-    val event = em.event
-    val nextState = if (initialized) state.apply(event) else factory.apply(event)
-    stateOpt = Option(nextState)
-    messageProcessed(em)
-  }
-
   def raise(event: DomainEvent) {
-    persist(EventMessage(event).causedBy(commandMessage)) {
+    persist(EventMessage(event).causedBy(currentCommandMessage)) {
       persisted =>
         {
           log.debug("Event persisted: {}", event)
-          updateState(persisted)
-          handle(_sender, toDomainEventMessage(persisted))
+          sm.apply(persisted)
+          handle(currentCommandSender, toDomainEventMessage(persisted))
         }
     }
   }
 
-  def toDomainEventMessage(persisted: EventMessage): DomainEventMessage =
-    DomainEventMessage(persisted, AggregateSnapshotId(id, lastSequenceNr))
-      .withMetaData(persisted.metadata)
+  private case class StateManager(factory: AggregateRootFactory, onStateChanged: (EventMessage) => Unit) {
+    private var s: Option[S] = None
 
-  /**
-   * Event handler, not invoked during recovery.
-   */
-  override def handle(senderRef: ActorRef, event: DomainEventMessage) {
-    acknowledgeCommandProcessed(commandMessage)
+    def apply(em: EventMessage): Unit = {
+      s = s match {
+        case Some(as) => Some(as.apply(em.event))
+        case None => Some(factory.apply(em.event))
+      }
+      onStateChanged(em)
+    }
+
+    def initialized = s.isDefined
+
+    def state = if (initialized) s.get else throw new AggregateRootNotInitializedException
   }
-
-  def initialized = stateOpt.isDefined
-
-  def state =
-    if (initialized) stateOpt.get else throw new AggregateRootNotInitializedException
-
-  def acknowledgeCommand(result: Any) =
-    acknowledgeCommandProcessed(commandMessage, Success(result))
-
-  def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("OK")) {
-    val deliveryReceipt = msg.deliveryReceipt(result)
-    _sender ! deliveryReceipt
-    log.debug(s"Delivery receipt (for received command) sent ($deliveryReceipt)")
-  }
-
-  def handleDuplicated(msg: Message) =
-    acknowledgeCommandProcessed(msg)
-
 
 }

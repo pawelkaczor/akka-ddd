@@ -3,7 +3,7 @@ package pl.newicom.dddd.eventhandling.reliable
 import akka.actor._
 import akka.persistence.AtLeastOnceDelivery.{UnconfirmedDelivery, UnconfirmedWarning}
 import akka.persistence._
-import pl.newicom.dddd.aggregate.AggregateRoot
+import pl.newicom.dddd.aggregate.AggregateRootBase
 import pl.newicom.dddd.delivery.protocol.alod.Processed
 import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.messaging.MetaData.DeliveryId
@@ -13,7 +13,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 
 trait ReliablePublisher extends PersistentActor with EventPublisher with AtLeastOnceDelivery {
-  this: AggregateRoot[_, _] =>
+  this: AggregateRootBase =>
 
   implicit def system: ActorSystem = context.system
 
