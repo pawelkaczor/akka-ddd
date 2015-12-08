@@ -27,7 +27,7 @@ trait PersistentActorLogging { this: PersistentActor ⇒
       NoLogging
     } else {
       if (_log eq null)
-        _log = akka.event.Logging(context.system, this)
+        _log = akka.event.Logging(context.system.eventStream, this)
       _log
     }
   }
