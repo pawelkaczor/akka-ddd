@@ -1,13 +1,13 @@
 package pl.newicom.dddd.process
 
-import akka.actor.ActorLogging
 import akka.persistence.PersistentActor
 import pl.newicom.dddd.aggregate.DomainEvent
+import pl.newicom.dddd.persistence.PersistentActorLogging
 
 trait SagaState[T <: SagaState[T]]
 
 trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
-  this: PersistentActor with ActorLogging =>
+  this: PersistentActor with PersistentActorLogging =>
 
   type StateFunction = PartialFunction[DomainEvent, S]
   type StateMachine  = PartialFunction[S, StateFunction]

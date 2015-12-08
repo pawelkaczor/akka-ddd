@@ -1,6 +1,7 @@
 package pl.newicom.eventstore
 
 import akka.actor._
+import akka.event.LoggingAdapter
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import eventstore.EventNumber._
@@ -23,8 +24,10 @@ class DemandController(triggerActor: ActorRef, bufferSize: Int, initialDemand: I
       triggerActor ! Tick(null)
 }
 
-trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializationSupport with ActorLogging {
+trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializationSupport {
   this: Actor =>
+
+  def log: LoggingAdapter
 
   override def system = context.system
 

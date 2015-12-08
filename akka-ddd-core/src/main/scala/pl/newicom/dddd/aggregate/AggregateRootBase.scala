@@ -1,6 +1,6 @@
 package pl.newicom.dddd.aggregate
 
-import akka.actor.{ActorLogging, ActorRef}
+import akka.actor.ActorRef
 import akka.contrib.pattern.ReceivePipeline
 import akka.contrib.pattern.ReceivePipeline.Inner
 import akka.persistence.PersistentActor
@@ -10,11 +10,13 @@ import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{AggregateSnapshotId, DomainEventMessage, EventMessage}
 import pl.newicom.dddd.messaging.{CollaborationSupport, Deduplication, Message}
 import pl.newicom.dddd.office.OfficeId
+import pl.newicom.dddd.persistence.PersistentActorLogging
+
 import scala.util.{Failure, Success, Try}
 
 
 trait AggregateRootBase extends BusinessEntity with CollaborationSupport with GracefulPassivation with PersistentActor
-    with EventHandler with ReceivePipeline with Deduplication with ActorLogging {
+    with EventHandler with ReceivePipeline with Deduplication with PersistentActorLogging {
 
   override def id = self.path.name
 

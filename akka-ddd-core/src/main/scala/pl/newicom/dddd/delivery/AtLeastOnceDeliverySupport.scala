@@ -1,15 +1,15 @@
 package pl.newicom.dddd.delivery
 
-import akka.actor.{ActorLogging, ActorPath}
+import akka.actor.ActorPath
 import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
 import akka.persistence._
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.{EntityMessage, Message}
-import pl.newicom.dddd.persistence.SaveSnapshotRequest
+import pl.newicom.dddd.persistence.{PersistentActorLogging, SaveSnapshotRequest}
 
 case class DeliveryStateSnapshot(state: DeliveryState, alodSnapshot: AtLeastOnceDeliverySnapshot)
 
-trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
+trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDelivery with PersistentActorLogging {
 
   private var deliveryState: DeliveryState = InitialState
 

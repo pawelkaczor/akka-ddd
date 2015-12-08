@@ -1,20 +1,21 @@
 package pl.newicom.dddd.process
 
-import akka.actor.{ActorLogging, ActorPath}
+import akka.actor.ActorPath
 import akka.contrib.pattern.ReceivePipeline
-import akka.persistence.{PersistentActor, AtLeastOnceDelivery}
+import akka.persistence.{AtLeastOnceDelivery, PersistentActor}
 import org.joda.time.DateTime
 import pl.newicom.dddd.actor.GracefulPassivation
 import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
+import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.office.OfficeId
+import pl.newicom.dddd.persistence.PersistentActorLogging
 import pl.newicom.dddd.scheduling.ScheduleEvent
 
 trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentActor
-  with AtLeastOnceDelivery with ReceivePipeline with Deduplication with ActorLogging {
+  with AtLeastOnceDelivery with ReceivePipeline with Deduplication with PersistentActorLogging {
 
   private var _lastEventMessage: Option[EventMessage] = None
 
