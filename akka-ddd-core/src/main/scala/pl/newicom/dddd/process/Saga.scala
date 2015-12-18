@@ -56,7 +56,6 @@ abstract class Saga extends SagaBase {
     msg match {
       case EventMessage(_, receipt: Delivered) =>
         confirmDelivery(receipt.deliveryId)
-        log.debug(s"Delivery of message confirmed (receipt: $receipt)")
         updateState(receipt)
 
       case em: EventMessage =>

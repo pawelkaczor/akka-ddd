@@ -22,7 +22,7 @@ trait AggregateRootBase extends BusinessEntity with CollaborationSupport with Gr
 
   def officeId: OfficeId
 
-  override def persistenceId = s"${officeId.clerkGlobalId(id)}"
+  override def persistenceId = officeId.clerkGlobalId(id)
 
   /**
     * Sender of the currently processed command. Not available during recovery
