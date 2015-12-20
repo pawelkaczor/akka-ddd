@@ -21,8 +21,6 @@ case class DomainEventMessage(
 
   override type MessageImpl = DomainEventMessage
 
-  override def destination = Some(aggregateId)
-
   override def copyWithMetaData(m: Option[MetaData]): DomainEventMessage =
     copy(metadata = m)
 
