@@ -80,12 +80,6 @@ trait EventstoreSerializationSupport {
       DomainEventMessage(em, aggrSnapId)
     }
 
-  def toEventMessage(eventData: EventData): Try[EventMessage] = {
-    fromEvent(eventData, classOf[PersistentRepr]).map {
-      pr => pr.payload.asInstanceOf[EventMessage]
-    }
-  }
-
   private def toPayloadAndMetadata(em: EventMessage): (DomainEvent, Option[MetaData]) =
     (em.event, em.withMetaData(Map("id" -> em.id, "timestamp" -> em.timestamp)).metadata)
 
