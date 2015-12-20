@@ -3,7 +3,7 @@ package pl.newicom.dddd.office
 import akka.actor._
 import pl.newicom.dddd.actor.{ActorContextCreationSupport, BusinessEntityActorFactory, Passivate, PassivationConfig}
 import pl.newicom.dddd.aggregate.{BusinessEntity, Command}
-import pl.newicom.dddd.messaging.EntityMessage
+import pl.newicom.dddd.messaging.AddressableMessage
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
@@ -39,10 +39,10 @@ class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
     // for the clerk being passivated, when receiving Terminated it should flush the buffer
     case Passivate(stopMessage) =>
       dismiss(sender(), stopMessage)
-    case msg: EntityMessage =>
+    case msg: AddressableMessage =>
       val clerkProps = clerkFactory.props(PassivationConfig(Passivate(PoisonPill), clerkFactory.inactivityTimeout))
       val clerk = assignClerk(clerkProps, resolveCaseId(msg))
-      log.debug(s"Forwarding EntityMessage to ${clerk.path}")
+      log.debug(s"Forwarding message to ${clerk.path}")
       clerk forward msg
   }
 

@@ -2,7 +2,7 @@ package pl.newicom.dddd.messaging
 
 import pl.newicom.dddd.aggregate.EntityId
 
-trait EntityMessage {
-  def entityId: EntityId
+trait AddressableMessage {
+  def destination: Option[EntityId]
   def payload: Any
 }

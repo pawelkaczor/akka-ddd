@@ -3,7 +3,7 @@ package pl.newicom.dddd.messaging.event
 import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate.DomainEvent
 import pl.newicom.dddd.messaging.MetaData.CorrelationId
-import pl.newicom.dddd.messaging.{MetaData, EntityMessage, Message}
+import pl.newicom.dddd.messaging.{MetaData, AddressableMessage, Message}
 import pl.newicom.dddd.utils.UUIDSupport._
 
 object EventMessage {
@@ -32,7 +32,7 @@ object EventMessage {
   }
 }
 
-trait EventMessage extends Message with EntityMessage {
+trait EventMessage extends Message with AddressableMessage {
 
   type MessageImpl <: EventMessage
 
@@ -40,7 +40,7 @@ trait EventMessage extends Message with EntityMessage {
   def id: String
   def timestamp: DateTime
 
-  override def entityId = tryGetMetaAttribute[String](CorrelationId).orNull
+  override def destination = tryGetMetaAttribute[String](CorrelationId)
   override def payload = event
 
   override def toString: String = {

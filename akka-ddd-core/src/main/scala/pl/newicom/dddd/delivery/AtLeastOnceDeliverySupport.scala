@@ -4,7 +4,7 @@ import akka.actor.ActorPath
 import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
 import akka.persistence._
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
-import pl.newicom.dddd.messaging.{EntityMessage, Message}
+import pl.newicom.dddd.messaging.{AddressableMessage, Message}
 import pl.newicom.dddd.persistence.{PersistentActorLogging, SaveSnapshotRequest}
 
 case class DeliveryStateSnapshot(state: DeliveryState, alodSnapshot: AtLeastOnceDeliverySnapshot)
@@ -33,8 +33,8 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
   }
 
   def updateState(msg: Any): Unit = msg match {
-    case message: Message with EntityMessage =>
-      if (message.entityId == null) {
+    case message: Message with AddressableMessage =>
+      if (message.destination.isEmpty) {
         log.warning(s"No entityId. Skipping $message")
       } else {
         deliver(destination(message))(deliveryIdToMessage(message))

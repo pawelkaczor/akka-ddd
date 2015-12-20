@@ -3,7 +3,7 @@ package pl.newicom.dddd.messaging.command
 import java.util.Date
 
 import pl.newicom.dddd.aggregate.{Command, EntityId}
-import pl.newicom.dddd.messaging.{MetaData, EntityMessage, Message}
+import pl.newicom.dddd.messaging.{MetaData, AddressableMessage, Message}
 import pl.newicom.dddd.utils.UUIDSupport.uuid
 
 case class CommandMessage(
@@ -11,11 +11,11 @@ case class CommandMessage(
     id: String = uuid,
     timestamp: Date = new Date,
     metadata: Option[MetaData] = None)
-  extends Message with EntityMessage {
+  extends Message with AddressableMessage {
 
   type MessageImpl = CommandMessage
 
-  override def entityId: EntityId = command.aggregateId
+  override def destination: Option[EntityId] = Some(command.aggregateId)
 
   override def payload: Any = command
 
