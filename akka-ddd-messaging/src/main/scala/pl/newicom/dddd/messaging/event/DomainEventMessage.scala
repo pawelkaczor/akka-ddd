@@ -21,13 +21,15 @@ case class DomainEventMessage(
 
   override type MessageImpl = DomainEventMessage
 
-  override def entityId = aggregateId
-
   override def copyWithMetaData(m: Option[MetaData]): DomainEventMessage =
     copy(metadata = m)
 
   def aggregateId = snapshotId.aggregateId
 
   def sequenceNr = snapshotId.sequenceNr
+
+  override def toString: String = {
+    s"DomainEventMessage(event = $event, id = $id, timestamp = $timestamp, metaData = $metadata)"
+  }
 
 }
