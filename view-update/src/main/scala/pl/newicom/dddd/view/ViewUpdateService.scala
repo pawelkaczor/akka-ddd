@@ -23,12 +23,7 @@ object ViewUpdateService {
 
   case class ViewUpdateConfigured(viewUpdate: ViewUpdate)
 
-  object EventReceived {
-    def apply(eventData: EventData, eventNr: Long, lastEventNrOpt: Option[Long]): EventReceived =
-      EventReceived(eventData, eventNr, eventNr <= lastEventNrOpt.getOrElse(-1L))
-  }
-
-  case class EventReceived(eventData: EventData, eventNr: Long, alreadyProcessed: Boolean)
+  case class EventReceived(eventData: EventData, eventNr: Long)
 
   case class ViewUpdate(office: BusinessEntity, lastEventNr: Option[Long], runnable: RunnableGraph[Future[Unit]]) {
     override def toString =  s"ViewUpdate(officeId = ${office.id}, lastEventNr = $lastEventNr)"
@@ -106,11 +101,9 @@ abstract class ViewUpdateService extends Actor with EventstoreSerializationSuppo
         eventSource(esCon, office, lastEvtNrOpt)
           .map {
             case ResolvedEvent(EventRecord(_, _, eventData, _), linkEvent) =>
-              EventReceived(eventData, linkEvent.number.value, lastEvtNrOpt)
+              EventReceived(eventData, linkEvent.number.value)
             case unexpected =>
               throw new RuntimeException(s"Unexpected msg received: $unexpected")
-          }.filter {
-            !_.alreadyProcessed
           }.mapAsync(1) {
             event => handler.handle(toDomainEventMessage(event.eventData).get, event.eventNr)
           }.toMat(Sink.ignore)(Keep.right)
