@@ -18,7 +18,7 @@ class SagaManager[E <: Saga](implicit val sagaOffice: SagaOffice[E]) extends Rec
   override def redeliverInterval = 30.seconds
   override def warnAfterNumberOfUnconfirmedAttempts = 15
 
-  override def metaDataProvider(em: EventMessage): Option[MetaData] =
+  def metaDataProvider(em: EventMessage): Option[MetaData] =
     sagaOffice.config.correlationIdResolver.lift(em.event).map { correlationId =>
       new MetaData(Map(CorrelationId -> correlationId))
     }
