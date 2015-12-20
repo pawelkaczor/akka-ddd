@@ -102,6 +102,6 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
   override def deliveryStateUpdated(deliveryState: DeliveryState): Unit =
     inFlightCallback.foreach(_.onChanged(deliveryState.unconfirmedNumber))
 
-  def metaDataProvider(em: EventMessage): Option[MetaData]
+  def metaDataProvider(em: EventMessage): Option[MetaData] = None
 
 }
