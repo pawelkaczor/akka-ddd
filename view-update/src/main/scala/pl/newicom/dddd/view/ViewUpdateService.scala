@@ -4,12 +4,13 @@ import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy._
 import akka.actor._
 import akka.pattern.pipe
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Keep, RunnableGraph, Sink}
 import eventstore._
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.view.ViewUpdateInitializer.ViewUpdateInitException
 import pl.newicom.dddd.view.ViewUpdateService._
-import pl.newicom.eventstore.EventstoreSubscriber
+import pl.newicom.eventstore.EventSourceProvider
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -27,9 +28,13 @@ object ViewUpdateService {
 
 }
 
-abstract class ViewUpdateService extends Actor with EventstoreSubscriber with ActorLogging {
+abstract class ViewUpdateService extends Actor with EventSourceProvider with ActorLogging {
 
   type VUConfig <: ViewUpdateConfig
+
+  override def system = context.system
+
+  implicit val actorMaterializer = ActorMaterializer()
 
   implicit val ec: ExecutionContext = context.dispatcher
 
