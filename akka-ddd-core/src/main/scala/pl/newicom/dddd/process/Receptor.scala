@@ -18,11 +18,7 @@ object ReceptorConfig {
   type StimuliSource = BusinessEntity
 }
 
-abstract class ReceptorConfig {
-  def stimuliSource: StimuliSource
-  def transduction: Transduction
-  def receiverResolver: ReceiverResolver
-}
+case class ReceptorConfig(stimuliSource: StimuliSource, transduction: Transduction, receiverResolver: ReceiverResolver)
 
 trait ReceptorGrammar {
   def reactTo[A : LocalOfficeId]:                                     ReceptorGrammar
@@ -45,17 +41,14 @@ case class ReceptorBuilder(
     copy(stimuliSource = observable)
   }
 
-  def applyTransduction(transduction: Transduction) =
+  def applyTransduction(transduction: Transduction): ReceptorBuilder =
     copy(transduction = transduction)
 
-  def route(_receiverResolver: ReceiverResolver) =
-    new ReceptorConfig() {
-      def stimuliSource = ReceptorBuilder.this.stimuliSource
-      def transduction = ReceptorBuilder.this.transduction
-      def receiverResolver = _receiverResolver
-    }
+  def route(receiverResolver: ReceiverResolver): ReceptorConfig =
+    ReceptorConfig(stimuliSource, transduction, receiverResolver)
 
-  def propagateTo(_receiver: ActorPath) = route({case _ => _receiver})
+  def propagateTo(receiver: ActorPath): ReceptorConfig =
+    route({case _ => receiver})
 }
 
 trait ReceptorPersistence extends ReceivePipeline with RegularSnapshotting {
