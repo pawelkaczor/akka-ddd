@@ -3,7 +3,7 @@ package pl.newicom.dddd.process
 import akka.persistence.RecoveryCompleted
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.alod._
-import pl.newicom.dddd.messaging.event.EventMessage
+import pl.newicom.dddd.messaging.event.{OfficeEventMessage, EventMessage}
 
 sealed trait SagaAction
 
@@ -31,10 +31,11 @@ abstract class Saga extends SagaBase {
   }
 
   override def receiveCommand: Receive = {
-    case em @ EventMessage(_, event) =>
+    case em @ OfficeEventMessage(caseId, event, id, timestamp, metadata) =>
       val action = receiveEvent(event)
       action match {
         case RaiseEvent(raisedEvent) =>
+          // TODO caseId of original OEM will be lost, consider storing it in metadata
           val raisedEventMsg = if (raisedEvent == event) em else EventMessage(raisedEvent)
           persist(raisedEventMsg) { persisted =>
             log.debug("Event message persisted: {}", persisted)

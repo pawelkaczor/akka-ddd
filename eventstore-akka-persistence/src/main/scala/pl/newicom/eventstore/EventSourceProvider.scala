@@ -22,9 +22,9 @@ trait EventSourceProvider extends EventstoreSerializationSupport {
       )
     ).map {
       case EventRecord(_, number, eventData, _) =>
-        EventMessageRecord(toDomainEventMessage(eventData).get, number.value)
+        EventMessageRecord(toOfficeEventMessage(eventData).get, number.value)
       case ResolvedEvent(EventRecord(_, _, eventData, _), linkEvent) =>
-        EventMessageRecord(toDomainEventMessage(eventData).get, linkEvent.number.value)
+        EventMessageRecord(toOfficeEventMessage(eventData).get, linkEvent.number.value)
       case unexpected =>
         throw new RuntimeException(s"Unexpected msg received: $unexpected")
     }

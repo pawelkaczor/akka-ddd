@@ -7,7 +7,7 @@ import akka.persistence.PersistentActor
 import pl.newicom.dddd.actor.GracefulPassivation
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
-import pl.newicom.dddd.messaging.event.{AggregateSnapshotId, DomainEventMessage, EventMessage}
+import pl.newicom.dddd.messaging.event.{CaseId, EventMessage, OfficeEventMessage}
 import pl.newicom.dddd.messaging.{CollaborationSupport, Deduplication, Message}
 import pl.newicom.dddd.office.OfficeId
 import pl.newicom.dddd.persistence.PersistentActorLogging
@@ -57,7 +57,7 @@ trait AggregateRootBase extends BusinessEntity with CollaborationSupport with Gr
   /**
     * Event handler, not invoked during recovery.
     */
-  override def handle(senderRef: ActorRef, event: DomainEventMessage) {
+  override def handle(senderRef: ActorRef, event: OfficeEventMessage) {
     acknowledgeCommandProcessed(currentCommandMessage)
   }
 
@@ -74,6 +74,6 @@ trait AggregateRootBase extends BusinessEntity with CollaborationSupport with Gr
     acknowledgeCommandProcessed(msg)
 
 
-  def toDomainEventMessage(em: EventMessage) = DomainEventMessage(em, AggregateSnapshotId(id, lastSequenceNr))
+  def toOfficeEventMessage(em: EventMessage) = OfficeEventMessage(em, CaseId(id, lastSequenceNr))
 
 }

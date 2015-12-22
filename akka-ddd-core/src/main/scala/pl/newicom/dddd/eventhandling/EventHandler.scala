@@ -1,8 +1,8 @@
 package pl.newicom.dddd.eventhandling
 
 import akka.actor.ActorRef
-import pl.newicom.dddd.messaging.event.DomainEventMessage
+import pl.newicom.dddd.messaging.event.OfficeEventMessage
 
 trait EventHandler {
-  def handle(senderRef: ActorRef, event: DomainEventMessage)
+  def handle(senderRef: ActorRef, event: OfficeEventMessage)
 }

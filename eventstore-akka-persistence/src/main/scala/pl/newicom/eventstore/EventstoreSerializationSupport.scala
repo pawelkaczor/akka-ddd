@@ -9,7 +9,7 @@ import eventstore.{Content, ContentType, EventData}
 import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.MetaData
-import pl.newicom.dddd.messaging.event.{AggregateSnapshotId, DomainEventMessage, EventMessage}
+import pl.newicom.dddd.messaging.event.{CaseId, EventMessage, OfficeEventMessage}
 import pl.newicom.dddd.serialization.JsonSerHints._
 import pl.newicom.eventstore.json.JsonSerializerExtension
 
@@ -73,11 +73,11 @@ trait EventstoreSerializationSupport {
       Failure(sys.error(s"Cannot deserialize event as $manifest, event: $event"))
   }
 
-  def toDomainEventMessage(eventData: EventData): Try[DomainEventMessage] =
+  def toOfficeEventMessage(eventData: EventData): Try[OfficeEventMessage] =
     fromEvent(eventData, classOf[PersistentRepr]).map { pr =>
       val em = pr.payload.asInstanceOf[EventMessage]
-      val aggrSnapId = new AggregateSnapshotId(pr.persistenceId, pr.sequenceNr)
-      DomainEventMessage(em, aggrSnapId)
+      val caseId = new CaseId(pr.persistenceId, pr.sequenceNr)
+      OfficeEventMessage(em, caseId)
     }
 
   private def toPayloadAndMetadata(em: EventMessage): (DomainEvent, Option[MetaData]) =

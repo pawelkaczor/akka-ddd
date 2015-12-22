@@ -48,7 +48,7 @@ abstract class AggregateRoot[S <: AggregateState[S], A <: AggregateRoot[S, A] : 
         {
           log.debug("Event persisted: {}", event)
           sm.apply(persisted)
-          handle(currentCommandSender, toDomainEventMessage(persisted))
+          handle(currentCommandSender, toOfficeEventMessage(persisted))
         }
     }
   }
