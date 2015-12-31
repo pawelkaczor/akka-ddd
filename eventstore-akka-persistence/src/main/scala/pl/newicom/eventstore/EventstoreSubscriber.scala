@@ -6,7 +6,7 @@ import akka.stream.{ActorMaterializer, OverflowStrategy}
 import eventstore._
 import eventstore.pipeline.TickGenerator.{Tick, Trigger}
 import pl.newicom.dddd.aggregate.BusinessEntity
-import pl.newicom.dddd.messaging.event.{EventMessageRecord, EventStreamSubscriber}
+import pl.newicom.dddd.messaging.event.{EventMessageEntry, EventStreamSubscriber}
 import pl.newicom.dddd.messaging.event.EventStreamSubscriber.InFlightMessagesCallback
 
 class DemandController(triggerActor: ActorRef, bufferSize: Int, initialDemand: Int = 20) extends InFlightMessagesCallback {
@@ -33,9 +33,9 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventSourceProvide
 
   def subscribe(observable: BusinessEntity, fromPosExcl: Option[Long]): InFlightMessagesCallback = {
 
-   def flow: Flow[Trigger, EventMessageRecord, Unit] = Flow() { implicit b =>
+   def flow: Flow[Trigger, EventMessageEntry, Unit] = Flow() { implicit b =>
       import FlowGraph.Implicits._
-      val zip = b.add(ZipWith((msg: EventMessageRecord, trigger: Trigger) => msg))
+      val zip = b.add(ZipWith((msg: EventMessageEntry, trigger: Trigger) => msg))
 
       eventSource(EsConnection(system), observable, fromPosExcl) ~> zip.in0
       (zip.in1, zip.out)

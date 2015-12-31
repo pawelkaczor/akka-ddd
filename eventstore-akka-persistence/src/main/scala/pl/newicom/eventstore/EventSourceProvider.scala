@@ -5,13 +5,13 @@ import akka.stream.scaladsl.Source
 import eventstore.{ResolvedEvent, EventRecord, EsConnection}
 import eventstore.EventNumber.Exact
 import pl.newicom.dddd.aggregate.BusinessEntity
-import pl.newicom.dddd.messaging.event.EventMessageRecord
+import pl.newicom.dddd.messaging.event.EventMessageEntry
 
 trait EventSourceProvider extends EventstoreSerializationSupport {
 
   def log: LoggingAdapter
 
-  def eventSource(esCon: EsConnection, observable: BusinessEntity, fromPosExcl: Option[Long]): Source[EventMessageRecord, Unit] = {
+  def eventSource(esCon: EsConnection, observable: BusinessEntity, fromPosExcl: Option[Long]): Source[EventMessageEntry, Unit] = {
     val streamId = StreamNameResolver.streamId(observable)
     log.debug(s"Subscribing to $streamId from position $fromPosExcl (exclusive)")
     Source(
@@ -22,9 +22,9 @@ trait EventSourceProvider extends EventstoreSerializationSupport {
       )
     ).map {
       case EventRecord(_, number, eventData, _) =>
-        EventMessageRecord(toOfficeEventMessage(eventData).get, number.value)
+        EventMessageEntry(toOfficeEventMessage(eventData).get, number.value)
       case ResolvedEvent(EventRecord(_, _, eventData, _), linkEvent) =>
-        EventMessageRecord(toOfficeEventMessage(eventData).get, linkEvent.number.value)
+        EventMessageEntry(toOfficeEventMessage(eventData).get, linkEvent.number.value)
       case unexpected =>
         throw new RuntimeException(s"Unexpected msg received: $unexpected")
     }
