@@ -22,7 +22,8 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
   def sagaId = self.path.name
 
   def officeId: OfficeId
-  override def persistenceId: String = s"${officeId.clerkGlobalId(id)}"
+
+  override def persistenceId: String = officeId.clerkGlobalId(id)
 
   override def id = sagaId
 
