@@ -12,7 +12,7 @@ trait EventSourceProvider extends EventstoreSerializationSupport {
   def log: LoggingAdapter
 
   def eventSource(esCon: EsConnection, observable: BusinessEntity, fromPosExcl: Option[Long]): Source[EventMessageEntry, Unit] = {
-    val streamId = StreamNameResolver.streamId(observable)
+    val streamId = StreamIdResolver.streamId(observable)
     log.debug(s"Subscribing to $streamId from position $fromPosExcl (exclusive)")
     Source(
       esCon.streamPublisher(

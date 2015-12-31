@@ -5,7 +5,7 @@ import eventstore.{EventStream => ESEventStream}
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.office.{LocalOfficeId, RemoteOfficeId, SagaConfig}
 
-object StreamNameResolver {
+object StreamIdResolver {
 
   def streamId(observable: BusinessEntity): ESEventStream.Id = observable match {
 
