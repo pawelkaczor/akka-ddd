@@ -25,7 +25,7 @@ See example AR: [DummyAggregateRoot](akka-ddd-test/src/test/scala/pl/newicom/ddd
    
 - [Office](akka-ddd-core/src/main/scala/pl/newicom/dddd/office/OfficeFactory.scala) - 
 an actor that is used by the client to talk to Aggregate Roots of particular class. 
-See [Don't call me, call my office](http://pkaczor.blogspot.com/2014/04/reactive-ddd-with-akka-lesson-2.html) for explanation. 
+See [Don't call me, call my office](http://pkaczor.blogspot.com/2014/04/reactive-ddd-with-akka-lesson-2.html#office) for explanation. 
 There are two office implementations: ["simple"](akka-ddd-test/src/main/scala/pl/newicom/dddd/office/SimpleOffice.scala) 
 (used for testing) and ["global" / distributed](akka-ddd-core/src/main/scala/pl/newicom/dddd/cluster/ShardingSupport.scala) 
 (implemented using [Akka Sharding](http://doc.akka.io/docs/akka/current/scala/cluster-sharding.html))
