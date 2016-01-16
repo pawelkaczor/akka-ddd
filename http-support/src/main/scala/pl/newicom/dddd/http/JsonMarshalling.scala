@@ -15,7 +15,7 @@ trait JsonMarshalling {
 
   implicit def feum[A: Manifest](implicit formats: Formats, m: Materializer, ec: ExecutionContext): FEUM[A] =
     PredefinedFromEntityUnmarshallers.stringUnmarshaller.flatMapWithInput { (entity, s) =>
-      if (entity.contentType().mediaType == MediaTypes.`application/json`)
+      if (entity.contentType.mediaType == MediaTypes.`application/json`)
         FastFuture.successful(read[A](s))
       else
         FastFuture.failed(

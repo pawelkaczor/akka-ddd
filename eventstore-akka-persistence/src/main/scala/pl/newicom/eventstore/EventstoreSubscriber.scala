@@ -2,7 +2,7 @@ package pl.newicom.eventstore
 
 import akka.actor._
 import akka.stream.scaladsl._
-import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.{FlowShape, ActorMaterializer, OverflowStrategy}
 import eventstore._
 import eventstore.pipeline.TickGenerator.{Tick, Trigger}
 import pl.newicom.dddd.aggregate.BusinessEntity
@@ -33,13 +33,14 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventSourceProvide
 
   def subscribe(observable: BusinessEntity, fromPosExcl: Option[Long]): InFlightMessagesCallback = {
 
-   def flow: Flow[Trigger, EventMessageEntry, Unit] = Flow() { implicit b =>
-      import FlowGraph.Implicits._
-      val zip = b.add(ZipWith((msg: EventMessageEntry, trigger: Trigger) => msg))
+    def flow: Flow[Trigger, EventMessageEntry, Unit] = Flow.fromGraph(
+      GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
+        val zip = b.add(ZipWith(Keep.left[EventMessageEntry, Trigger]))
 
-      eventSource(EsConnection(system), observable, fromPosExcl) ~> zip.in0
-      (zip.in1, zip.out)
-    }
+        eventSource(EsConnection(system), observable, fromPosExcl) ~> zip.in0
+        FlowShape(zip.in1, zip.out)
+      })
 
     val sink = Sink.actorRef(self, onCompleteMessage = Kill)
     val triggerSource = Source.actorRef(bufferSize, OverflowStrategy.dropNew)

@@ -14,7 +14,7 @@ trait EventSourceProvider extends EventstoreSerializationSupport {
   def eventSource(esCon: EsConnection, observable: BusinessEntity, fromPosExcl: Option[Long]): Source[EventMessageEntry, Unit] = {
     val streamId = StreamIdResolver.streamId(observable)
     log.debug(s"Subscribing to $streamId from position $fromPosExcl (exclusive)")
-    Source(
+    Source.fromPublisher(
       esCon.streamPublisher(
         streamId,
         fromPosExcl.map(nr => Exact(nr.toInt)),
