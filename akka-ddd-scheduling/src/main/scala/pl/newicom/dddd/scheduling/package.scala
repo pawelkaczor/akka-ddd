@@ -1,13 +1,11 @@
 package pl.newicom.dddd
 
-import pl.newicom.dddd.messaging.event.ClerkEventStream
-import pl.newicom.dddd.office.OfficeInfo
+import pl.newicom.dddd.office.{LocalOfficeId, RemoteOfficeId}
 
 package object scheduling {
 
-  implicit val schedulingOffice: OfficeInfo[SchedulingOffice] = new OfficeInfo[SchedulingOffice] {
-    def name: String = "deadlines"
-  }
+  implicit val schedulingOfficeId: LocalOfficeId[Scheduler] = new LocalOfficeId[Scheduler]("deadlines")
 
-  def currentDeadlinesStream(businessUnit: String) = ClerkEventStream("currentDeadlines", businessUnit)
+  val currentDeadlinesOfficeId = RemoteOfficeId("currentDeadlines")
+
 }

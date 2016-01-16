@@ -1,5 +1,5 @@
 package pl.newicom.dddd.eventhandling.reliable
 
-import pl.newicom.dddd.messaging.event.DomainEventMessage
+import pl.newicom.dddd.messaging.event.OfficeEventMessage
 
-case class RedeliveryFailedException(event: DomainEventMessage) extends RuntimeException
+case class RedeliveryFailedException(event: OfficeEventMessage) extends RuntimeException

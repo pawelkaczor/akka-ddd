@@ -46,7 +46,7 @@ lazy val `akka-ddd-write-front` = project
     commonSettings,
     publishArtifact in Test := true,
     libraryDependencies ++= Seq(
-      Akka.clusterTools
+      Akka.clusterTools, Akka.slf4j
     ))
   .dependsOn(`http-support`)
 

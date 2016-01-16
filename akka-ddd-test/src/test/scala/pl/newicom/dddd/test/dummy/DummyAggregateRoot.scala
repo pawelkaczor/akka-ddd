@@ -6,7 +6,6 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate
 import pl.newicom.dddd.aggregate.{AggregateRoot, AggregateState, EntityId}
 import pl.newicom.dddd.eventhandling.EventPublisher
-import pl.newicom.dddd.messaging.CollaborationSupport
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 import pl.newicom.dddd.test.dummy.ValueGeneratorActor.GenerateRandom
 import pl.newicom.dddd.utils.UUIDSupport.uuidObj
@@ -60,14 +59,12 @@ object DummyAggregateRoot {
 
 }
 
-class DummyAggregateRoot extends CollaborationSupport with AggregateRoot[DummyState] {
+class DummyAggregateRoot extends AggregateRoot[DummyState, DummyAggregateRoot] {
   this: EventPublisher =>
 
   def valueGenerator: Int = (Math.random() * 100).toInt
 
   val valueGeneratorActor = context.actorOf(ValueGeneratorActor.props(valueGenerator))
-
-  override def persistenceId = s"${dummyOffice.name}-$id"
 
   override val factory: AggregateRootFactory = {
     case DummyAggregateRoot.DummyCreated(_, _, _, value) => DummyState(value)

@@ -1,8 +1,8 @@
 package pl.newicom.dddd.view
 
-import pl.newicom.dddd.office.OfficeInfo
+import pl.newicom.dddd.aggregate.BusinessEntity
 
 abstract class ViewUpdateConfig {
   def viewName: String
-  def officeInfo: OfficeInfo[_]
+  def office: BusinessEntity
 }

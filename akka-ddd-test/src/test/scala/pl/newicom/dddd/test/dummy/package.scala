@@ -1,9 +1,12 @@
 package pl.newicom.dddd.test
 
-import pl.newicom.dddd.office.OfficeInfo
+import pl.newicom.dddd.office.LocalOfficeId
+import pl.newicom.dddd.test.dummy.DummySaga.DummySagaConfig
 
 package object dummy {
 
-  implicit val dummyOffice: OfficeInfo[DummyAggregateRoot] = OfficeInfo[DummyAggregateRoot]()
+  implicit val dummyOfficeId = new LocalOfficeId[DummyAggregateRoot](classOf[DummyAggregateRoot].getSimpleName)
+
+  implicit val testSagaConfig = new DummySagaConfig("DummySaga")
 
 }

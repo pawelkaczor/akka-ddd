@@ -3,29 +3,28 @@ package pl.newicom.dddd.office
 import akka.actor._
 import pl.newicom.dddd.actor.{ActorContextCreationSupport, BusinessEntityActorFactory, Passivate, PassivationConfig}
 import pl.newicom.dddd.aggregate.{BusinessEntity, Command}
-import pl.newicom.dddd.messaging.EntityMessage
+import pl.newicom.dddd.messaging.AddressableMessage
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 import scala.concurrent.duration._
-import scala.reflect.ClassTag
 
-object LocalOffice {
+object SimpleOffice {
 
-  implicit def localOfficeFactory[A <: BusinessEntity: BusinessEntityActorFactory: EntityIdResolution : ClassTag](implicit system: ActorSystem): OfficeFactory[A] = {
+  implicit def simpleOfficeFactory[A <: BusinessEntity: BusinessEntityActorFactory: EntityIdResolution : LocalOfficeId](implicit system: ActorSystem): OfficeFactory[A] = {
     new OfficeFactory[A] {
-      override def getOrCreate: ActorRef = {
-        system.actorOf(Props(new LocalOffice[A]()), s"${officeName}_${uuid7}")
+      override def getOrCreate(): ActorRef = {
+        system.actorOf(Props(new SimpleOffice[A]()), s"${officeId.id}_$uuid7")
       }
     }
   }
 }
 
-class LocalOffice[A <: BusinessEntity](inactivityTimeout: Duration = 1.minutes)(
-  implicit ct: ClassTag[A],
-  caseIdResolution: EntityIdResolution[A],
-  clerkFactory: BusinessEntityActorFactory[A])
+class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
+    inactivityTimeout: Duration = 1.minutes)(
+    implicit caseIdResolution: EntityIdResolution[A],
+    clerkFactory: BusinessEntityActorFactory[A])
   extends ActorContextCreationSupport with Actor with ActorLogging {
 
   override def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
@@ -40,10 +39,10 @@ class LocalOffice[A <: BusinessEntity](inactivityTimeout: Duration = 1.minutes)(
     // for the clerk being passivated, when receiving Terminated it should flush the buffer
     case Passivate(stopMessage) =>
       dismiss(sender(), stopMessage)
-    case msg: EntityMessage =>
+    case msg: AddressableMessage =>
       val clerkProps = clerkFactory.props(PassivationConfig(Passivate(PoisonPill), clerkFactory.inactivityTimeout))
       val clerk = assignClerk(clerkProps, resolveCaseId(msg))
-      log.debug(s"Forwarding EntityMessage to ${clerk.path}")
+      log.debug(s"Forwarding message to ${clerk.path}")
       clerk forward msg
   }
 

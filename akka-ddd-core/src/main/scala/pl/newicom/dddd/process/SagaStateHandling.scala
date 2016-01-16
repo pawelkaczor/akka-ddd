@@ -1,12 +1,13 @@
 package pl.newicom.dddd.process
 
-import akka.actor.ActorLogging
+import akka.persistence.PersistentActor
 import pl.newicom.dddd.aggregate.DomainEvent
+import pl.newicom.dddd.persistence.PersistentActorLogging
 
 trait SagaState[T <: SagaState[T]]
 
 trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
-  this: ActorLogging =>
+  this: PersistentActor with PersistentActorLogging =>
 
   type StateFunction = PartialFunction[DomainEvent, S]
   type StateMachine  = PartialFunction[S, StateFunction]
@@ -21,14 +22,14 @@ trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
   class SagaBuilder(init: StateFunction) {
     def andThen(sm: StateMachine)  = {
       initiation = init
-      stateMachine = sm.orElse({case s => initiation})
+      stateMachine = sm
     }
   }
 
   def startWhen(initiation: StateFunction) = new SagaBuilder(initiation)
 
   def receiveEvent: ReceiveEvent = {
-    case e: DomainEvent if stateMachine(currentState).isDefinedAt(e) =>
+    case e: DomainEvent if canHandle(e) =>
       RaiseEvent(e)
     case _ =>
       RejectEvent
@@ -36,22 +37,27 @@ trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
 
   def updateState(event: DomainEvent): Unit = {
     currentEvent = event
-    def stay: StateFunction = {
-      case _ => currentState
-    }
+    val inputState = state
 
-    val oldState = currentState
-    currentState = stateMachine(state).applyOrElse(event, stay)
+    def default: PartialFunction[DomainEvent, S] = {case _ => inputState} // accept delivery receipt
+    currentState = stateMachine.applyOrElse[S, StateFunction](inputState, {case _ => default}).applyOrElse(event, default)
 
-    onTransition(Option(oldState))
+    onEventApplied(event, inputState)
   }
 
-  def onTransition(oldState: Option[S]): Unit = {
-    if (oldState.isDefined) {
-      log.debug(s"State transition occurred: ${oldState.get} -> $currentState")
+  def onEventApplied(event: DomainEvent, oldState: S): Unit = {
+    log.debug(s"Event applied: $oldState -> $currentState")
+  }
+
+  private def canHandle(event: DomainEvent): Boolean = {
+    val fromStatePF = stateMachine.orElse[S, StateFunction]({case null => initiation})
+    if (fromStatePF.isDefinedAt(currentState)) {
+      fromStatePF(currentState).isDefinedAt(event)
     } else {
-      log.debug(s"Initial state: $currentState")
+      log.debug(s"No transition found from state $currentState for event $event")
+      false
     }
+
   }
 
   //

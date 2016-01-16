@@ -7,9 +7,19 @@ import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 
 import scala.reflect.ClassTag
 
-abstract class OfficeFactory[A <: BusinessEntity : BusinessEntityActorFactory : EntityIdResolution : ClassTag] {
+object OfficeFactory {
 
-  def getOrCreate: ActorRef
+  def office[A <: BusinessEntity : BusinessEntityActorFactory : EntityIdResolution : OfficeFactory : LocalOfficeId: ClassTag]: Office[A] = {
+    Office(implicitly[LocalOfficeId[A]], implicitly[OfficeFactory[A]].getOrCreate())
+  }
 
-  def officeName = implicitly[ClassTag[A]].runtimeClass.getSimpleName
+  def sagaOffice[A <: BusinessEntity : BusinessEntityActorFactory : EntityIdResolution : OfficeFactory : SagaConfig: ClassTag]: SagaOffice[A] = {
+    new SagaOffice(implicitly[SagaConfig[A]], implicitly[OfficeFactory[A]].getOrCreate())
+  }
+
+}
+
+abstract class OfficeFactory[A <: BusinessEntity : BusinessEntityActorFactory : EntityIdResolution: LocalOfficeId] {
+  def officeId = implicitly[LocalOfficeId[A]]
+  def getOrCreate(): ActorRef
 }

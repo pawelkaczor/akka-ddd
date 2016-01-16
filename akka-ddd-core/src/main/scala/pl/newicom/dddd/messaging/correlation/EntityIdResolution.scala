@@ -1,7 +1,7 @@
 package pl.newicom.dddd.messaging.correlation
 
 import pl.newicom.dddd.aggregate.EntityId
-import pl.newicom.dddd.messaging.EntityMessage
+import pl.newicom.dddd.messaging.AddressableMessage
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution.EntityIdResolver
 
 object EntityIdResolution {
@@ -11,6 +11,6 @@ object EntityIdResolution {
 class EntityIdResolution[A] {
 
   def entityIdResolver: EntityIdResolver = {
-    case em: EntityMessage => em.entityId
+    case msg: AddressableMessage => msg.destination.get
   }
 }

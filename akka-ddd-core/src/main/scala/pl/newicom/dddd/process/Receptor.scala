@@ -3,29 +3,25 @@ package pl.newicom.dddd.process
 import akka.actor.ActorPath
 import akka.contrib.pattern.ReceivePipeline
 import akka.persistence.PersistentActor
-import pl.newicom.dddd.aggregate.EntityId
+import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.delivery.{DeliveryState, AtLeastOnceDeliverySupport}
-import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{InFlightMessagesCallback, EventReceived}
+import pl.newicom.dddd.messaging.event.EventStreamSubscriber.InFlightMessagesCallback
 import pl.newicom.dddd.messaging.event._
 import pl.newicom.dddd.messaging.{Message, MetaData}
-import pl.newicom.dddd.office.OfficeInfo
+import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.process.ReceptorConfig.{ReceiverResolver, StimuliSource, Transduction}
-import pl.newicom.dddd.persistence.{RegularSnapshottingConfig, RegularSnapshotting, ForgettingParticularEvents}
+import pl.newicom.dddd.persistence.{RegularSnapshottingConfig, RegularSnapshotting}
 
 object ReceptorConfig {
   type Transduction = PartialFunction[EventMessage, Message]
   type ReceiverResolver = PartialFunction[Message, ActorPath]
-  type StimuliSource = EventStream
+  type StimuliSource = BusinessEntity
 }
 
-abstract class ReceptorConfig {
-  def stimuliSource: StimuliSource
-  def transduction: Transduction
-  def receiverResolver: ReceiverResolver
-}
+case class ReceptorConfig(stimuliSource: StimuliSource, transduction: Transduction, receiverResolver: ReceiverResolver)
 
 trait ReceptorGrammar {
-  def reactTo[A : OfficeInfo](subChannel: Option[String] = None):     ReceptorGrammar
+  def reactTo[A : LocalOfficeId]:                                     ReceptorGrammar
   def applyTransduction(transduction: Transduction):                  ReceptorGrammar
   def route(receiverResolver: ReceiverResolver):                      ReceptorConfig
   def propagateTo(receiver: ActorPath):                               ReceptorConfig
@@ -37,39 +33,32 @@ case class ReceptorBuilder(
     receiverResolver: ReceiverResolver = null)
   extends ReceptorGrammar {
 
-  def reactTo[A : OfficeInfo]: ReceptorBuilder = {
-    reactTo[A](None)
+  def reactTo[A : LocalOfficeId]: ReceptorBuilder = {
+    reactTo(implicitly[LocalOfficeId[A]].asInstanceOf[BusinessEntity])
   }
 
-  def reactTo[A : OfficeInfo](clerk: Option[EntityId]) = {
-    val officeInfo: OfficeInfo[_] = implicitly[OfficeInfo[_]]
-    val officeName = officeInfo.name
-    val eventStream = clerk.fold[EventStream](OfficeEventStream(officeInfo)) { c => ClerkEventStream(officeName, c) }
-    reactToStream(eventStream)
+  def reactTo(observable: BusinessEntity): ReceptorBuilder = {
+    copy(stimuliSource = observable)
   }
 
-  def reactToStream(eventStream: EventStream) = {
-    copy(stimuliSource = eventStream)
-  }
-
-  def applyTransduction(transduction: Transduction) =
+  def applyTransduction(transduction: Transduction): ReceptorBuilder =
     copy(transduction = transduction)
 
-  def route(_receiverResolver: ReceiverResolver) =
-    new ReceptorConfig() {
-      def stimuliSource = ReceptorBuilder.this.stimuliSource
-      def transduction = ReceptorBuilder.this.transduction
-      def receiverResolver = _receiverResolver
-    }
+  def route(receiverResolver: ReceiverResolver): ReceptorConfig =
+    ReceptorConfig(stimuliSource, transduction, receiverResolver)
 
-  def propagateTo(_receiver: ActorPath) = route({case _ => _receiver})
+  def propagateTo(receiver: ActorPath): ReceptorConfig =
+    route({case _ => receiver})
 }
 
-trait ReceptorPersistencePolicy extends ReceivePipeline with ForgettingParticularEvents with RegularSnapshotting {
+trait ReceptorPersistence extends ReceivePipeline with RegularSnapshotting {
   this: PersistentActor =>
+
+  override def journalPluginId = "akka.persistence.journal.inmem"
+
 }
 
-abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersistencePolicy {
+abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersistence {
   this: EventStreamSubscriber =>
 
   def config: ReceptorConfig
@@ -82,7 +71,7 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
     config.receiverResolver.applyOrElse(msg, (any: Message) => deadLetters)
 
   override lazy val persistenceId: String =
-    s"Receptor-${config.stimuliSource.officeName}-${self.path.hashCode}"
+    s"Receptor-${config.stimuliSource.id}-${self.path.hashCode}"
 
   var inFlightCallback: Option[InFlightMessagesCallback] = None
 
@@ -96,8 +85,9 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
     }
 
   def receiveEvent: Receive = {
-    case EventReceived(em, position) =>
-      config.transduction.lift(em).foreach { msg =>
+    case EventMessageEntry(em, position) =>
+      val msgToDeliver = em.withMetaData(metaDataProvider(em))
+      config.transduction.lift(msgToDeliver).foreach { msg =>
         deliver(msg, deliveryId = position)
       }
   }
@@ -105,6 +95,6 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
   override def deliveryStateUpdated(deliveryState: DeliveryState): Unit =
     inFlightCallback.foreach(_.onChanged(deliveryState.unconfirmedNumber))
 
-  override def metaDataProvider(em: EventMessage): Option[MetaData] = None
+  def metaDataProvider(em: OfficeEventMessage): Option[MetaData] = None
 
 }

@@ -5,10 +5,9 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
-import pl.newicom.dddd.test.dummy.DummyOfficeSpec._
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
-
+import DummyOfficeSpec._
 import scala.concurrent.duration.{Duration, _}
 
 object DummyOfficeSpec {
@@ -19,6 +18,7 @@ object DummyOfficeSpec {
         override def valueGenerator: Int = -1 // not allowed
       })
       override def inactivityTimeout: Duration = it
+
     }
 }
 
