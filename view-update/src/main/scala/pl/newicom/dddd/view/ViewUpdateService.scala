@@ -121,7 +121,7 @@ abstract class ViewUpdateService extends Actor with EventstoreSerializationSuppo
 
   def eventSource(esCon: EsConnection, oi: OfficeInfo[_], lastEvtNrOpt: Option[Long]): Source[Event, Unit] = { 
     val streamId = StreamNameResolver.streamId(OfficeEventStream(oi))
-    Source(
+    Source.fromPublisher(
       esCon.streamPublisher(
         streamId,
         lastEvtNrOpt.map(nr => Exact(nr.toInt)),

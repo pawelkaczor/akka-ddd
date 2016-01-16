@@ -40,7 +40,7 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializ
       }
       val streamId = StreamNameResolver.streamId(stream)
       log.debug(s"Subscribing to $streamId from position $fromPosExcl (exclusive)")
-      Source(
+      Source.fromPublisher(
         EsConnection(system).streamPublisher(
           streamId,
           fromPosExcl.map(l => Exact(l.toInt)),
@@ -55,8 +55,8 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventstoreSerializ
     }
 
    def flow: Flow[Trigger, EventReceived, Unit] = Flow.fromGraph(
-     FlowGraph.create() { implicit b =>
-        import FlowGraph.Implicits._
+     GraphDSL.create() { implicit b =>
+        import GraphDSL.Implicits._
         val zip = b.add(ZipWith(Keep.left[EventReceived, Trigger]))
 
         eventSource ~> zip.in0
