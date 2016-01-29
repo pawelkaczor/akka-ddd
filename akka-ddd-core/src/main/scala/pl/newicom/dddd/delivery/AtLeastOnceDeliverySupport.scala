@@ -46,7 +46,7 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
         log.debug(s"[DELIVERY-ID: $internalDeliveryId] - Delivery confirmed")
         if (confirmDelivery(internalDeliveryId)) {
           deliveryState = deliveryState.withDelivered(deliveryId)
-          deliveryStateUpdated(deliveryState)
+          deliveryConfirmed(internalDeliveryId)
         }
       }
 
@@ -79,13 +79,12 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
       setDeliverySnapshot(alodSnapshot)
       deliveryState = dState
       log.debug(s"Snapshot restored: $deliveryState")
-      deliveryStateUpdated(deliveryState)
 
     case msg =>
       updateState(msg)
   }
 
-  def deliveryStateUpdated(deliveryState: DeliveryState): Unit = {
+  def deliveryConfirmed(deliveryId: Long): Unit = {
     // do nothing
   }
 }

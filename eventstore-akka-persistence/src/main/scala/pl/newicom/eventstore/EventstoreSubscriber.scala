@@ -5,16 +5,17 @@ import akka.stream.scaladsl._
 import akka.stream.{FlowShape, ActorMaterializer, OverflowStrategy}
 import eventstore._
 import eventstore.pipeline.TickGenerator.{Tick, Trigger}
+import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{DemandConfig, DemandCallback}
+
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.messaging.event.{EventMessageEntry, EventStreamSubscriber}
-import pl.newicom.dddd.messaging.event.EventStreamSubscriber.InFlightMessagesCallback
 
-class DemandController(triggerActor: ActorRef, bufferSize: Int, initialDemand: Int = 20) extends InFlightMessagesCallback {
+class DemandController(triggerActor: ActorRef, initialDemand: Int) extends DemandCallback {
 
   increaseDemand(initialDemand)
 
-  def onChanged(messagesInFlight: Int): Unit = {
-    increaseDemand(bufferSize - messagesInFlight)
+  override def onEventProcessed(): Unit = {
+    increaseDemand(1)
   }
 
   private def increaseDemand(increaseValue: Int): Unit =
@@ -27,27 +28,30 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventSourceProvide
 
   override def system = context.system
 
-  def bufferSize: Int = 20
-
   implicit val actorMaterializer = ActorMaterializer()
 
-  def subscribe(observable: BusinessEntity, fromPosExcl: Option[Long]): InFlightMessagesCallback = {
+  def subscribe(observable: BusinessEntity, fromPosExcl: Option[Long], demandConfig: DemandConfig): DemandCallback = {
 
     def flow: Flow[Trigger, EventMessageEntry, Unit] = Flow.fromGraph(
       GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
         val zip = b.add(ZipWith(Keep.left[EventMessageEntry, Trigger]))
 
-        eventSource(EsConnection(system), observable, fromPosExcl) ~> zip.in0
+        eventSource(eventstoreConnection, observable, fromPosExcl) ~> zip.in0
         FlowShape(zip.in1, zip.out)
       })
 
-    val sink = Sink.actorRef(self, onCompleteMessage = Kill)
-    val triggerSource = Source.actorRef(bufferSize, OverflowStrategy.dropNew)
+    val triggerActor = flow
+      .toMat {
+        Sink.actorRef(self, onCompleteMessage = Kill)}(Keep.both)
+      .runWith {
+        Source.actorRef(demandConfig.subscriberCapacity, OverflowStrategy.dropNew)
+      }
 
-    val triggerActor = flow.toMat(sink)(Keep.both).runWith(triggerSource)
-
-    new DemandController(triggerActor, bufferSize)
+    new DemandController(triggerActor, demandConfig.initialDemand)
   }
 
+  def eventstoreConnection: EsConnection = {
+    EsConnection(system)
+  }
 }

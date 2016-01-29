@@ -34,8 +34,9 @@ trait RegularSnapshotting {
       Inner(sss)
 
     case msg if isMessageCounted(msg) =>
-      if (isTimeForSnapshot())
+      if (isTimeForSnapshot()) {
         self ! SaveSnapshotRequest
+      }
       receivedSinceLastSnapshot += 1
       Inner(msg)
   }

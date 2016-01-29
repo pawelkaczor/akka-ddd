@@ -4,8 +4,8 @@ import akka.actor.ActorPath
 import akka.contrib.pattern.ReceivePipeline
 import akka.persistence.PersistentActor
 import pl.newicom.dddd.aggregate.BusinessEntity
-import pl.newicom.dddd.delivery.{DeliveryState, AtLeastOnceDeliverySupport}
-import pl.newicom.dddd.messaging.event.EventStreamSubscriber.InFlightMessagesCallback
+import pl.newicom.dddd.delivery.AtLeastOnceDeliverySupport
+import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{DemandConfig, DemandCallback}
 import pl.newicom.dddd.messaging.event._
 import pl.newicom.dddd.messaging.{Message, MetaData}
 import pl.newicom.dddd.office.LocalOfficeId
@@ -18,7 +18,12 @@ object ReceptorConfig {
   type StimuliSource = BusinessEntity
 }
 
-case class ReceptorConfig(stimuliSource: StimuliSource, transduction: Transduction, receiverResolver: ReceiverResolver)
+case class ReceptorConfig(
+   stimuliSource: StimuliSource,
+   transduction: Transduction,
+   receiverResolver: ReceiverResolver,
+   capacity: Int
+)
 
 trait ReceptorGrammar {
   def reactTo[A : LocalOfficeId]:                                     ReceptorGrammar
@@ -28,9 +33,10 @@ trait ReceptorGrammar {
 }
 
 case class ReceptorBuilder(
-    stimuliSource: StimuliSource = null,
-    transduction: Transduction = {case em => em},
-    receiverResolver: ReceiverResolver = null)
+    stimuliSource:    StimuliSource = null,
+    transduction:     Transduction = {case em => em},
+    receiverResolver: ReceiverResolver = null,
+    capacity:         Int = 1000)
   extends ReceptorGrammar {
 
   def reactTo[A : LocalOfficeId]: ReceptorBuilder = {
@@ -45,10 +51,13 @@ case class ReceptorBuilder(
     copy(transduction = transduction)
 
   def route(receiverResolver: ReceiverResolver): ReceptorConfig =
-    ReceptorConfig(stimuliSource, transduction, receiverResolver)
+    ReceptorConfig(stimuliSource, transduction, receiverResolver, capacity)
 
   def propagateTo(receiver: ActorPath): ReceptorConfig =
     route({case _ => receiver})
+
+  def withCapacity(capacity: Int): ReceptorBuilder =
+    copy(capacity = capacity)
 }
 
 trait ReceptorPersistence extends ReceivePipeline with RegularSnapshotting {
@@ -63,7 +72,9 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
 
   def config: ReceptorConfig
 
-  val snapshottingConfig = RegularSnapshottingConfig(receiveEvent, 1000)
+  val snapshottingConfig = RegularSnapshottingConfig(
+    interest = receiveEvent,
+    interval = config.capacity) // TODO: snapshoting interval should be configured independently of the receptor capacity ?
 
   def deadLetters = context.system.deadLetters.path
 
@@ -73,10 +84,15 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
   override lazy val persistenceId: String =
     s"Receptor-${config.stimuliSource.id}-${self.path.hashCode}"
 
-  var inFlightCallback: Option[InFlightMessagesCallback] = None
+  var demandCallback: Option[DemandCallback] = None
 
   override def recoveryCompleted(): Unit =
-    inFlightCallback = Some(subscribe(config.stimuliSource, lastSentDeliveryId))
+    demandCallback = Some(subscribe(
+        observable            = config.stimuliSource,
+        fromPositionExclusive = lastSentDeliveryId,
+        demandConfig          = DemandConfig(
+                                  subscriberCapacity = config.capacity,
+                                  initialDemand = config.capacity - unconfirmedNumber)))
 
   override def receiveCommand: Receive =
     receiveEvent.orElse(deliveryStateReceive).orElse {
@@ -92,8 +108,8 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
       }
   }
 
-  override def deliveryStateUpdated(deliveryState: DeliveryState): Unit =
-    inFlightCallback.foreach(_.onChanged(deliveryState.unconfirmedNumber))
+  override def deliveryConfirmed(deliveryId: Long): Unit =
+    demandCallback.foreach(_.onEventProcessed())
 
   def metaDataProvider(em: OfficeEventMessage): Option[MetaData] = None
 
