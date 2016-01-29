@@ -58,11 +58,10 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
 
     case SaveSnapshotRequest =>
       val snapshot = new DeliveryStateSnapshot(deliveryState, getDeliverySnapshot)
-      log.debug(s"Saving snapshot: $snapshot")
       saveSnapshot(snapshot)
 
     case SaveSnapshotSuccess(metadata) =>
-      log.debug("Snapshot saved successfully")
+      log.info("Snapshot saved successfully")
 
     case f @ SaveSnapshotFailure(metadata, reason) =>
       log.error(s"$f")

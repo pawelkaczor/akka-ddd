@@ -86,13 +86,16 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
 
   var demandCallback: Option[DemandCallback] = None
 
-  override def recoveryCompleted(): Unit =
+  override def recoveryCompleted(): Unit = {
     demandCallback = Some(subscribe(
         observable            = config.stimuliSource,
         fromPositionExclusive = lastSentDeliveryId,
         demandConfig          = DemandConfig(
                                   subscriberCapacity = config.capacity,
                                   initialDemand = config.capacity - unconfirmedNumber)))
+    log.info(s"$persistenceId subscribed to '${config.stimuliSource.id}' event stream from position: ${lastSentDeliveryId.getOrElse(0)}.")
+  }
+
 
   override def receiveCommand: Receive =
     receiveEvent.orElse(deliveryStateReceive).orElse {
