@@ -15,6 +15,9 @@ object Deps {
     val PostgresqlSlickExt    = "0.10.0" // Slick 3.1.0
     val H2Driver              = "1.4.189"
 
+    // monitoring
+    val Kamon                 = "0.6.0-a9d5c5c61f7e5e189bf67baee2b13e21ebbaaf73"
+
     // test
     val ScalaTest             = "2.2.4"
     val ScalaCheck            = "1.12.5"
@@ -61,6 +64,11 @@ object Deps {
     val testDriver     = "com.h2database" % "h2" % Version.H2Driver % "test"
 
     def apply() = Seq(`slick-for-pg`, connectionPool, testDriver)
+  }
+
+  object Kamon {
+    val core          = apply("core")
+    private def apply(m: String) = "io.kamon" %% s"kamon-$m" % Version.Kamon
   }
 
   object TestFrameworks {

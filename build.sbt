@@ -15,7 +15,7 @@ homepage          in ThisBuild := Some(new URL("http://github.com/pawelkaczor/ak
 licenses          in ThisBuild := ("Apache2", new URL("http://raw.githubusercontent.com/pawelkaczor/akka-ddd/master/LICENSE.md")) :: Nil
 
 lazy val root = (project in file("."))
-  .aggregate(`akka-ddd-messaging`, `akka-ddd-core`, `akka-ddd-write-front`, `view-update`, `view-update-sql`, `akka-ddd-test`, `eventstore-akka-persistence`, `http-support`, `akka-ddd-scheduling`)
+  .aggregate(`akka-ddd-messaging`, `akka-ddd-monitoring`, `akka-ddd-core`, `akka-ddd-write-front`, `view-update`, `view-update-sql`, `akka-ddd-test`, `eventstore-akka-persistence`, `http-support`, `akka-ddd-scheduling`)
   .settings(
     commonSettings,
     publishArtifact := false
@@ -116,6 +116,12 @@ lazy val `akka-ddd-scheduling` = project
     ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence`, `akka-ddd-test` % "test->compile;test->test")
 
+
+lazy val `akka-ddd-monitoring` = project
+  .settings(
+    commonSettings,
+    libraryDependencies += Kamon.core
+  ).dependsOn(`akka-ddd-core`)
 
 lazy val commonSettings: Seq[Setting[_]] = Publish.settings ++ Seq(
   updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true),

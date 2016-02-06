@@ -48,7 +48,6 @@ trait AggregateRootBase extends BusinessEntity with CollaborationSupport with Gr
 
   pipelineOuter {
     case cm: CommandMessage =>
-      log.debug(s"Received: $cm")
       _currentCommandMessage = Some(cm)
       _currentCommandSender = Some(sender())
       Inner(cm)
@@ -67,7 +66,6 @@ trait AggregateRootBase extends BusinessEntity with CollaborationSupport with Gr
   def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("OK")) {
     val deliveryReceipt = msg.deliveryReceipt(result)
     currentCommandSender ! deliveryReceipt
-    log.debug(s"Delivery receipt (for received command) sent ($deliveryReceipt)")
   }
 
   def handleDuplicated(msg: Message) =
