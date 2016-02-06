@@ -9,8 +9,6 @@ import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
 
-import scala.util.control.NonFatal
-
 trait AggregateRootMonitoring extends EventHandler {
   this: AggregateRootBase =>
 
@@ -27,7 +25,8 @@ trait AggregateRootMonitoring extends EventHandler {
       try {
         Tracer.setCurrentContext(Kamon.tracer.newContext("CommandMessage"))
       } catch {
-        case NonFatal(e) => // Kamon not initialized, ignore
+        case e: NoClassDefFoundError => // Kamon not initialized, ignore
+        case e: ExceptionInInitializerError => // Kamon not initialized, ignore
       }
       Inner(cm)
   }
