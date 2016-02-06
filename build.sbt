@@ -120,6 +120,7 @@ lazy val `akka-ddd-scheduling` = project
 lazy val `akka-ddd-monitoring` = project
   .settings(
     commonSettings,
+    resolvers += "Kamon Snapshots Repository" at "http://snapshots.kamon.io",
     libraryDependencies += Kamon.core
   ).dependsOn(`akka-ddd-core`)
 
