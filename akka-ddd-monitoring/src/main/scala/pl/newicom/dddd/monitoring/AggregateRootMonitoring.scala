@@ -9,12 +9,14 @@ import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
 
+import scala.util.control.NonFatal
+
 trait AggregateRootMonitoring extends EventHandler {
   this: AggregateRootBase =>
 
   override abstract def handle(senderRef: ActorRef, event: OfficeEventMessage): Unit = {
     super.handle(senderRef, event)
-    Tracer.currentContext.finish()
+    Option(Tracer.currentContext).foreach(_.finish())
     log.debug("Event stored: {}", event.payload)
   }
 
@@ -22,7 +24,11 @@ trait AggregateRootMonitoring extends EventHandler {
   pipelineOuter {
     case cm: CommandMessage =>
       log.debug("Received: {}", cm)
-      Tracer.setCurrentContext(Kamon.tracer.newContext("CommandMessage"))
+      try {
+        Tracer.setCurrentContext(Kamon.tracer.newContext("CommandMessage"))
+      } catch {
+        case NonFatal(e) => // Kamon not initialized, ignore
+      }
       Inner(cm)
   }
 
