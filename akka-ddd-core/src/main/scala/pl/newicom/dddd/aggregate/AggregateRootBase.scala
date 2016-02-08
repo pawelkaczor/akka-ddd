@@ -16,7 +16,7 @@ import scala.util.{Failure, Success, Try}
 
 
 trait AggregateRootBase extends BusinessEntity with CollaborationSupport with GracefulPassivation with PersistentActor
-    with EventHandler with ReceivePipeline with Deduplication with PersistentActorLogging {
+    with EventHandler with EventMessageFactory with ReceivePipeline with Deduplication with PersistentActorLogging {
 
   override def id = self.path.name
 
@@ -70,7 +70,6 @@ trait AggregateRootBase extends BusinessEntity with CollaborationSupport with Gr
 
   def handleDuplicated(msg: Message) =
     acknowledgeCommandProcessed(msg)
-
 
   def toOfficeEventMessage(em: EventMessage) = OfficeEventMessage(em, CaseId(id, lastSequenceNr))
 

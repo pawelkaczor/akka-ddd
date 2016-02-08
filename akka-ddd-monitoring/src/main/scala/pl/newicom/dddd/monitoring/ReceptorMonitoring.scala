@@ -2,13 +2,11 @@ package pl.newicom.dddd.monitoring
 
 import akka.contrib.pattern.ReceivePipeline
 import akka.contrib.pattern.ReceivePipeline.Inner
-import kamon.Kamon
-import kamon.trace.Tracer
-import pl.newicom.dddd.aggregate.{EntityId, BusinessEntity}
+import pl.newicom.dddd.aggregate.{BusinessEntity, EntityId}
 import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{DemandCallback, DemandConfig}
 import pl.newicom.dddd.messaging.event.{EventMessageEntry, EventStreamSubscriber}
 
-trait ReceptorMonitoring extends EventStreamSubscriber {
+trait ReceptorMonitoring extends EventStreamSubscriber with TraceContextSupport {
   this: ReceivePipeline =>
 
   var observed: Option[EntityId] = None
@@ -21,13 +19,8 @@ trait ReceptorMonitoring extends EventStreamSubscriber {
 
   pipelineOuter {
     case msg @ EventMessageEntry(em, _) =>
-      try {
-        val contextName  = s"${em.payload.getClass.getSimpleName} from ${observed.getOrElse("???")}"
-        Tracer.setCurrentContext(Kamon.tracer.newContext(contextName))
-      } catch {
-        case e: NoClassDefFoundError => // Kamon not initialized, ignore
-        case e: ExceptionInInitializerError => // Kamon not initialized, ignore
-      }
+      val contextName  = s"${observed.getOrElse("???")}-${em.payloadName}"
+      setNewCurrentTraceContext(contextName)
       Inner(msg)
   }
 

@@ -43,14 +43,14 @@ abstract class AggregateRoot[S <: AggregateState[S], A <: AggregateRoot[S, A] : 
   def handleCommand: Receive
 
   def raise(event: DomainEvent) {
-    persist(EventMessage(event).causedBy(currentCommandMessage)) {
-      persisted =>
-        {
-          sm.apply(persisted)
-          handle(currentCommandSender, toOfficeEventMessage(persisted))
-        }
+    persist(toEventMessage(event).causedBy(currentCommandMessage)) {
+      persisted => {
+        sm.apply(persisted)
+        handle(currentCommandSender, toOfficeEventMessage(persisted))
+      }
     }
   }
+
 
   private case class StateManager(factory: AggregateRootFactory, onStateChanged: (EventMessage) => Unit) {
     private var s: Option[S] = None
