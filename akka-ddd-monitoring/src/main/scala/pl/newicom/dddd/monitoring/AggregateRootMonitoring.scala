@@ -23,7 +23,7 @@ trait AggregateRootMonitoring extends EventHandler {
     case cm: CommandMessage =>
       log.debug("Received: {}", cm)
       try {
-        Tracer.setCurrentContext(Kamon.tracer.newContext("CommandMessage"))
+        Tracer.setCurrentContext(Kamon.tracer.newContext(cm.payload.getClass.getSimpleName))
       } catch {
         case e: NoClassDefFoundError => // Kamon not initialized, ignore
         case e: ExceptionInInitializerError => // Kamon not initialized, ignore
