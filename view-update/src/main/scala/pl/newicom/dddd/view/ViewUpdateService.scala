@@ -11,8 +11,8 @@ import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.view.ViewUpdateInitializer.ViewUpdateInitException
 import pl.newicom.dddd.view.ViewUpdateService._
 import pl.newicom.eventstore.EventSourceProvider
-
 import scala.concurrent.{ExecutionContext, Future}
+import akka.Done
 
 object ViewUpdateService {
   object EnsureViewStoreAvailable
@@ -22,7 +22,7 @@ object ViewUpdateService {
 
   case class ViewUpdateConfigured(viewUpdate: ViewUpdate)
 
-  case class ViewUpdate(office: BusinessEntity, lastEventNr: Option[Long], runnable: RunnableGraph[Future[Unit]]) {
+  case class ViewUpdate(office: BusinessEntity, lastEventNr: Option[Long], runnable: RunnableGraph[Future[Done]]) {
     override def toString =  s"ViewUpdate(officeId = ${office.id}, lastEventNr = $lastEventNr)"
   }
 

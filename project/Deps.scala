@@ -3,11 +3,10 @@ import sbt._
 object Deps {
 
   object Version {
-    val Akka                  = "2.4.1"
-    val AkkaHttp              = "2.0.2"
-    
-    val EventStoreClient      = "2.2.0"
-    val EventStoreAkkaJournal = "2.2.0"
+    val Akka                  = "2.4.2-RC2"
+
+    val EventStoreClient      = "2.2.1-SNAPSHOT"
+    val EventStoreAkkaJournal = "2.2.1-SNAPSHOT"
     
     val json4s                = "3.3.0"
 
@@ -28,8 +27,8 @@ object Deps {
 
   object Akka {
     val actor             = apply("actor")
-    val httpCore          = "com.typesafe.akka" %% "akka-http-experimental" % Version.AkkaHttp
-    val httpTestKit       = "com.typesafe.akka" %% "akka-http-testkit-experimental" % Version.AkkaHttp % "test"
+    val httpCore          = apply("http-experimental")
+    val httpTestKit       = apply("http-testkit-experimental")
     val http              = Seq(httpCore, httpTestKit)
     val slf4j             = apply("slf4j")
     val persistence       = apply("persistence")

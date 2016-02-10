@@ -9,6 +9,7 @@ import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{DemandConfig, Dema
 
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.messaging.event.{EventMessageEntry, EventStreamSubscriber}
+import akka.NotUsed
 
 class DemandController(triggerActor: ActorRef, initialDemand: Int) extends DemandCallback {
 
@@ -32,7 +33,7 @@ trait EventstoreSubscriber extends EventStreamSubscriber with EventSourceProvide
 
   def subscribe(observable: BusinessEntity, fromPosExcl: Option[Long], demandConfig: DemandConfig): DemandCallback = {
 
-    def flow: Flow[Trigger, EventMessageEntry, Unit] = Flow.fromGraph(
+    def flow: Flow[Trigger, EventMessageEntry, NotUsed] = Flow.fromGraph(
       GraphDSL.create() { implicit b =>
         import GraphDSL.Implicits._
         val zip = b.add(ZipWith(Keep.left[EventMessageEntry, Trigger]))

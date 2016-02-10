@@ -6,12 +6,13 @@ import eventstore.{ResolvedEvent, EventRecord, EsConnection}
 import eventstore.EventNumber.Exact
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.messaging.event.EventMessageEntry
+import akka.NotUsed
 
 trait EventSourceProvider extends EventstoreSerializationSupport {
 
   def log: LoggingAdapter
 
-  def eventSource(esCon: EsConnection, observable: BusinessEntity, fromPosExcl: Option[Long]): Source[EventMessageEntry, Unit] = {
+  def eventSource(esCon: EsConnection, observable: BusinessEntity, fromPosExcl: Option[Long]): Source[EventMessageEntry, NotUsed] = {
     val streamId = StreamIdResolver.streamId(observable)
     log.debug(s"Subscribing to $streamId from position $fromPosExcl (exclusive)")
     Source.fromPublisher(
