@@ -2,7 +2,7 @@ package pl.newicom.dddd.process
 
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
-import org.scalatest.WordSpecLike
+import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaData._
@@ -18,9 +18,13 @@ import pl.newicom.dddd.utils.UUIDSupport.uuid10
 import scala.concurrent.duration._
 
 
-class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with ImplicitSender {
+class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with ImplicitSender with BeforeAndAfterAll {
 
   implicit lazy val testSagaConfig = new DummySagaConfig("DummySaga")
+
+  override def afterAll {
+    TestKit.shutdownActorSystem(system)
+  }
 
   implicit object TestSagaActorFactory extends SagaActorFactory[DummySaga] {
     override def props(pc: PassivationConfig): Props = {
