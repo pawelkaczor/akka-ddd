@@ -104,7 +104,7 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
     }
 
   def receiveEvent: Receive = {
-    case EventMessageEntry(em, position) =>
+    case EventMessageEntry(em, position, _) =>
       val msgToDeliver = em.withMetaData(metaDataProvider(em))
       config.transduction.lift(msgToDeliver).foreach { msg =>
         deliver(msg, deliveryId = position)

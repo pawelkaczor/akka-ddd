@@ -26,10 +26,10 @@ trait EventSourceProvider extends EventstoreSerializationSupport with pl.newicom
         resolveLinkTos = true
       )
     ).map {
-      case EventRecord(_, number, eventData, _) =>
-        EventMessageEntry(toOfficeEventMessage(eventData).get, number.value)
-      case ResolvedEvent(EventRecord(_, _, eventData, _), linkEvent) =>
-        EventMessageEntry(toOfficeEventMessage(eventData).get, linkEvent.number.value)
+      case EventRecord(_, number, eventData, created) =>
+        EventMessageEntry(toOfficeEventMessage(eventData).get, number.value, created)
+      case ResolvedEvent(EventRecord(_, _, eventData, created), linkEvent) =>
+        EventMessageEntry(toOfficeEventMessage(eventData).get, linkEvent.number.value, created)
       case unexpected =>
         throw new RuntimeException(s"Unexpected msg received: $unexpected")
     }

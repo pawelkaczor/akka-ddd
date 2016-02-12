@@ -1,3 +1,5 @@
 package pl.newicom.dddd.messaging.event
 
-case class EventMessageEntry(msg: OfficeEventMessage, position: Long)
+import org.joda.time.DateTime
+
+case class EventMessageEntry(msg: OfficeEventMessage, position: Long, created: Option[DateTime])

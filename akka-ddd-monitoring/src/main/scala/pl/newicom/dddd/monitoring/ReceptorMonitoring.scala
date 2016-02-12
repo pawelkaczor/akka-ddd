@@ -9,7 +9,7 @@ trait ReceptorMonitoring[ES] extends EventSourceProvider[ES] with TraceContextSu
 
   override abstract def eventSource(eventStore: ES, observable: BusinessEntity, fromPositionExclusive: Option[Long]): Source[EventMessageEntry, NotUsed] = {
     super.eventSource(eventStore, observable, fromPositionExclusive).map {
-      case entry @ EventMessageEntry(em, _) =>
+      case entry @ EventMessageEntry(em, _, _) =>
         setNewCurrentTraceContext(s"${observable.id}-${em.payloadName}")
         entry
     }
