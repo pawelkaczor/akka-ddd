@@ -6,19 +6,19 @@ import akka.actor._
 import akka.pattern.pipe
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Keep, RunnableGraph, Sink}
-import eventstore._
+import pl.newicom.dddd.messaging.event.EventSourceProvider
+
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.view.ViewUpdateInitializer.ViewUpdateInitException
 import pl.newicom.dddd.view.ViewUpdateService._
-import pl.newicom.eventstore.EventSourceProvider
 import scala.concurrent.{ExecutionContext, Future}
 import akka.Done
 
 object ViewUpdateService {
   object EnsureViewStoreAvailable
 
-  case class InitiateViewUpdate(esCon: EsConnection)
-  case class ViewUpdateInitiated(esCon: EsConnection)
+  case class InitiateViewUpdate[ES](eventStore: ES)
+  case class ViewUpdateInitiated[ES](eventStore: ES)
 
   case class ViewUpdateConfigured(viewUpdate: ViewUpdate)
 
@@ -28,11 +28,10 @@ object ViewUpdateService {
 
 }
 
-abstract class ViewUpdateService extends Actor with EventSourceProvider with ActorLogging {
+abstract class ViewUpdateService[ES] extends Actor with ActorLogging {
+  this: EventSourceProvider[ES] =>
 
   type VUConfig <: ViewUpdateConfig
-
-  override def system = context.system
 
   implicit val actorMaterializer = ActorMaterializer()
 
@@ -47,8 +46,8 @@ abstract class ViewUpdateService extends Actor with EventSourceProvider with Act
   /**
    * Overridable initialization logic
    */
-  def onViewUpdateInit(esCon: EsConnection): Future[ViewUpdateInitiated] =
-    Future.successful(ViewUpdateInitiated(esCon))
+  def onViewUpdateInit(eventStore: ES): Future[ViewUpdateInitiated[ES]] =
+    Future.successful(ViewUpdateInitiated(eventStore))
 
   /**
    * Restart ViewUpdateInitializer until it successfully obtains connection to event store and view store
@@ -68,12 +67,12 @@ abstract class ViewUpdateService extends Actor with EventSourceProvider with Act
   }
 
   override def receive: Receive = {
-    case InitiateViewUpdate(esCon) =>
-      onViewUpdateInit(esCon) pipeTo self
+    case InitiateViewUpdate(eventStore: ES @unchecked) =>
+      onViewUpdateInit(eventStore) pipeTo self
 
-    case ViewUpdateInitiated(esCon) =>
+    case ViewUpdateInitiated(eventStore: ES @unchecked) =>
       log.debug("Initiated.")
-      vuConfigs.map(viewUpdate(esCon, _)).foreach(_.pipeTo(self))
+      vuConfigs.map(viewUpdate(eventStore, _)).foreach(_.pipeTo(self))
 
     case vu @ ViewUpdate(_, _, runnable) =>
         log.debug(s"Starting: $vu")
@@ -90,12 +89,12 @@ abstract class ViewUpdateService extends Actor with EventSourceProvider with Act
   }
 
 
-  def viewUpdate(esCon: EsConnection, vuConfig: VUConfig): Future[ViewUpdate] = {
+  def viewUpdate(eventStore: ES, vuConfig: VUConfig): Future[ViewUpdate] = {
     val handler = viewHandler(vuConfig)
     val office = vuConfig.office
     handler.lastEventNumber.map { lastEvtNrOpt =>
       ViewUpdate(office, lastEvtNrOpt,
-        eventSource(esCon, office, lastEvtNrOpt)
+        eventSource(eventStore, office, lastEvtNrOpt)
           .mapAsync(1) {
             msgRecord => handler.handle(msgRecord.msg, msgRecord.position)
           }.toMat(Sink.ignore)(Keep.right)

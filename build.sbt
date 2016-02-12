@@ -26,7 +26,7 @@ lazy val `akka-ddd-messaging` = project
   .settings(
     commonSettings,
     scalacOptions ++= Seq("-language:implicitConversions"),
-    libraryDependencies ++= Json.`4s` ++ Seq(Akka.actor, nscalaTime)
+    libraryDependencies ++= Json.`4s` ++ Seq(Akka.stream, nscalaTime)
   )
 
 

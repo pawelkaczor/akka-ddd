@@ -1,6 +1,6 @@
 package pl.newicom.dddd.view.sql
 
-import eventstore.EsConnection
+import pl.newicom.dddd.messaging.event.EventSourceProvider
 import pl.newicom.dddd.view.ViewUpdateService
 import pl.newicom.dddd.view.ViewUpdateService.ViewUpdateInitiated
 import slick.dbio.DBIO
@@ -9,8 +9,8 @@ import slick.driver.JdbcProfile
 
 import scala.concurrent.Future
 
-abstract class SqlViewUpdateService(implicit val profile: JdbcProfile) extends ViewUpdateService with FutureHelpers {
-  this: SqlViewStoreConfiguration =>
+abstract class SqlViewUpdateService[ES](implicit val profile: JdbcProfile) extends ViewUpdateService[ES] with FutureHelpers {
+  this: SqlViewStoreConfiguration with EventSourceProvider[ES] =>
 
   type VUConfig = SqlViewUpdateConfig
 
@@ -18,9 +18,9 @@ abstract class SqlViewUpdateService(implicit val profile: JdbcProfile) extends V
     viewStore.run(profile.defaultTables).mapToUnit
   }
 
-  override def onViewUpdateInit(esCon: EsConnection): Future[ViewUpdateInitiated] =
+  override def onViewUpdateInit(eventStore: ES): Future[ViewUpdateInitiated[ES]] =
     viewStore.run {
-      onViewUpdateInit >> successful(ViewUpdateInitiated(esCon))
+      onViewUpdateInit >> successful(ViewUpdateInitiated(eventStore))
     }
 
   def onViewUpdateInit: DBIO[Unit] =

@@ -27,16 +27,17 @@ object Deps {
 
   object Akka {
     val actor             = apply("actor")
-    val httpCore          = apply("http-experimental")
-    val httpTestKit       = apply("http-testkit-experimental")
-    val http              = Seq(httpCore, httpTestKit)
-    val slf4j             = apply("slf4j")
-    val persistence       = apply("persistence")
     val clusterTools      = apply("cluster-tools")
     val clusterSharding   = apply("cluster-sharding")
     val contributions     = apply("contrib")
-    val testkit           = apply("testkit")
+    val httpCore          = apply("http-experimental")
+    val httpTestKit       = apply("http-testkit-experimental")
+    val http              = Seq(httpCore, httpTestKit)
     val multiNodeTestkit  = apply("multi-node-testkit")
+    val persistence       = apply("persistence")
+    val slf4j             = apply("slf4j")
+    val stream            = apply("stream")
+    val testkit           = apply("testkit")
 
     private def apply(moduleName: String) = "com.typesafe.akka" %% s"akka-$moduleName" % Version.Akka
   }
