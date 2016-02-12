@@ -1,28 +1,18 @@
 package pl.newicom.dddd.monitoring
 
-import akka.contrib.pattern.ReceivePipeline
-import akka.contrib.pattern.ReceivePipeline.Inner
-import pl.newicom.dddd.aggregate.{BusinessEntity, EntityId}
-import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{DemandCallback, DemandConfig}
-import pl.newicom.dddd.messaging.event.{EventMessageEntry, EventStreamSubscriber}
+import akka.NotUsed
+import akka.stream.scaladsl.Source
+import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.messaging.event.{EventMessageEntry, EventSourceProvider}
 
-trait ReceptorMonitoring extends EventStreamSubscriber with TraceContextSupport {
-  this: ReceivePipeline =>
+trait ReceptorMonitoring[ES] extends EventSourceProvider[ES] with TraceContextSupport {
 
-  var observed: Option[EntityId] = None
-
-  override abstract def subscribe(observable: BusinessEntity, fromPositionExclusive: Option[Long], demandConfig: DemandConfig): DemandCallback  = {
-    observed = Some(observable.id)
-    super.subscribe(observable, fromPositionExclusive, demandConfig)
+  override abstract def eventSource(eventStore: ES, observable: BusinessEntity, fromPositionExclusive: Option[Long]): Source[EventMessageEntry, NotUsed] = {
+    super.eventSource(eventStore, observable, fromPositionExclusive).map {
+      case entry @ EventMessageEntry(em, _) =>
+        setNewCurrentTraceContext(s"${observable.id}-${em.payloadName}")
+        entry
+    }
   }
-
-
-  pipelineOuter {
-    case msg @ EventMessageEntry(em, _) =>
-      val contextName  = s"${observed.getOrElse("???")}-${em.payloadName}"
-      setNewCurrentTraceContext(contextName)
-      Inner(msg)
-  }
-
 
 }
