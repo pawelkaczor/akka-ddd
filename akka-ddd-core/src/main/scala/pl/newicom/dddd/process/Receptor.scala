@@ -89,7 +89,7 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
   override def recoveryCompleted(): Unit = {
     demandCallback = Some(subscribe(
         observable            = config.stimuliSource,
-        fromPositionExclusive = lastSentDeliveryId,
+        fromPosExcl = lastSentDeliveryId,
         demandConfig          = DemandConfig(
                                   subscriberCapacity = config.capacity,
                                   initialDemand = config.capacity - unconfirmedNumber)))

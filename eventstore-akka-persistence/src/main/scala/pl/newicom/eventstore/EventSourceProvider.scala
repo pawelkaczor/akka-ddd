@@ -1,13 +1,12 @@
 package pl.newicom.eventstore
 
-import akka.actor.{ActorSystem, Actor}
+import akka.actor.{Actor, ActorSystem}
 import akka.event.LoggingAdapter
 import akka.stream.scaladsl.Source
-import eventstore.{ResolvedEvent, EventRecord, EsConnection}
 import eventstore.EventNumber.Exact
+import eventstore.{EsConnection, EventRecord, ResolvedEvent}
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.messaging.event.EventMessageEntry
-import akka.NotUsed
 
 trait EventSourceProvider extends EventstoreSerializationSupport with pl.newicom.dddd.messaging.event.EventSourceProvider[EsConnection] {
   this: Actor =>
@@ -16,7 +15,7 @@ trait EventSourceProvider extends EventstoreSerializationSupport with pl.newicom
 
   def log: LoggingAdapter
 
-  override def eventSource(eventStore: EsConnection, observable: BusinessEntity, fromPosExcl: Option[Long]): Source[EventMessageEntry, NotUsed] = {
+  override def eventSource(eventStore: EsConnection, observable: BusinessEntity, fromPosExcl: Option[Long]): EventSource = {
     val streamId = StreamIdResolver.streamId(observable)
     log.debug(s"Subscribing to $streamId from position $fromPosExcl (exclusive)")
     Source.fromPublisher(

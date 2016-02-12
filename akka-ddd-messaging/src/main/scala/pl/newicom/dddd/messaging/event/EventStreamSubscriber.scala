@@ -20,11 +20,11 @@ trait EventStreamSubscriber {
    * Subscribes this actor (the subscriber) to given event stream.
    * The subscriber will receive events as [[pl.newicom.dddd.messaging.event.EventMessageEntry]] messages.
    *
-   * @param fromPositionExclusive if provided Subscriber will be receiving events
+   * @param fromPosExcl if provided Subscriber will be receiving events
    *                              from given position (exclusively)
     * @return callback that the subscriber should invoke after processing an event.
    */
-  def subscribe(observable: BusinessEntity, fromPositionExclusive: Option[Long], demandConfig: DemandConfig): DemandCallback
+  def subscribe(observable: BusinessEntity, fromPosExcl: Option[Long], demandConfig: DemandConfig): DemandCallback
 
 
 }

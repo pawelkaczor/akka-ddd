@@ -24,7 +24,8 @@ class DemandController(triggerActor: ActorRef, initialDemand: Int) extends Deman
 }
 
 trait EventSourceProvider[ES] {
-  def eventSource(eventStore: ES, observable: BusinessEntity, fromPositionExclusive: Option[Long]): Source[EventMessageEntry, NotUsed]
+  type EventSource = Source[EventMessageEntry, NotUsed]
+  def eventSource(eventStore: ES, observable: BusinessEntity, fromPosExcl: Option[Long]): EventSource
 }
 
 trait DefaultEventStreamSubscriber[ES] extends EventStreamSubscriber {
@@ -34,11 +35,11 @@ trait DefaultEventStreamSubscriber[ES] extends EventStreamSubscriber {
 
   implicit val actorMaterializer = ActorMaterializer()
 
-  override def subscribe(observable: BusinessEntity, fromPositionExclusive: Option[Long], demandConfig: DemandConfig): DemandCallback = {
-    subscribe(eventSource(eventStore, observable, fromPositionExclusive), demandConfig)
+  override def subscribe(observable: BusinessEntity, fromPosExcl: Option[Long], demandConfig: DemandConfig): DemandCallback = {
+    subscribe(eventSource(eventStore, observable, fromPosExcl), demandConfig)
   }
 
-  private def subscribe(eventSource: Source[EventMessageEntry, NotUsed], demandConfig: DemandConfig): DemandCallback = {
+  private def subscribe(eventSource: EventSource, demandConfig: DemandConfig): DemandCallback = {
 
     def flow: Flow[Trigger, EventMessageEntry, NotUsed] = Flow.fromGraph(
       GraphDSL.create() { implicit b =>

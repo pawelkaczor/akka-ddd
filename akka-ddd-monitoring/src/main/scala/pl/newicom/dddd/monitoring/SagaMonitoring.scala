@@ -9,6 +9,7 @@ trait SagaMonitoring extends SagaAbstractStateHandling with TraceContextSupport 
   override abstract def updateState(event: DomainEvent): Unit = {
     super.updateState(event)
     if (!recoveryRunning) {
+      // finish 'reaction' record
       finishCurrentTraceContext()
     }
   }
