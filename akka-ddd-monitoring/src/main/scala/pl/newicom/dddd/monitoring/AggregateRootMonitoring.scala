@@ -6,7 +6,7 @@ import pl.newicom.dddd.aggregate.{AggregateRootBase, EventMessageFactory}
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
-import pl.newicom.dddd.monitoring.Stage.Handling_Of_Command
+import pl.newicom.dddd.monitoring.Stage._
 
 trait AggregateRootMonitoring extends EventHandler with EventMessageFactory with TraceContextSupport {
   this: AggregateRootBase =>
@@ -19,10 +19,30 @@ trait AggregateRootMonitoring extends EventHandler with EventMessageFactory with
 
   pipelineOuter {
     case cm: CommandMessage =>
+      /**
+        * Record elapsed time since the command was created (by write-front)
+        */
+      def recordCommandCreationToReceptionPeriod() =
+        newTraceContext(
+          name            = Reception_Of_Command.traceContextName(this, cm),
+          startedOnMillis = cm.timestamp.getTime
+        ).foreach(
+          _.finish()
+        )
+
+      def startRecordingOfCommandHandling() =
+        setNewCurrentTraceContext(
+          name = Handling_Of_Command.traceContextName(this, cm)
+        )
+
       log.debug("Received: {}", cm)
-      setNewCurrentTraceContext(Handling_Of_Command.traceContextName(officeId, cm))
+
+      recordCommandCreationToReceptionPeriod()
+      startRecordingOfCommandHandling()
+
       Inner(cm)
   }
+
 
   def commandTraceContext = currentTraceContext
 }

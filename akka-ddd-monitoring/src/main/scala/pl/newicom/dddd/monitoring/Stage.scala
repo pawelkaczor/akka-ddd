@@ -10,7 +10,8 @@ case class Stage(position: Integer, shortName: String) {
 }
 
 object Stage {
-  val Handling_Of_Command = Stage(1, "handling")
-  val Reception_Of_Event  = Stage(2, "reception")
-  val Reaction_On_Event   = Stage(3 ,"reaction")
+  val Reception_Of_Command = Stage(1, "reception")
+  val Handling_Of_Command  = Stage(2, "handling")
+  val Reception_Of_Event   = Stage(3, "reception")
+  val Reaction_On_Event    = Stage(4 ,"reaction")
 }
