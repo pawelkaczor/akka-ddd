@@ -3,7 +3,8 @@ package pl.newicom.dddd.process
 import akka.actor.{ActorRef, Props}
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
-import pl.newicom.dddd.office.{SagaOffice, SagaConfig, OfficeFactory}
+import pl.newicom.dddd.office.OfficeFactory
+import pl.newicom.dddd.saga.{SagaOffice, SagaConfig}
 
 import scala.reflect.ClassTag
 

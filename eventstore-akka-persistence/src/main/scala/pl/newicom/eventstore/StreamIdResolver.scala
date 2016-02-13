@@ -3,7 +3,8 @@ package pl.newicom.eventstore
 import eventstore.EventStream.{Plain, System}
 import eventstore.{EventStream => ESEventStream}
 import pl.newicom.dddd.aggregate.BusinessEntity
-import pl.newicom.dddd.office.{LocalOfficeId, RemoteOfficeId, SagaConfig}
+import pl.newicom.dddd.office.{LocalOfficeId, RemoteOfficeId}
+import pl.newicom.dddd.saga.SagaConfig
 
 object StreamIdResolver {
 

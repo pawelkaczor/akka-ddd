@@ -4,8 +4,9 @@ import akka.actor.{ActorPath, Props}
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
-import pl.newicom.dddd.office.{LocalOfficeId, SagaConfig}
+import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.process._
+import pl.newicom.dddd.saga.SagaConfig
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{DummyCreated, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummyState, EventApplied, DummyCommand}
 

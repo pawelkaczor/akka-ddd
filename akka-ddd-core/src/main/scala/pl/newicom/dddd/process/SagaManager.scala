@@ -3,7 +3,7 @@ package pl.newicom.dddd.process
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.event.{EventStreamSubscriber, OfficeEventMessage}
-import pl.newicom.dddd.office.SagaOffice
+import pl.newicom.dddd.saga.SagaOffice
 
 import scala.concurrent.duration._
 

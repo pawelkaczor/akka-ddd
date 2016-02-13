@@ -30,8 +30,5 @@ case class Office[E: ClassTag](val officeId: LocalOfficeId[E], actor: ActorRef) 
   def actorPath: ActorPath = actor.path
 }
 
-case class BusinessProcess(id: EntityId, department: String) extends BusinessEntity
 
-class SagaOffice[E: ClassTag](val config: SagaConfig[E], actor: ActorRef) extends Office[E](config, actor) {
-  def businessProcess = BusinessProcess(config.bpsName, config.department)
-}
+

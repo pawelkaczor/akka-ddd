@@ -1,6 +1,7 @@
-package pl.newicom.dddd.office
+package pl.newicom.dddd.saga
 
 import pl.newicom.dddd.aggregate.{DomainEvent, EntityId}
+import pl.newicom.dddd.office.LocalOfficeId
 
 import scala.reflect.ClassTag
 

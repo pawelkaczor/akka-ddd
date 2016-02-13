@@ -8,10 +8,10 @@ import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.SimpleOffice._
-import pl.newicom.dddd.office.SagaOffice
 import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
 import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, registerSaga}
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
+import pl.newicom.dddd.saga.SagaOffice
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, CreateDummy, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
 import pl.newicom.dddd.test.dummy.{dummyOfficeId, DummyAggregateRoot, DummySaga}

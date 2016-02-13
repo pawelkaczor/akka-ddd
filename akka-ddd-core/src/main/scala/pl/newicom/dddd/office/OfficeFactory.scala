@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
+import pl.newicom.dddd.saga.{SagaOffice, SagaConfig}
 
 import scala.reflect.ClassTag
 

@@ -6,7 +6,7 @@ import pl.newicom.dddd.messaging.AddressableMessage
 case class Stage(position: Integer, shortName: String) {
 
   def traceContextName(observed: BusinessEntity, msg: AddressableMessage): String =
-    s"$position-${observed.department.toUpperCase}-$shortName-${msg.payloadName}"
+    s"$position-${observed.department.capitalize}-$shortName-${msg.payloadName}"
 }
 
 object Stage {
