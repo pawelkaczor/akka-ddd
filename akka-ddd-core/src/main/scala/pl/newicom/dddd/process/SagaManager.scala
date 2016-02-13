@@ -10,11 +10,14 @@ import scala.concurrent.duration._
 class SagaManager[E <: Saga](implicit val sagaOffice: SagaOffice[E]) extends Receptor {
   this: EventStreamSubscriber =>
 
-  lazy val config: ReceptorConfig = {
+  def defaultConfig: ReceptorConfig =
     ReceptorBuilder()
       .reactTo(sagaOffice.businessProcess)
       .propagateTo(sagaOffice.actor.path)
-  }
+
+
+  lazy val config = defaultConfig
+
 
   override def redeliverInterval = 30.seconds
   override def warnAfterNumberOfUnconfirmedAttempts = 15
