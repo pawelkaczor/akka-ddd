@@ -26,6 +26,7 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
   override def persistenceId: String = officeId.clerkGlobalId(id)
 
   override def id = sagaId
+  override def department = officeId.department
 
   def currentEventMsg: EventMessage = _lastEventMessage.get
 

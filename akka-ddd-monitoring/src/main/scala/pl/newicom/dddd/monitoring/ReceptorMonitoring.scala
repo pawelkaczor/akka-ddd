@@ -1,20 +1,8 @@
 package pl.newicom.dddd.monitoring
 
 import pl.newicom.dddd.aggregate.BusinessEntity
-import pl.newicom.dddd.messaging.event.{EventSourceProvider, OfficeEventMessage}
-import pl.newicom.dddd.monitoring.ReceptorMonitoring.Phase._
-
-object ReceptorMonitoring {
-  case class Phase(name: String) {
-    def traceContextName(observed: BusinessEntity, msg: OfficeEventMessage): String =
-      s"${observed.id}-${msg.payloadName}-$name"
-  }
-
-  object Phase {
-    val Reaction = Phase("reaction")
-    val Reception = Phase("reception")
-  }
-}
+import pl.newicom.dddd.messaging.event.EventSourceProvider
+import pl.newicom.dddd.monitoring.Stage._
 
 trait ReceptorMonitoring[ES] extends EventSourceProvider[ES] with TraceContextSupport {
 
@@ -26,7 +14,7 @@ trait ReceptorMonitoring[ES] extends EventSourceProvider[ES] with TraceContextSu
           */
         def recordCreationToReceptionPeriod() =
           newTraceContext(
-            name            = Reception.traceContextName(observable, entry.msg),
+            name            = Reception_Of_Event.traceContextName(observable, entry.msg),
             startedOnMillis = entry.created.get.getMillis
           ).foreach(
             _.finish()
@@ -34,7 +22,7 @@ trait ReceptorMonitoring[ES] extends EventSourceProvider[ES] with TraceContextSu
 
         def startRecordingReaction() =
           setNewCurrentTraceContext(
-            name = Reaction.traceContextName(observable, entry.msg)
+            name = Reaction_On_Event.traceContextName(observable, entry.msg)
           )
 
         recordCreationToReceptionPeriod()

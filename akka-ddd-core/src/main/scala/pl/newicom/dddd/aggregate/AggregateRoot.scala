@@ -21,6 +21,7 @@ abstract class AggregateRootActorFactory[A <: AggregateRoot[_, A]: LocalOfficeId
 abstract class AggregateRoot[S <: AggregateState[S], A <: AggregateRoot[S, A] : LocalOfficeId] extends AggregateRootBase {
 
   override def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
+  override def department: String = officeId.department
 
   type AggregateRootFactory = PartialFunction[DomainEvent, S]
 

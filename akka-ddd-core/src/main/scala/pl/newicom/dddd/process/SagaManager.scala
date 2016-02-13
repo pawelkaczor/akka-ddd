@@ -2,7 +2,7 @@ package pl.newicom.dddd.process
 
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.MetaData._
-import pl.newicom.dddd.messaging.event.{OfficeEventMessage, EventStreamSubscriber}
+import pl.newicom.dddd.messaging.event.{EventStreamSubscriber, OfficeEventMessage}
 import pl.newicom.dddd.office.SagaOffice
 
 import scala.concurrent.duration._
@@ -10,10 +10,11 @@ import scala.concurrent.duration._
 class SagaManager[E <: Saga](implicit val sagaOffice: SagaOffice[E]) extends Receptor {
   this: EventStreamSubscriber =>
 
-  lazy val config: ReceptorConfig =
+  lazy val config: ReceptorConfig = {
     ReceptorBuilder()
-      .reactTo(sagaOffice.bps)
+      .reactTo(sagaOffice.businessProcess)
       .propagateTo(sagaOffice.actor.path)
+  }
 
   override def redeliverInterval = 30.seconds
   override def warnAfterNumberOfUnconfirmedAttempts = 15

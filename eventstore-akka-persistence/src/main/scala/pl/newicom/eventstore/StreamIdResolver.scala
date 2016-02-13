@@ -12,10 +12,10 @@ object StreamIdResolver {
     case o: SagaConfig[_] =>
       Plain(s"${o.id}")
 
-    case LocalOfficeId(id) =>
+    case LocalOfficeId(id, _) =>
       System(s"ce-$id")
 
-    case RemoteOfficeId(id) =>
+    case RemoteOfficeId(id, _) =>
       System(s"ce-$id")
 
     case clerk: BusinessEntity =>

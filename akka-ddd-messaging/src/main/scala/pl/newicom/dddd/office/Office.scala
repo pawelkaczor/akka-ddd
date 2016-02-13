@@ -6,20 +6,22 @@ import pl.newicom.dddd.aggregate.{BusinessEntity, EntityId}
 import scala.reflect.ClassTag
 
 trait OfficeId extends BusinessEntity {
-  def clerkGlobalId(clerkId: EntityId) = s"$id-$clerkId"
+  def clerkGlobalId(clerkId: EntityId): String =
+    s"$id-$clerkId"
 
-  def clerk(clerkId: EntityId): BusinessEntity = new BusinessEntity {
-    def id = clerkGlobalId(clerkId)
-  }
+  def clerk(clerkId: EntityId): BusinessEntity =
+    Clerk(clerkGlobalId(clerkId), department)
 }
 
-case class RemoteOfficeId(id: EntityId) extends OfficeId
+case class Clerk(id: EntityId, department: String) extends BusinessEntity
+
+case class RemoteOfficeId(id: EntityId, department: String) extends OfficeId
 
 object LocalOfficeId {
-  implicit def fromRemoteId[E: ClassTag](remoteId: RemoteOfficeId): LocalOfficeId[E] = LocalOfficeId[E](remoteId.id)
+  implicit def fromRemoteId[E: ClassTag](remoteId: RemoteOfficeId): LocalOfficeId[E] = LocalOfficeId[E](remoteId.id, remoteId.department)
 }
 
-case class LocalOfficeId[E: ClassTag](val id: EntityId) extends OfficeId {
+case class LocalOfficeId[E: ClassTag](val id: EntityId, val department: String) extends OfficeId {
   def clerkClass: Class[E] = implicitly[ClassTag[E]].runtimeClass.asInstanceOf[Class[E]]
 }
 
@@ -28,9 +30,8 @@ case class Office[E: ClassTag](val officeId: LocalOfficeId[E], actor: ActorRef) 
   def actorPath: ActorPath = actor.path
 }
 
+case class BusinessProcess(id: EntityId, department: String) extends BusinessEntity
 
 class SagaOffice[E: ClassTag](val config: SagaConfig[E], actor: ActorRef) extends Office[E](config, actor) {
-  def bps = new BusinessEntity {
-    override def id: EntityId = config.bpsName
-  }
+  def businessProcess = BusinessProcess(config.bpsName, config.department)
 }

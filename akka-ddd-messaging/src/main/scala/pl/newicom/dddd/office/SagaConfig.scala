@@ -7,7 +7,8 @@ import scala.reflect.ClassTag
 /**
   * @param bpsName name of Business Process Stream (bps)
   */
-abstract class SagaConfig[E : ClassTag](val bpsName: String) extends LocalOfficeId[E](s"${bpsName}Saga") {
+abstract class SagaConfig[E : ClassTag](val bpsName: String, departmentId: EntityId = null)
+  extends LocalOfficeId[E](s"${bpsName}Saga", Option(departmentId).getOrElse(bpsName)) {
 
   /**
     * Correlation ID identifies process instance.

@@ -6,6 +6,7 @@ import pl.newicom.dddd.aggregate.{AggregateRootBase, EventMessageFactory}
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
+import pl.newicom.dddd.monitoring.Stage.Handling_Of_Command
 
 trait AggregateRootMonitoring extends EventHandler with EventMessageFactory with TraceContextSupport {
   this: AggregateRootBase =>
@@ -19,13 +20,9 @@ trait AggregateRootMonitoring extends EventHandler with EventMessageFactory with
   pipelineOuter {
     case cm: CommandMessage =>
       log.debug("Received: {}", cm)
-      setNewCurrentTraceContext(traceContextName(cm))
+      setNewCurrentTraceContext(Handling_Of_Command.traceContextName(officeId, cm))
       Inner(cm)
   }
-
-  def traceContextName(cm: CommandMessage): String =
-    s"AR-${cm.payloadName}"
-
 
   def commandTraceContext = currentTraceContext
 }
