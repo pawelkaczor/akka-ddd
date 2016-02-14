@@ -39,5 +39,5 @@ trait TraceContextSupport {
     newTraceContext(name).foreach(setCurrentTraceContext)
 
   def finishCurrentTraceContext(): Unit =
-    Option(Tracer.currentContext).foreach(_.finish())
+    Option(Tracer.currentContext).filter(_.isOpen).foreach(_.finish())
 }
