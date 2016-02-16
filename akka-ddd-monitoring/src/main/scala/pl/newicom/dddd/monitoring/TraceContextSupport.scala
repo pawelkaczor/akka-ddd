@@ -2,7 +2,7 @@ package pl.newicom.dddd.monitoring
 
 import kamon.Kamon
 import kamon.trace.{TraceContext, Tracer}
-import kamon.util.MilliTimestamp
+import kamon.util.{RelativeNanoTimestamp, MilliTimestamp}
 
 trait TraceContextSupport {
 
@@ -23,6 +23,20 @@ trait TraceContextSupport {
         timestamp = new MilliTimestamp(startedOnMillis).toRelativeNanoTimestamp,
         isOpen = true,
         isLocal = false))
+    } catch {
+      case e: NoClassDefFoundError => None // Kamon not initialized, ignore
+      case e: ExceptionInInitializerError => None // Kamon not initialized, ignore
+    }
+  }
+
+  def newLocalTraceContext(name: String, startedOnNanos: Long): Option[TraceContext] = {
+    try {
+      Some(Kamon.tracer.newContext(
+        name,
+        token = None,
+        timestamp = new RelativeNanoTimestamp(startedOnNanos),
+        isOpen = true,
+        isLocal = true))
     } catch {
       case e: NoClassDefFoundError => None // Kamon not initialized, ignore
       case e: ExceptionInInitializerError => None // Kamon not initialized, ignore

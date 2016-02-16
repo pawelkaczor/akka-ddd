@@ -20,14 +20,8 @@ trait ReceptorMonitoring[ES] extends EventSourceProvider[ES] with TraceContextSu
             _.finish()
           )
 
-        def startRecordingReaction() =
-          setNewCurrentTraceContext(
-            name = Reaction_On_Event.traceContextName(observable, entry.msg)
-          )
-
         recordCreationToReceptionPeriod()
-        startRecordingReaction()
-        entry
+        entry.copy(msg = entry.msg.withMetaAttribute(Reaction_On_Event.shortName, System.nanoTime()))
     }
 
 }
