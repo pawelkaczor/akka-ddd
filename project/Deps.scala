@@ -3,7 +3,7 @@ import sbt._
 object Deps {
 
   object Version {
-    val Akka                  = "2.4.2-RC2"
+    val Akka                  = "2.4.2"
 
     val EventStoreClient      = "2.2.1-SNAPSHOT"
     val EventStoreAkkaJournal = "2.2.1-SNAPSHOT"
@@ -31,7 +31,7 @@ object Deps {
     val clusterSharding   = apply("cluster-sharding")
     val contributions     = apply("contrib")
     val httpCore          = apply("http-experimental")
-    val httpTestKit       = apply("http-testkit-experimental")
+    val httpTestKit       = apply("http-testkit")
     val http              = Seq(httpCore, httpTestKit)
     val multiNodeTestkit  = apply("multi-node-testkit")
     val persistence       = apply("persistence")
