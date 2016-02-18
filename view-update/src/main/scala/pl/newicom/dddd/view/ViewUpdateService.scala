@@ -28,8 +28,8 @@ object ViewUpdateService {
 
 }
 
-abstract class ViewUpdateService[ES] extends Actor with ActorLogging {
-  this: EventSourceProvider[ES] =>
+abstract class ViewUpdateService extends Actor with ActorLogging {
+  this: EventSourceProvider =>
 
   type VUConfig <: ViewUpdateConfig
 
@@ -46,7 +46,7 @@ abstract class ViewUpdateService[ES] extends Actor with ActorLogging {
   /**
    * Overridable initialization logic
    */
-  def onViewUpdateInit(eventStore: ES): Future[ViewUpdateInitiated[ES]] =
+  def onViewUpdateInit(eventStore: EventStore): Future[ViewUpdateInitiated[EventStore]] =
     Future.successful(ViewUpdateInitiated(eventStore))
 
   /**
@@ -67,10 +67,10 @@ abstract class ViewUpdateService[ES] extends Actor with ActorLogging {
   }
 
   override def receive: Receive = {
-    case InitiateViewUpdate(eventStore: ES @unchecked) =>
+    case InitiateViewUpdate(eventStore: EventStore @unchecked) =>
       onViewUpdateInit(eventStore) pipeTo self
 
-    case ViewUpdateInitiated(eventStore: ES @unchecked) =>
+    case ViewUpdateInitiated(eventStore: EventStore @unchecked) =>
       log.debug("Initiated.")
       vuConfigs.map(viewUpdate(eventStore, _)).foreach(_.pipeTo(self))
 
@@ -89,7 +89,7 @@ abstract class ViewUpdateService[ES] extends Actor with ActorLogging {
   }
 
 
-  def viewUpdate(eventStore: ES, vuConfig: VUConfig): Future[ViewUpdate] = {
+  def viewUpdate(eventStore: EventStore, vuConfig: VUConfig): Future[ViewUpdate] = {
     val handler = viewHandler(vuConfig)
     val office = vuConfig.office
     handler.lastEventNumber.map { lastEvtNrOpt =>

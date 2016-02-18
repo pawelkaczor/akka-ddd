@@ -4,9 +4,9 @@ import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.messaging.event.EventSourceProvider
 import pl.newicom.dddd.monitoring.Stage._
 
-trait ReceptorMonitoring[ES] extends EventSourceProvider[ES] with TraceContextSupport {
+trait ReceptorMonitoring extends EventSourceProvider with TraceContextSupport {
 
-  override abstract def eventSource(es: ES, observable: BusinessEntity, fromPosExcl: Option[Long]): EventSource =
+  override abstract def eventSource(es: EventStore, observable: BusinessEntity, fromPosExcl: Option[Long]): EventSource =
     super.eventSource(es, observable, fromPosExcl) map {
       entry =>
         /**

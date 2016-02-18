@@ -4,7 +4,6 @@ import akka.actor.Props
 import akka.event.EventStream
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
-import eventstore.EsConnection
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.eventhandling.LocalPublisher
@@ -58,7 +57,7 @@ class SqlViewUpdateServiceIntegrationSpec
       system.eventStream.subscribe(probe.ref, classOf[ViewUpdated])
 
       system.actorOf(Props(
-        new SqlViewUpdateService[EsConnection] with SqlViewStoreConfiguration with EventSourceProvider {
+        new SqlViewUpdateService with SqlViewStoreConfiguration with EventSourceProvider {
           def config = SqlViewUpdateServiceIntegrationSpec.this.config
           def vuConfigs = List(SqlViewUpdateConfig("test-view", dummyOfficeId, new Projection {
 
