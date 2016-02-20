@@ -5,7 +5,7 @@ import java.net.URL
 
 name := "akka-ddd"
 
-version in ThisBuild := "1.2.0"
+version in ThisBuild := "1.2.1-SNAPSHOT"
 organization in ThisBuild := "pl.newicom.dddd"
 scalaVersion in ThisBuild := "2.11.7"
 
@@ -54,7 +54,7 @@ lazy val `akka-ddd-write-front` = project
 lazy val `view-update` = project
   .settings(
     commonSettings
-  ).dependsOn(`akka-ddd-messaging`, `eventstore-akka-persistence`)
+  ).dependsOn(`akka-ddd-messaging`)
 
 
 lazy val `view-update-sql` = project
@@ -71,7 +71,7 @@ lazy val `view-update-sql` = project
       logbackClassic % "test", scalaCheck % "test"
 
     ))
-  .dependsOn(`view-update`, `akka-ddd-test` % "test->compile;test->test")
+  .dependsOn(`view-update`, `akka-ddd-test` % "test->compile;test->test", `eventstore-akka-persistence` % "test->compile")
 
 
 lazy val `akka-ddd-test` = project

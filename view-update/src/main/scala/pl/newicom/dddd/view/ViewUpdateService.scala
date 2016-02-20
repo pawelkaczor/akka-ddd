@@ -16,9 +16,10 @@ import akka.Done
 
 object ViewUpdateService {
   object EnsureViewStoreAvailable
+  object EnsureEventStoreAvailable
 
-  case class InitiateViewUpdate[ES](eventStore: ES)
-  case class ViewUpdateInitiated[ES](eventStore: ES)
+  case object InitiateViewUpdate
+  case object ViewUpdateInitiated
 
   case class ViewUpdateConfigured(viewUpdate: ViewUpdate)
 
@@ -37,17 +38,22 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
 
   implicit val ec: ExecutionContext = context.dispatcher
 
+  def eventStore: EventStore
+
   def vuConfigs: Seq[VUConfig]
 
   def viewHandler(config: VUConfig): ViewHandler
 
   def ensureViewStoreAvailable: Future[Unit]
 
+  def ensureEventStoreAvailable: Future[EventStore] =
+    Future(eventStore)
+
   /**
    * Overridable initialization logic
    */
-  def onViewUpdateInit(eventStore: EventStore): Future[ViewUpdateInitiated[EventStore]] =
-    Future.successful(ViewUpdateInitiated(eventStore))
+  def onViewUpdateInit(eventStore: EventStore): Future[ViewUpdateInitiated.type] =
+    Future.successful(ViewUpdateInitiated)
 
   /**
    * Restart ViewUpdateInitializer until it successfully obtains connection to event store and view store
@@ -67,10 +73,10 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
   }
 
   override def receive: Receive = {
-    case InitiateViewUpdate(eventStore: EventStore @unchecked) =>
+    case InitiateViewUpdate =>
       onViewUpdateInit(eventStore) pipeTo self
 
-    case ViewUpdateInitiated(eventStore: EventStore @unchecked) =>
+    case ViewUpdateInitiated =>
       log.debug("Initiated.")
       vuConfigs.map(viewUpdate(eventStore, _)).foreach(_.pipeTo(self))
 
@@ -83,6 +89,9 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
 
     case EnsureViewStoreAvailable =>
       ensureViewStoreAvailable pipeTo sender()
+
+    case EnsureEventStoreAvailable =>
+      ensureEventStoreAvailable pipeTo sender()
 
     case unexpected =>
       throw new RuntimeException(s"Unexpected message received: $unexpected")

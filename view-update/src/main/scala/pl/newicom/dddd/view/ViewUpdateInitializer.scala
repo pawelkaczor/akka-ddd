@@ -1,17 +1,18 @@
 package pl.newicom.dddd.view
 
-import akka.actor.Status.{Success, Failure}
+import akka.actor.Status.Failure
 import akka.actor.{Actor, ActorLogging, ActorRef}
 import akka.util.Timeout
-import eventstore.EventStoreExtension
-import eventstore.EventStream.System
 import pl.newicom.dddd.view.ViewUpdateInitializer._
+import pl.newicom.dddd.view.ViewUpdateService.{EnsureViewStoreAvailable, EnsureEventStoreAvailable}
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import akka.pattern.ask
+import akka.pattern.pipe
 
 object ViewUpdateInitializer {
-  object Started
+  case object InitializationStarted
+  case object InitializationCompleted
   class ViewUpdateInitException(cause: Throwable) extends Exception(cause)
 }
 
@@ -19,36 +20,26 @@ class ViewUpdateInitializer(updateService: ActorRef) extends Actor with ActorLog
 
   import context.dispatcher
 
+  implicit val timeout = Timeout(5.seconds)
+
   @scala.throws[Exception](classOf[Exception])
   override def preStart(): Unit = {
-    self ! Started
+    self ! InitializationStarted
   }
 
-  private val esExtension: EventStoreExtension = EventStoreExtension(context.system)
-
-  def ensureEventStoreAvailable(): Future[Any] = {
-    esExtension.connection.getStreamMetadata(System("test"))
-  }
-
-  def ensureViewStoreAvailable(): Future[Any] = {
-    import akka.pattern.ask
-    implicit val timeout = Timeout(5.seconds)
-    updateService ? ViewUpdateService.EnsureViewStoreAvailable
-  }
-
-  import akka.pattern.pipe
   override def receive: Receive = {
-    case Started =>
+    case InitializationStarted =>
       (for {
-        _ <- ensureEventStoreAvailable()
-        _ <- ensureViewStoreAvailable()
-      } yield "OK").pipeTo(self)
+        _ <- updateService ? EnsureEventStoreAvailable
+        _ <- updateService ? EnsureViewStoreAvailable
+      } yield InitializationCompleted).pipeTo(self)
+
+    case InitializationCompleted =>
+      updateService ! ViewUpdateService.InitiateViewUpdate
 
     case Failure(ex) =>
       throw new ViewUpdateInitException(ex)
 
-    case _ =>
-      updateService ! ViewUpdateService.InitiateViewUpdate(esExtension.connection)
 
   }
 

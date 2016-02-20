@@ -18,9 +18,9 @@ abstract class SqlViewUpdateService(implicit val profile: JdbcProfile) extends V
     viewStore.run(profile.defaultTables).mapToUnit
   }
 
-  override def onViewUpdateInit(eventStore: EventStore): Future[ViewUpdateInitiated[EventStore]] =
+  override def onViewUpdateInit(eventStore: EventStore): Future[ViewUpdateInitiated.type] =
     viewStore.run {
-      onViewUpdateInit >> successful(ViewUpdateInitiated(eventStore))
+      onViewUpdateInit >> successful(ViewUpdateInitiated)
     }
 
   def onViewUpdateInit: DBIO[Unit] =
