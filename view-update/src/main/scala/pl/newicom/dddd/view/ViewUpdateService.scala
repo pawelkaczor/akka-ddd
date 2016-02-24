@@ -3,7 +3,7 @@ package pl.newicom.dddd.view
 import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy._
 import akka.actor._
-import akka.pattern.pipe
+import akka.pattern.{BackoffSupervisor, Backoff, pipe}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Keep, RunnableGraph, Sink}
 import pl.newicom.dddd.messaging.event.EventSourceProvider
@@ -11,6 +11,7 @@ import pl.newicom.dddd.messaging.event.EventSourceProvider
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.view.ViewUpdateInitializer.ViewUpdateInitException
 import pl.newicom.dddd.view.ViewUpdateService._
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import akka.Done
 
@@ -55,21 +56,23 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
   def onViewUpdateInit(eventStore: EventStore): Future[ViewUpdateInitiated.type] =
     Future.successful(ViewUpdateInitiated)
 
-  /**
-   * Restart ViewUpdateInitializer until it successfully obtains connection to event store and view store
-   * During normal processing escalate all exceptions so that feeding is restarted
-   */
-  override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
-    case _: ActorKilledException               => Stop
-    case _: ActorInitializationException       => Stop
-    case _: ViewUpdateInitException            => Restart
-    case _                                     => Escalate
-  }
-
 
   @scala.throws[Exception](classOf[Exception])
   override def preStart(): Unit = {
-    context.actorOf(Props(new ViewUpdateInitializer(self)))
+    val initializerProps = Props(new ViewUpdateInitializer(self))
+    val supervisor = BackoffSupervisor.props(
+      Backoff.onFailure(
+        initializerProps,
+        childName = "ViewUpdateInitializer",
+        minBackoff = 3 seconds,
+        maxBackoff = 30.seconds,
+        randomFactor = 0.1
+      ).withAutoReset(10.seconds)
+        .withSupervisorStrategy(OneForOneStrategy() {
+          case _: ViewUpdateInitException            => Restart
+          case _                                     => Escalate
+      }))
+    context.actorOf(supervisor)
   }
 
   override def receive: Receive = {
