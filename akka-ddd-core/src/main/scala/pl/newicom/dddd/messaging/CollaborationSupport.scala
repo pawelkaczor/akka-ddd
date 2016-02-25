@@ -1,15 +1,15 @@
 package pl.newicom.dddd.messaging
 
-import akka.actor.Stash
+import akka.actor.{Actor, Stash}
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.util.Failure
 
 trait CollaborationSupport extends Stash {
+  this: Actor =>
 
   def receiveNext(receive: Receive)(implicit timeout: FiniteDuration = 10.seconds): Unit = {
-    import ExecutionContext.Implicits.global
+    import context.dispatcher
     scheduler.scheduleOnce(timeout, self, Failure(new RuntimeException("time out")))
 
     context.become (

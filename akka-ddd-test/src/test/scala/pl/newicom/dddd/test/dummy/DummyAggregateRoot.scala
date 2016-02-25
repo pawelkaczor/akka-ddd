@@ -19,13 +19,15 @@ object DummyAggregateRoot {
     def id: EntityId
     override def aggregateId: String = id
   }
+  sealed trait UpdateCommand extends Command
 
   case class CreateDummy(id: EntityId, name: String, description: String, value: Int) extends Command
-  case class ChangeName(id: EntityId, name: String) extends Command
-  case class ChangeDescription(id: EntityId, description: String) extends Command
-  case class ChangeValue(id: EntityId, value: Int) extends Command
-  case class GenerateValue(id: EntityId) extends Command
-  case class ConfirmGeneratedValue(id: EntityId, confirmationToken: UUID) extends Command
+
+  case class ChangeName(id: EntityId, name: String)                                   extends UpdateCommand
+  case class ChangeDescription(id: EntityId, description: String)                     extends UpdateCommand
+  case class ChangeValue(id: EntityId, value: Int)                                    extends UpdateCommand
+  case class GenerateValue(id: EntityId)                                              extends UpdateCommand
+  case class ConfirmGeneratedValue(id: EntityId, confirmationToken: UUID)             extends UpdateCommand
 
   //
   // Events
@@ -34,10 +36,10 @@ object DummyAggregateRoot {
     def id: EntityId
   }
   case class DummyCreated(id: EntityId, name: String, description: String, value: Int) extends DummyEvent
-  case class NameChanged(id: EntityId, name: String) extends DummyEvent
-  case class DescriptionChanged(id: EntityId, description: String) extends DummyEvent
-  case class ValueChanged(id: EntityId, value: Int, dummyVersion: Long) extends DummyEvent
-  case class ValueGenerated(id: EntityId, value: Int, confirmationToken: UUID) extends DummyEvent
+  case class NameChanged(id: EntityId, name: String)                                   extends DummyEvent
+  case class DescriptionChanged(id: EntityId, description: String)                     extends DummyEvent
+  case class ValueChanged(id: EntityId, value: Int, dummyVersion: Long)                extends DummyEvent
+  case class ValueGenerated(id: EntityId, value: Int, confirmationToken: UUID)         extends DummyEvent
 
   case class CandidateValue(value: Int, confirmationToken: UUID)
 
@@ -74,62 +76,46 @@ class DummyAggregateRoot extends AggregateRoot[DummyState, DummyAggregateRoot] {
 
     case CreateDummy(id, name, description, value) =>
       if (initialized) {
-        throw new RuntimeException("Dummy already exists")
+        sys.error("Dummy already exists")
       } else {
         if (value < 0) {
-          throw new RuntimeException("negative value not allowed")
+          sys.error("negative value not allowed")
         } else {
           raise(DummyCreated(id, name, description, value))
         }
       }
 
+    case _: UpdateCommand if !initialized =>
+      sys.error("Unknown Dummy")
+
     case ChangeName(id, name) =>
-      if (initialized)
-        raise(NameChanged(id, name))
-      else
-        throw new RuntimeException("Unknown Dummy")
+      raise(NameChanged(id, name))
 
     case ChangeDescription(id, description) =>
-      if (initialized)
-        raise(DescriptionChanged(id, description))
-      else
-        throw new RuntimeException("Unknown Dummy")
+      raise(DescriptionChanged(id, description))
 
     case ChangeValue(id, value) =>
-      if (initialized) {
-        if (value < 0) {
-          throw new RuntimeException("negative value not allowed")
-        } else {
-          raise(ValueChanged(id, value, lastSequenceNr))
-        }
+      if (value < 0) {
+        sys.error("negative value not allowed")
       } else {
-        throw new RuntimeException("Unknown Dummy")
+        raise(ValueChanged(id, value, lastSequenceNr))
       }
 
     case GenerateValue(id) =>
-      if (initialized) {
-        receiveNext {
-          case ValueGeneratorActor.ValueGenerated(value) =>
-            if (value < 0) {
-              throw new RuntimeException("negative value not allowed")
-            } else {
-              raise(ValueGenerated(id, value, confirmationToken = generateConfirmationToken))
-            }
-        }
-        valueGeneratorActor ! GenerateRandom
-      } else {
-        throw new RuntimeException("Unknown Dummy")
+      receiveNext {
+        case ValueGeneratorActor.ValueGenerated(value) =>
+          if (value < 0) {
+            sys.error("negative value not allowed")
+          } else {
+            raise(ValueGenerated(id, value, confirmationToken = generateConfirmationToken))
+          }
       }
+      valueGeneratorActor ! GenerateRandom
 
     case ConfirmGeneratedValue(id, confirmationToken) =>
-      if (initialized) {
-        state.candidateValue(confirmationToken).foreach { value =>
-          raise(ValueChanged(id, value, lastSequenceNr))
-        }
-      } else {
-        throw new RuntimeException("Unknown Dummy")
+      state.candidateValue(confirmationToken).foreach { value =>
+        raise(ValueChanged(id, value, lastSequenceNr))
       }
-
   }
 
   def generateConfirmationToken = uuidObj
