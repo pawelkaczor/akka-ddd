@@ -8,10 +8,9 @@ import eventstore.{EsConnection, EventRecord, ResolvedEvent}
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.messaging.event.EventMessageEntry
 
-trait EventSourceProvider extends EventstoreSerializationSupport with pl.newicom.dddd.messaging.event.EventSourceProvider {
+trait EventSourceProvider extends EventstoreSerializationSupport
+  with pl.newicom.dddd.messaging.event.EventSourceProvider with EventStoreProvider {
   this: Actor =>
-
-  type EventStore = EsConnection
 
   override def system: ActorSystem = context.system
 

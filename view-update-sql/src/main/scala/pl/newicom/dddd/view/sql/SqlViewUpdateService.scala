@@ -18,12 +18,12 @@ abstract class SqlViewUpdateService(implicit val profile: JdbcProfile) extends V
     viewStore.run(profile.defaultTables).mapToUnit
   }
 
-  override def onViewUpdateInit(eventStore: EventStore): Future[ViewUpdateInitiated.type] =
+  override def onViewUpdateInit: Future[ViewUpdateInitiated.type] =
     viewStore.run {
-      onViewUpdateInit >> successful(ViewUpdateInitiated)
+      viewUpdateInitAction >> successful(ViewUpdateInitiated)
     }
 
-  def onViewUpdateInit: DBIO[Unit] =
+  def viewUpdateInitAction: DBIO[Unit] =
     new ViewMetadataDao().ensureSchemaCreated
 
 

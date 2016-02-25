@@ -14,7 +14,7 @@ import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.view.sql.Projection.ProjectionAction
 import pl.newicom.dddd.view.sql.SqlViewUpdateServiceIntegrationSpec._
-import pl.newicom.eventstore.{EventStoreConfiguration, EventSourceProvider}
+import pl.newicom.eventstore.EventSourceProvider
 import slick.backend.DatabaseComponent
 import slick.dbio._
 import slick.dbio.DBIOAction.{failed, successful}
@@ -57,7 +57,7 @@ class SqlViewUpdateServiceIntegrationSpec
       system.eventStream.subscribe(probe.ref, classOf[ViewUpdated])
 
       system.actorOf(Props(
-        new SqlViewUpdateService with SqlViewStoreConfiguration with EventStoreConfiguration with EventSourceProvider {
+        new SqlViewUpdateService with SqlViewStoreConfiguration with EventSourceProvider {
           def config = SqlViewUpdateServiceIntegrationSpec.this.config
           def vuConfigs = List(SqlViewUpdateConfig("test-view", dummyOfficeId, new Projection {
 

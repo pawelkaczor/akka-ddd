@@ -39,21 +39,16 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
 
   implicit val ec: ExecutionContext = context.dispatcher
 
-  def eventStore: EventStore
-
   def vuConfigs: Seq[VUConfig]
 
   def viewHandler(config: VUConfig): ViewHandler
 
   def ensureViewStoreAvailable: Future[Unit]
 
-  def ensureEventStoreAvailable: Future[EventStore] =
-    Future(eventStore)
-
   /**
    * Overridable initialization logic
    */
-  def onViewUpdateInit(eventStore: EventStore): Future[ViewUpdateInitiated.type] =
+  def onViewUpdateInit: Future[ViewUpdateInitiated.type] =
     Future.successful(ViewUpdateInitiated)
 
 
@@ -77,7 +72,7 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case InitiateViewUpdate =>
-      onViewUpdateInit(eventStore) pipeTo self
+      onViewUpdateInit pipeTo self
 
     case ViewUpdateInitiated =>
       log.debug("Initiated.")

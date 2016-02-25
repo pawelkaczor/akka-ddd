@@ -23,16 +23,8 @@ class DemandController(triggerActor: ActorRef, initialDemand: Int) extends Deman
       triggerActor ! Tick
 }
 
-trait EventSourceProvider {
-  type EventSource = Source[EventMessageEntry, NotUsed]
-  type EventStore
-  def eventSource(eventStore: EventStore, observable: BusinessEntity, fromPosExcl: Option[Long]): EventSource
-}
-
 trait DefaultEventStreamSubscriber extends EventStreamSubscriber {
   this: Actor with EventSourceProvider =>
-
-  def eventStore: EventStore
 
   implicit val actorMaterializer = ActorMaterializer()
 
