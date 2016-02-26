@@ -102,7 +102,7 @@ class DummyAggregateRoot extends AggregateRoot[DummyState, DummyAggregateRoot] {
       }
 
     case GenerateValue(id) =>
-      receiveNext {
+      expectFrom(valueGeneratorActor) {
         case ValueGeneratorActor.ValueGenerated(value) =>
           if (value < 0) {
             sys.error("negative value not allowed")

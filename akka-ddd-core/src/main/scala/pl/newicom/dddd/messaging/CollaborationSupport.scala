@@ -1,27 +1,44 @@
 package pl.newicom.dddd.messaging
 
-import akka.actor.{Actor, Stash}
+import akka.actor.{Actor, ActorRef, Stash}
+import pl.newicom.dddd.messaging.CollaborationSupport.{NoResponseReceived, ReceiveTimeout, UnexpectedResponseReceived}
 
 import scala.concurrent.duration.{FiniteDuration, _}
-import scala.util.Failure
+
+object CollaborationSupport {
+  case object ReceiveTimeout
+
+  @SerialVersionUID(1L)
+  class CollaborationFailed(msg: String) extends RuntimeException(msg)
+
+  case class NoResponseReceived(timeout: FiniteDuration)
+    extends CollaborationFailed(s"No response received within $timeout.")
+
+  case class UnexpectedResponseReceived(response: Any)
+    extends CollaborationFailed(s"Unexpected response received: $response.")
+}
 
 trait CollaborationSupport extends Stash {
   this: Actor =>
 
-  def receiveNext(receive: Receive)(implicit timeout: FiniteDuration = 10.seconds): Unit = {
+  def expectFrom(collaborator: ActorRef)(receive: Receive)(implicit timeout: FiniteDuration = 3.seconds): Unit = {
     import context.dispatcher
-    scheduler.scheduleOnce(timeout, self, Failure(new RuntimeException("time out")))
+    val scheduledTimeout = scheduler.scheduleOnce(timeout, self, ReceiveTimeout)
 
-    context.become (
+    context.become(
       receive andThen {
-        case _ =>
+        case _ => // expected response received
+          scheduledTimeout.cancel()
           unstashAll()
           context.unbecome()
       } orElse {
-        case Failure(reason) =>
-          //unstashAll() and context.unbecome() will be called automatically
-          throw reason;
-        case _ =>
+        case ReceiveTimeout =>
+          throw NoResponseReceived(timeout)
+
+        case msg if sender() eq collaborator =>
+          throw UnexpectedResponseReceived(msg)
+
+        case _  =>
           stash()
       }
       , discardOld = false)
