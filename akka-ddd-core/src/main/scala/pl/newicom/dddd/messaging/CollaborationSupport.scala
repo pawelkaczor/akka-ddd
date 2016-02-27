@@ -1,9 +1,7 @@
 package pl.newicom.dddd.messaging
 
-import akka.actor.{Actor, ActorRef, Stash}
-import pl.newicom.dddd.messaging.CollaborationSupport.{NoResponseReceived, ReceiveTimeout, UnexpectedResponseReceived}
-
-import scala.concurrent.duration.{FiniteDuration, _}
+import akka.actor.{ActorRef, Stash}
+import scala.concurrent.duration._
 
 object CollaborationSupport {
   case object ReceiveTimeout
@@ -16,14 +14,28 @@ object CollaborationSupport {
 
   case class UnexpectedResponseReceived(response: Any)
     extends CollaborationFailed(s"Unexpected response received: $response.")
+
 }
 
 trait CollaborationSupport extends Stash {
-  this: Actor =>
+  import CollaborationSupport._
 
-  def expectFrom(collaborator: ActorRef)(receive: Receive)(implicit timeout: FiniteDuration = 3.seconds): Unit = {
+  implicit class CollaborationBuilder(val target: ActorRef) {
+    def !<(msg: Any): Collaboration = Collaboration(target, msg)
+  }
+
+  case class Collaboration(target: ActorRef, msg: Any) {
+    def apply(receive: Receive)(implicit timeout: FiniteDuration): Unit = {
+      target ! msg
+      internalExpectOnce(target, receive)
+    }
+
+    def expectOnce(receive: Receive)(implicit timeout: FiniteDuration): Unit = apply(receive)
+  }
+
+  private def internalExpectOnce(target: ActorRef, receive: Receive)(implicit timeout: FiniteDuration): Unit = {
     import context.dispatcher
-    val scheduledTimeout = scheduler.scheduleOnce(timeout, self, ReceiveTimeout)
+    val scheduledTimeout = context.system.scheduler.scheduleOnce(timeout, self, ReceiveTimeout)
 
     context.become(
       receive andThen {
@@ -35,7 +47,7 @@ trait CollaborationSupport extends Stash {
         case ReceiveTimeout =>
           throw NoResponseReceived(timeout)
 
-        case msg if sender() eq collaborator =>
+        case msg if sender() eq target =>
           throw UnexpectedResponseReceived(msg)
 
         case _  =>
@@ -44,5 +56,4 @@ trait CollaborationSupport extends Stash {
       , discardOld = false)
   }
 
-  private def scheduler = context.system.scheduler
 }

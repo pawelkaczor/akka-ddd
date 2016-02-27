@@ -9,6 +9,7 @@ import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 import pl.newicom.dddd.test.dummy.ValueGeneratorActor.GenerateRandom
 import pl.newicom.dddd.utils.UUIDSupport.uuidObj
+import scala.concurrent.duration._
 
 object DummyAggregateRoot {
 
@@ -102,7 +103,8 @@ class DummyAggregateRoot extends AggregateRoot[DummyState, DummyAggregateRoot] {
       }
 
     case GenerateValue(id) =>
-      expectFrom(valueGeneratorActor) {
+      implicit val timeout = 3.seconds
+      (valueGeneratorActor !< GenerateRandom) {
         case ValueGeneratorActor.ValueGenerated(value) =>
           if (value < 0) {
             sys.error("negative value not allowed")
@@ -110,7 +112,6 @@ class DummyAggregateRoot extends AggregateRoot[DummyState, DummyAggregateRoot] {
             raise(ValueGenerated(id, value, confirmationToken = generateConfirmationToken))
           }
       }
-      valueGeneratorActor ! GenerateRandom
 
     case ConfirmGeneratedValue(id, confirmationToken) =>
       state.candidateValue(confirmationToken).foreach { value =>
