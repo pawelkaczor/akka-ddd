@@ -33,7 +33,7 @@ case class MetaData(content: Map[String, Any]) extends Serializable {
 
   def exceptDeliveryAttributes: Option[MetaData] = {
     val resultMap = this.content.filterKeys(a => !a.startsWith("_"))
-    if (resultMap.isEmpty) None else Some(new MetaData(resultMap))
+    if (resultMap.isEmpty) None else Some(MetaData(resultMap))
   }
 
   override def toString: String = content.toString()

@@ -24,7 +24,7 @@ class SagaManager[E <: Saga](implicit val sagaOffice: SagaOffice[E]) extends Rec
 
   override def metaDataProvider(em: OfficeEventMessage): Option[MetaData] =
     sagaOffice.config.correlationIdResolver.lift(em.event).map { correlationId =>
-      new MetaData(Map(CorrelationId -> correlationId))
+      MetaData(Map(CorrelationId -> correlationId))
     }
 
 }
