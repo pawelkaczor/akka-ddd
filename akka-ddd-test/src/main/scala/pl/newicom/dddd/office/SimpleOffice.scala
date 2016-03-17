@@ -27,6 +27,8 @@ class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
     clerkFactory: BusinessEntityActorFactory[A])
   extends ActorContextCreationSupport with Actor with ActorLogging {
 
+  val clerkProps = clerkFactory.props(PassivationConfig(Passivate(PoisonPill), clerkFactory.inactivityTimeout))
+
   override def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
     receive.applyOrElse(msg match {
       case c: Command => CommandMessage(c)
@@ -40,8 +42,8 @@ class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
     case Passivate(stopMessage) =>
       dismiss(sender(), stopMessage)
     case msg: AddressableMessage =>
-      val clerkProps = clerkFactory.props(PassivationConfig(Passivate(PoisonPill), clerkFactory.inactivityTimeout))
-      val clerk = assignClerk(clerkProps, resolveCaseId(msg))
+      val caseId: String = resolveCaseId(msg)
+      val clerk = assignClerk(clerkProps, caseId)
       log.debug(s"Forwarding message to ${clerk.path}")
       clerk forward msg
   }
