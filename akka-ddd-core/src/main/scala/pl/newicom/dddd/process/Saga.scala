@@ -5,11 +5,12 @@ import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.alod._
 import pl.newicom.dddd.messaging.event.{OfficeEventMessage, EventMessage}
 
+case object EventDroppedMarkerEvent extends DomainEvent
+
 sealed trait SagaAction
 
 case class  RaiseEvent(e: DomainEvent)  extends SagaAction
 case object DropEvent                   extends SagaAction
-case object RejectEvent                 extends SagaAction
 
 trait SagaAbstractStateHandling {
   type ReceiveEvent = PartialFunction[DomainEvent, SagaAction]
@@ -32,23 +33,33 @@ abstract class Saga extends SagaBase {
 
   override def receiveCommand: Receive = {
     case em @ OfficeEventMessage(caseId, event, id, timestamp, metadata) =>
-      val action = receiveEvent(event)
-      action match {
-        case RaiseEvent(raisedEvent) =>
-          // TODO caseId of original OEM will be lost, consider storing it in metadata
-          val raisedEventMsg = if (raisedEvent == event) em else EventMessage(raisedEvent)
-          persist(raisedEventMsg) { persisted =>
-            log.debug("Event message persisted: {}", persisted)
-            _updateState(persisted)
-            acknowledgeEvent(persisted)
-          }
-        case DropEvent =>
-          acknowledgeEvent(em)
-        case RejectEvent =>
-          // rejected event should be redelivered by SagaManager
-      }
-      onEventReceived(em, action)
+      val actionMaybe: Option[SagaAction] =
+        em.previouslySentMsgId.fold(Option(receiveEvent(event))) { msgId =>
+          idOfRecentlyReceivedMessage.filter(_ == msgId)
+            .map(_ => receiveEvent(event))
+        }
 
+      if (actionMaybe.isEmpty) {
+        log.debug("Message out of order detected: {}", em.id)
+      } else {
+        val action  = actionMaybe.get
+        val eventToPersist = action match {
+          case RaiseEvent(raisedEvent) => raisedEvent
+          case DropEvent => EventDroppedMarkerEvent
+        }
+
+        val emToPersist = EventMessage(eventToPersist)
+          .withMetaData(metadata)
+          .withCausationId(id)
+
+        persist(emToPersist) { persisted =>
+          log.debug("Event message persisted: {}", persisted)
+          _updateState(persisted)
+          acknowledgeEvent(persisted)
+        }
+
+        onEventReceived(em, action)
+      }
     case receipt: Delivered =>
       persist(EventMessage(receipt))(_updateState)
   }
@@ -59,16 +70,18 @@ abstract class Saga extends SagaBase {
         confirmDelivery(receipt.deliveryId)
         updateState(receipt)
 
-      case em: EventMessage =>
-        messageProcessed(em)
-        updateState(em.event)
+      case em: EventMessage => em.event match {
+        case EventDroppedMarkerEvent =>
+          messageProcessed(em)
+        case event =>
+          messageProcessed(em)
+          updateState(event)
+      }
     }
   }
 
   def onEventReceived(em: EventMessage, appliedAction: SagaAction): Unit = {
     appliedAction match {
-      case RejectEvent =>
-        log.warning(s"Event message rejected: $em")
       case DropEvent =>
         log.debug(s"Event dropped: ${em.event}")
       case RaiseEvent(e) =>

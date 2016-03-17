@@ -3,6 +3,7 @@ package pl.newicom.dddd.delivery
 import akka.actor.ActorPath
 import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
 import akka.persistence._
+import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.{AddressableMessage, Message}
 import pl.newicom.dddd.persistence.{PersistentActorLogging, SaveSnapshotRequest}
@@ -10,6 +11,8 @@ import pl.newicom.dddd.persistence.{PersistentActorLogging, SaveSnapshotRequest}
 case class DeliveryStateSnapshot(state: DeliveryState, alodSnapshot: AtLeastOnceDeliverySnapshot)
 
 trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDelivery with PersistentActorLogging {
+
+  type DeliverableMessage = Message with AddressableMessage
 
   private var deliveryState: DeliveryState = InitialState
 
@@ -24,16 +27,20 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
   def deliver(msg: Message, deliveryId: Long): Unit =
     persist(msg.withDeliveryId(deliveryId))(updateState)
 
-  def deliveryIdToMessage(msg: Message): Long ⇒ Any = { internalDeliveryId => {
-      val deliveryId = msg.deliveryId.get
-      log.debug(s"[DELIVERY-ID: $deliveryId] Delivering: $msg")
-      deliveryState = deliveryState.withSent(internalDeliveryId, deliveryId)
-      msg
-    }
+  def deliveryIdToMessage(msg: DeliverableMessage): Long ⇒ Any = internalDeliveryId => {
+    val deliveryId = msg.deliveryId.get
+    val destinationId: EntityId = msg.destination.get
+    val lastSentToDestinationMsgId: Option[EntityId] = deliveryState.lastSentToDestinationMsgId(destinationId)
+    deliveryState = deliveryState.withSent(msg.id, internalDeliveryId, deliveryId, destinationId)
+
+    val msgToDeliver = msg.withPreviouslySentMsgId(lastSentToDestinationMsgId)
+    log.debug(s"[DELIVERY-ID: $deliveryId] Delivering: $msgToDeliver")
+    msgToDeliver
   }
 
+
   def updateState(msg: Any): Unit = msg match {
-    case message: Message with AddressableMessage =>
+    case message: DeliverableMessage =>
       if (message.destination.isEmpty) {
         log.warning(s"No entityId. Skipping $message")
       } else {
@@ -43,7 +50,7 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
     case receipt: Delivered =>
       val deliveryId = receipt.deliveryId
       deliveryState.internalDeliveryId(deliveryId).foreach { internalDeliveryId =>
-        log.debug(s"[DELIVERY-ID: $internalDeliveryId] - Delivery confirmed")
+        log.debug(s"[DELIVERY-ID: $deliveryId] - Delivery confirmed")
         if (confirmDelivery(internalDeliveryId)) {
           deliveryState = deliveryState.withDelivered(deliveryId)
           deliveryConfirmed(internalDeliveryId)

@@ -10,6 +10,7 @@ object MetaData {
   val DeliveryId          = "_deliveryId"
   val CausationId         = "causationId"
   val CorrelationId       = "correlationId"
+  val PreviouslySentMsgId = "previouslySentMsgId"
   val SessionId           = "sessionId"
 
   def empty: MetaData = MetaData(Map.empty)
@@ -83,6 +84,8 @@ trait Message extends Serializable {
 
   def withCausationId(causationId: EntityId) = withMetaAttribute(CausationId, causationId)
 
+  def withPreviouslySentMsgId(msgIdOpt: Option[String]) = msgIdOpt.map(msgId => withMetaAttribute(PreviouslySentMsgId, msgId)).getOrElse(this.asInstanceOf[MessageImpl])
+
   def withSessionId(sessionId: EntityId) = withMetaAttribute(SessionId, sessionId)
 
   def deliveryId: Option[Long] = tryGetMetaAttribute[Any](DeliveryId).map {
@@ -92,4 +95,7 @@ trait Message extends Serializable {
 
   def correlationId: Option[EntityId] = tryGetMetaAttribute[EntityId](CorrelationId)
 
+  def causationId: Option[EntityId] = tryGetMetaAttribute[EntityId](CausationId)
+
+  def previouslySentMsgId: Option[String] = tryGetMetaAttribute[String](PreviouslySentMsgId)
 }
