@@ -14,12 +14,14 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
 
   type DeliverableMessage = Message with AddressableMessage
 
+  def isSupporting_MustFollow_Attribute: Boolean = true
+
   private var deliveryState: DeliveryState = InitialState
 
   def destination(msg: Message): ActorPath
 
   def recoveryCompleted(): Unit
-  
+
   def lastSentDeliveryId: Option[Long] = deliveryState.lastSentOpt
 
   def unconfirmedNumber: Int = deliveryState.unconfirmedNumber
@@ -27,14 +29,17 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
   def deliver(msg: Message, deliveryId: Long): Unit =
     persist(msg.withDeliveryId(deliveryId))(updateState)
 
-  def deliveryIdToMessage(msg: DeliverableMessage): Long ⇒ Any = internalDeliveryId => {
+  def deliveryIdToMessage(msg: DeliverableMessage, destination: ActorPath): Long ⇒ Any = internalDeliveryId => {
     val deliveryId = msg.deliveryId.get
     val destinationId: EntityId = msg.destination.get
     val lastSentToDestinationMsgId: Option[EntityId] = deliveryState.lastSentToDestinationMsgId(destinationId)
     deliveryState = deliveryState.withSent(msg.id, internalDeliveryId, deliveryId, destinationId)
 
-    val msgToDeliver = msg.withPreviouslySentMsgId(lastSentToDestinationMsgId)
-    log.debug(s"[DELIVERY-ID: $deliveryId] Delivering: $msgToDeliver")
+    val msgToDeliver =
+      if (isSupporting_MustFollow_Attribute) msg.withMustFollow(lastSentToDestinationMsgId)
+      else msg
+
+    log.debug(s"[DELIVERY-ID: $deliveryId] Delivering: $msgToDeliver to $destination")
     msgToDeliver
   }
 
@@ -44,7 +49,8 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
       if (message.destination.isEmpty) {
         log.warning(s"No entityId. Skipping $message")
       } else {
-        deliver(destination(message))(deliveryIdToMessage(message))
+        val dest: ActorPath = destination(message)
+        deliver(dest)(deliveryIdToMessage(message, dest))
       }
 
     case receipt: Delivered =>

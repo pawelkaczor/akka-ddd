@@ -81,7 +81,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
 
       val em1 = toEventMessage(ValueChanged(processId, 1, 1L))
       val em2 = toEventMessage(ValueChanged(processId, 2, 2L), previouslySentMsg = Some(em1))
-        .withPreviouslySentMsgId(Some("0"))
+        .withMustFollow(Some("0"))
 
       // When
       sagaOffice ! em1
@@ -114,7 +114,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
     OfficeEventMessage(CaseId(entityId, event.dummyVersion), event).withMetaData(Map(
       CorrelationId -> entityId,
       DeliveryId -> 1L
-    )).withPreviouslySentMsgId(previouslySentMsg.map(msg => msg.id))
+    )).withMustFollow(previouslySentMsg.map(msg => msg.id))
   }
 
   def ensureActorTerminated(actor: ActorRef) = {

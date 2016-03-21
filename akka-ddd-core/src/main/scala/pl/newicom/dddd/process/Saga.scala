@@ -34,9 +34,11 @@ abstract class Saga extends SagaBase {
   override def receiveCommand: Receive = {
     case em @ OfficeEventMessage(caseId, event, id, timestamp, metadata) =>
       val actionMaybe: Option[SagaAction] =
-        em.previouslySentMsgId.fold(Option(receiveEvent(event))) { msgId =>
-          idOfRecentlyReceivedMessage.filter(_ == msgId)
-            .map(_ => receiveEvent(event))
+        em.mustFollow.fold(Option(receiveEvent(event))) { mustFollow =>
+          if (wasReceived(mustFollow))
+            Option(receiveEvent(event))
+          else
+            None
         }
 
       if (actionMaybe.isEmpty) {
