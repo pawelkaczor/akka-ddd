@@ -3,7 +3,7 @@ package pl.newicom.dddd.process
 import akka.persistence.RecoveryCompleted
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.alod._
-import pl.newicom.dddd.messaging.event.{OfficeEventMessage, EventMessage}
+import pl.newicom.dddd.messaging.event.EventMessage
 
 case object EventDroppedMarkerEvent extends DomainEvent
 
@@ -32,8 +32,9 @@ abstract class Saga extends SagaBase {
   }
 
   override def receiveCommand: Receive = {
-    case em @ OfficeEventMessage(caseId, event, id, timestamp, metadata) =>
-      val actionMaybe: Option[SagaAction] =
+    case em: EventMessage =>
+      val event = em.event
+	    val actionMaybe: Option[SagaAction] =
         em.mustFollow.fold(Option(receiveEvent(event))) { mustFollow =>
           if (wasReceived(mustFollow))
             Option(receiveEvent(event))
@@ -51,7 +52,7 @@ abstract class Saga extends SagaBase {
         }
 
         val emToPersist = EventMessage(eventToPersist)
-          .withMetaData(metadata)
+          .withMetaData(em.metadata)
           .withCausationId(id)
 
         persist(emToPersist) { persisted =>
