@@ -19,6 +19,8 @@ trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
 
   def state = Option(currentState).getOrElse(initiation(currentEvent))
 
+  override def initialized: Boolean = Option(currentState).isDefined
+
   class SagaBuilder(init: StateFunction) {
     def andThen(sm: StateMachine)  = {
       initiation = init

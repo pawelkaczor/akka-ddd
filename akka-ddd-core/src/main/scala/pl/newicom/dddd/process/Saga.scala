@@ -18,6 +18,8 @@ trait SagaAbstractStateHandling {
   def receiveEvent: ReceiveEvent
 
   def updateState(event: DomainEvent): Unit
+
+  def initialized: Boolean
 }
 
 
@@ -63,7 +65,8 @@ abstract class Saga extends SagaBase {
 
         onEventReceived(em, action)
       }
-    case receipt: Delivered =>
+
+    case receipt: Delivered if initialized =>
       persist(EventMessage(receipt))(_updateState)
   }
 
