@@ -57,16 +57,16 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
     log.debug(s"Delivery receipt (for received event) sent ($deliveryReceipt)")
   }
 
-  override def messageProcessed(m: Message): Unit = {
-    _lastEventMessage = m match {
+  override def messageProcessed(msg: Message): Unit = {
+    _lastEventMessage = msg match {
       case em: EventMessage =>
         Some(em)
       case _ => None
     }
-    super.messageProcessed(m)
+    super.messageProcessed(msg)
   }
 
-  override def handleDuplicated(m: Message) =
-    acknowledgeEvent(m)
+  override def handleDuplicated(msg: Message) =
+    acknowledgeEvent(msg)
 
 }

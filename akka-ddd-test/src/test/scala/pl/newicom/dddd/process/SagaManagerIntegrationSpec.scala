@@ -128,8 +128,8 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
       sagaManager = registerSaga[DummySaga](sagaOffice)
 
       // then
-      expectNumberOfEventsAppliedBySaga(2)
-      expectNoUnconfirmedMessages(sagaManager)
+      expectNumberOfEventsAppliedBySaga(1)
+      expectNumberOfUnconfirmedMessages(sagaManager, 0)
 
     }
   }

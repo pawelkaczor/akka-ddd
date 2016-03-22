@@ -27,22 +27,12 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
   }
 
   implicit object TestSagaActorFactory extends SagaActorFactory[DummySaga] {
-    override def props(pc: PassivationConfig): Props = {
-      Props(new DummySaga(pc, officeId, None) {
-        override def onEventReceived(em: EventMessage, action: SagaAction) = {
-          action match {
-            case RejectEvent =>
-              system.eventStream.publish(em.event)
-            case _ =>
-          }
-          super.onEventReceived(em, action)
-        }
-      })
-    }
+    override def props(pc: PassivationConfig): Props =
+      Props(new DummySaga(pc, officeId, None))
   }
 
   def processId = uuid10
-  val sagaOffice = office[DummySaga].actor
+  lazy val sagaOffice = office[DummySaga].actor
 
   "Saga" should {
     "not process previously processed events" in {
@@ -63,6 +53,49 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
   }
 
   "Saga" should {
+    "process messages received in order" in {
+      // Given
+      val probe = TestProbe()
+      system.eventStream.subscribe(probe.ref, classOf[EventApplied])
+
+      val em1 = toEventMessage(ValueChanged(processId, 1, 1L))
+
+      // When
+      sagaOffice ! em1
+      // Then
+      probe.expectMsgClass(classOf[EventApplied])
+
+      // When
+      sagaOffice ! toEventMessage(ValueChanged(processId, 2, 2L), previouslySentMsg = Some(em1))
+      // Then
+      probe.expectMsgClass(classOf[EventApplied])
+      probe.expectNoMsg(1.seconds)
+    }
+  }
+
+  "Saga" should {
+    "not process message received out of order" in {
+      // Given
+      val probe = TestProbe()
+      system.eventStream.subscribe(probe.ref, classOf[EventApplied])
+
+      val em1 = toEventMessage(ValueChanged(processId, 1, 1L))
+      val em2 = toEventMessage(ValueChanged(processId, 2, 2L), previouslySentMsg = Some(em1))
+        .withMustFollow(Some("0"))
+
+      // When
+      sagaOffice ! em1
+      // Then
+      probe.expectMsgClass(classOf[EventApplied])
+
+      // When
+      sagaOffice ! em2
+      // Then
+      probe.expectNoMsg(1.seconds)
+    }
+  }
+
+  "Saga" should {
     "acknowledge previously processed events" in {
       // Given
       val em1 = toEventMessage(ValueChanged(processId, 1, 1L))
@@ -76,11 +109,12 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
     }
   }
 
-  def toEventMessage(event: ValueChanged): EventMessage = {
-    OfficeEventMessage(CaseId(processId, event.dummyVersion), event).withMetaData(Map(
-      CorrelationId -> processId,
+  def toEventMessage(event: ValueChanged, previouslySentMsg: Option[EventMessage] = None): EventMessage = {
+    val entityId = previouslySentMsg.flatMap(msg => msg.correlationId).getOrElse(processId)
+    OfficeEventMessage(CaseId(entityId, event.dummyVersion), event).withMetaData(Map(
+      CorrelationId -> entityId,
       DeliveryId -> 1L
-    ))
+    )).withMustFollow(previouslySentMsg.map(msg => msg.id))
   }
 
   def ensureActorTerminated(actor: ActorRef) = {

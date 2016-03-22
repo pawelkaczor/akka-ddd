@@ -2,31 +2,43 @@ package pl.newicom.dddd.messaging
 
 import akka.contrib.pattern.ReceivePipeline
 import akka.contrib.pattern.ReceivePipeline.{Inner, HandledCompletely}
-
 import scala.collection.mutable
 
+/**
+  * Designed to be used by persistent actors. Allows detecting duplicated messages sent to the actor.
+  * Keeps a set of message IDs that were received by the actor.
+  *
+  * Provides messageProcessed(Message) method that should be called during the "update-state" stage.
+  * The given message must contain [[pl.newicom.dddd.messaging.MetaData.CausationId]] attribute
+  * referring to the ID of the received message.
+  */
 trait Deduplication {
   this: ReceivePipeline =>
-
-  private val processedMessages: mutable.Set[String] = mutable.Set.empty
+  private val ids: mutable.Set[String] = mutable.Set.empty
 
   pipelineInner {
-    case m: Message =>
-      if (wasProcessed(m)) {
-        handleDuplicated(m)
+    case msg: Message =>
+      if (wasReceived(msg)) {
+        handleDuplicated(msg)
         HandledCompletely
       } else {
-        Inner(m)
+        Inner(msg)
       }
   }
 
-  def handleDuplicated(m: Message)
+  def handleDuplicated(msg: Message)
 
-  def messageProcessed(m: Message): Unit = {
-    processedMessages += m.id
+  def messageProcessed(msg: Message): Unit =
+    msg.causationId.foreach(messageReceived)
+
+  def wasReceived(msgId: String): Boolean =
+    ids.contains(msgId)
+
+  private def wasReceived(msg: Message): Boolean =
+    wasReceived(msg.id)
+
+  private def messageReceived(msgId: String): Unit = {
+    ids += msgId
   }
-
-  def wasProcessed(m: Message): Boolean =
-    processedMessages.contains(m.id)
 
 }

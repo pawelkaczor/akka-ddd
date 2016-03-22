@@ -32,7 +32,7 @@ trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
     case e: DomainEvent if canHandle(e) =>
       RaiseEvent(e)
     case _ =>
-      RejectEvent
+      DropEvent
   }
 
   def updateState(event: DomainEvent): Unit = {

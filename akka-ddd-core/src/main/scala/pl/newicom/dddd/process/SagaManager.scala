@@ -13,18 +13,23 @@ class SagaManager[E <: Saga](implicit val sagaOffice: SagaOffice[E]) extends Rec
   def defaultConfig: ReceptorConfig =
     ReceptorBuilder()
       .reactTo(sagaOffice.businessProcess)
-      .propagateTo(sagaOffice.actor.path)
+      .propagateTo(sagaOffice.actorPath)
 
 
   lazy val config = defaultConfig
-
 
   override def redeliverInterval = 30.seconds
   override def warnAfterNumberOfUnconfirmedAttempts = 15
 
   override def metaDataProvider(em: OfficeEventMessage): Option[MetaData] =
     sagaOffice.config.correlationIdResolver.lift(em.event).map { correlationId =>
-      MetaData(Map(CorrelationId -> correlationId))
+      MetaData(Map(
+        CorrelationId -> correlationId
+      ))
     }
 
+  override def recoveryCompleted(): Unit = {
+    super.recoveryCompleted()
+    log.info(s"SagaManager: $persistenceId for Saga office: ${sagaOffice.actorPath} is up and running.")
+  }
 }
