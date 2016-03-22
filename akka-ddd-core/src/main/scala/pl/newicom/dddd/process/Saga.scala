@@ -53,7 +53,7 @@ abstract class Saga extends SagaBase {
 
         val emToPersist = EventMessage(eventToPersist)
           .withMetaData(em.metadata)
-          .withCausationId(id)
+          .withCausationId(em.id)
 
         persist(emToPersist) { persisted =>
           log.debug("Event message persisted: {}", persisted)
