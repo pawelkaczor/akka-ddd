@@ -13,11 +13,10 @@ class SagaManager[E <: Saga](implicit val sagaOffice: SagaOffice[E]) extends Rec
   def defaultConfig: ReceptorConfig =
     ReceptorBuilder()
       .reactTo(sagaOffice.businessProcess)
-      .propagateTo(sagaOffice.actor.path)
+      .propagateTo(sagaOffice.actorPath)
 
 
   lazy val config = defaultConfig
-
 
   override def redeliverInterval = 30.seconds
   override def warnAfterNumberOfUnconfirmedAttempts = 15
@@ -29,4 +28,8 @@ class SagaManager[E <: Saga](implicit val sagaOffice: SagaOffice[E]) extends Rec
       ))
     }
 
+  override def recoveryCompleted(): Unit = {
+    super.recoveryCompleted()
+    log.info(s"SagaManager: $persistenceId for Saga office: ${sagaOffice.actorPath} is up and running.")
+  }
 }

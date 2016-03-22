@@ -79,7 +79,10 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
   def deadLetters = context.system.deadLetters.path
 
   def destination(msg: Message): ActorPath =
-    config.receiverResolver.applyOrElse(msg, (any: Message) => deadLetters)
+    config.receiverResolver.applyOrElse(msg, (any: Message) => {
+      log.warning("No destination provided")
+      deadLetters
+    })
 
   override lazy val persistenceId: String =
     s"Receptor-${config.stimuliSource.id}-${self.path.hashCode}"
@@ -93,7 +96,7 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
         demandConfig          = DemandConfig(
                                   subscriberCapacity = config.capacity,
                                   initialDemand = config.capacity - unconfirmedNumber)))
-    log.info(s"$persistenceId subscribed to '${config.stimuliSource.id}' event stream from position: ${lastSentDeliveryId.getOrElse(0)}.")
+    log.info(s"Receptor $persistenceId subscribed to '${config.stimuliSource.id}' event stream from position: ${lastSentDeliveryId.getOrElse(0)}.")
   }
 
 

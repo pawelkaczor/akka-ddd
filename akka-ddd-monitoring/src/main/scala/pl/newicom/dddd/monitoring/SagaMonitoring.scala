@@ -9,11 +9,13 @@ trait SagaMonitoring extends SagaAbstractStateHandling with TraceContextSupport 
 
   override abstract def updateState(event: DomainEvent): Unit = {
     super.updateState(event)
-    if (!recoveryRunning) {
+    val reactionOnEvent: Option[Long] = currentEventMsg.tryGetMetaAttribute(Reaction_On_Event.shortName)
+
+    if (!recoveryRunning && reactionOnEvent.isDefined) {
       // finish 'reaction' record
       newLocalTraceContext(
         name            = Reaction_On_Event.traceContextName(officeId, currentEventMsg),
-        startedOnNanos = currentEventMsg.getMetaAttribute(Reaction_On_Event.shortName)
+        startedOnNanos = reactionOnEvent.get
       ).foreach(
         _.finish()
       )
