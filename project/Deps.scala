@@ -15,7 +15,7 @@ object Deps {
     val H2Driver              = "1.4.189"
 
     // monitoring
-    val Kamon                 = "0.6.0-2961cc2fff3f408dbce964ed8ec82998bc864186"
+    val Kamon                 = "0.6.0"
 
     // test
     val ScalaTest             = "2.2.4"
