@@ -48,7 +48,7 @@ Generic artifacts for building view update services that consume events from [Ev
 Sql (defult is Postgresql) specific implementation of view-update artifacts.
 
 ##### akka-ddd-test
-Allows easy creation of test of Aggregate Root implementations. Supports both "simple" and "global" offices. See [DummyOfficeSpec](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyOfficeSpec.scala).
+Allows easy creation of test of Aggregate Root implementations. Supports both "simple" and "global" offices. See [DummyOfficeSpec](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyOfficeSpec.scala) and [DummyOfficeWithGenSpec](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyOfficeWithGenSpec.scala).
 
 ##### akka-ddd-write-front
 Artifacts for building http server with use of [Akka Http](http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/scala/http/index.html) and [Akka Cluster Client](http://doc.akka.io/docs/akka/current/scala/cluster-client.html) responsible for handling commands sent as json messages. Provides infrastructure for demarshalling commands and forwarding them to write-backend application.
