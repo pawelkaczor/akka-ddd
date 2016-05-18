@@ -21,7 +21,7 @@ import pl.newicom.eventstore.EventstoreSubscriber
 
 import scala.concurrent.duration._
 
-object SagaManagerStressSpec {
+object SagaManagerStressIntegrationSpec {
 
   case object GetNumberOfUnconfirmed
 
@@ -36,7 +36,7 @@ object SagaManagerStressSpec {
 /**
   * Requires EventStore to be running on localhost!
   */
-class SagaManagerStressSpec extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("SagaManagerStressSpec"))) {
+class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("SagaManagerStressSpec"))) {
 
   override val shareAggregateRoot = true
 
