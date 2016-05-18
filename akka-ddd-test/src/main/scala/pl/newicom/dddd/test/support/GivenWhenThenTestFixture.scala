@@ -24,15 +24,15 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   def ensureOfficeTerminated(): Unit
 
-  private def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(new Command {
+  private def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(Seq(new Command {
     override def aggregateId: String = uuid
-  }, pastEvents)
+  }), pastEvents)
   
   implicit def whenContextToCommand[C <: Command](wc: WhenContext[C]): C = wc.command
 
   implicit def whenContextToPastEvents[C <: Command](wc: WhenContext[C]): PastEvents = wc.pastEvents
 
-  implicit def commandToWhenContext[C <: Command](c: C): WhenContext[C] = WhenContext(c)
+  implicit def commandToWhenContext[C <: Command](c: C): WhenContext[C] = WhenContext(Seq(c))
 
   @tailrec
   implicit final def commandGenToWhenContext[C <: Command](cGen: Gen[C]): WhenContext[C] = {
@@ -44,7 +44,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   implicit def commandGenWithParamToWhenContext[C <: Command](cGen: Gen[(C, Any)]): WhenContext[C] = {
     val (c, param1) = cGen.sample.get
-    WhenContext(c, PastEvents(), List(param1))
+    WhenContext(Seq(c), PastEvents(), List(param1))
   }
 
   implicit def acksToPastEvents(acks: Seq[Processed]): PastEvents = PastEvents(acks.toList)
@@ -58,9 +58,11 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   }
 
   case class WhenContext[C <: Command](
-    command: C,
+    commands: Seq[C],
     pastEvents: PastEvents = PastEvents(),
-    params: Seq[Any] = Seq.empty)
+    params: Seq[Any] = Seq.empty) {
+    def command = commands(0)
+  }
 
   case class Given(givenFun: () => PastEvents) {
     val pastEvents = givenFun()
@@ -70,9 +72,16 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
       when(f(fakeWhenContext(pastEvents)))
 
     def when[C <: Command](wc: WhenContext[C]): When[C] = when(wc, () => {
-      val command: C = wc.command
-      val cm = CommandMessage(command).withMetaData(commandMetaDataProvider(command))
-      officeUnderTest ! cm
+      wc.commands.foreach { command =>
+        val cm = CommandMessage(command).withMetaData(commandMetaDataProvider(command))
+        if (wc.commands.size > 1) {
+          import akka.pattern.ask
+          implicit val timeout = timeoutGiven
+          Await.ready(officeUnderTest ? cm, timeoutGiven.duration)
+        } else {
+          officeUnderTest ! cm
+        }
+      }
     })
 
     private def when[C <: Command](wc: WhenContext[C], whenFun: () => Unit): When[C] = {
@@ -81,6 +90,15 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   }
 
   case class When[C <: Command](wc: WhenContext[C], whenFun: () => Unit) {
+
+    def expectEvents[E](events: E*)(implicit t: ClassTag[E]): Unit = {
+      val probe = TestProbe()
+      _system.eventStream.subscribe(probe.ref, t.runtimeClass)
+      whenFun()
+      events.foreach { _ =>
+        probe.expectMsgAnyOf[E](timeoutThen.duration, events: _*)
+      }
+    }
 
     def expectEvent[E](e: E)(implicit t: ClassTag[E]): Unit = {
       expectEventMatching[E](
