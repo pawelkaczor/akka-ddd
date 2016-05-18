@@ -33,6 +33,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   implicit def whenContextToPastEvents[C <: Command](wc: WhenContext[C]): PastEvents = wc.pastEvents
 
   implicit def commandToWhenContext[C <: Command](c: C): WhenContext[C] = WhenContext(Seq(c))
+  implicit def commandsToWhenContext[C <: Command](cs: Seq[C]): WhenContext[C] = WhenContext(cs)
 
   @tailrec
   implicit final def commandGenToWhenContext[C <: Command](cGen: Gen[C]): WhenContext[C] = {

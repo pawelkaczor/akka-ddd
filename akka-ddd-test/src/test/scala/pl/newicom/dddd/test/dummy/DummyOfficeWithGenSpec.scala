@@ -73,6 +73,22 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](Some(testSys
     }
 
     /**
+      * Multiple commands in When section are supported.
+      * 'expectEvents' should be used in Then section to assert multiple events were raised.
+      */
+    "update Dummy's value twice" in {
+      given {
+        a [CreateDummy]
+      }
+      .when (
+        Seq(ChangeValue(dummyId, 1), ChangeValue(dummyId, 2))
+      )
+      .expectEvents (
+        ValueChanged(dummyId, 1, 1), ValueChanged(dummyId, 2, 2)
+      )
+    }
+
+    /**
      * No problem with two or more commands inside Given clause.
      */
     "handle subsequent Update command" in {

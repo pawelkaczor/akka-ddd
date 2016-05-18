@@ -78,9 +78,9 @@ class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](So
           ChangeValue(dummyId, 1)
         )
       }
-      .when { WhenContext(
+      .when {
         changes.map(v => ChangeValue(dummyId, v))
-      )}
+      }
       .expectEvents(
         changes.map(v => ValueChanged(dummyId, v, v.toLong)): _*
       )
