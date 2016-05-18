@@ -74,7 +74,7 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
       saveSnapshot(snapshot)
 
     case SaveSnapshotSuccess(metadata) =>
-      log.debug("Snapshot saved successfully")
+      log.debug("Snapshot saved successfully with metadata: {}", metadata)
 
     case f @ SaveSnapshotFailure(metadata, reason) =>
       log.error(s"$f")
