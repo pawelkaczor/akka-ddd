@@ -38,8 +38,6 @@ object SagaManagerStressIntegrationSpec {
   */
 class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("SagaManagerStressSpec"))) {
 
-  override val shareAggregateRoot = true
-
   def dummyId = aggregateId
 
   implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
@@ -71,7 +69,9 @@ class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](So
     val changes = 2 to 101
 
     "deliver 100 events to a saga office" in {
-      // given
+      val (so, sm) = registerSaga[DummySaga]
+      sagaManager = sm; sagaOffice = so
+
       given {
         List(
           CreateDummy(dummyId, "name", "description", 0),
@@ -85,11 +85,6 @@ class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](So
         changes.map(v => ValueChanged(dummyId, v, v.toLong)): _*
       )
 
-      // when
-      val (so, sm) = registerSaga[DummySaga]
-      sagaManager = sm; sagaOffice = so
-
-      // then
       expectNumberOfEventsAppliedBySaga(changes.size + 1)
       expectNoUnconfirmedMessages(sagaManager)
     }
