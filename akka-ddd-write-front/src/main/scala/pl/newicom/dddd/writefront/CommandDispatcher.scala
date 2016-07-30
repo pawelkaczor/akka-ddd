@@ -1,58 +1,32 @@
 package pl.newicom.dddd.writefront
 
 import akka.actor.{Actor, ActorRef}
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server._
 import akka.pattern.ask
 import akka.util.Timeout
-import org.json4s.Formats
 import pl.newicom.dddd.aggregate.Command
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.office.RemoteOfficeId
 import pl.newicom.dddd.utils.UUIDSupport._
-import pl.newicom.dddd.http.JsonMarshalling
-import pl.newicom.dddd.streams.ImplicitMaterializer
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
-trait CommandDispatcher extends GlobalOfficeClientSupport with CommandDirectives
-  with Directives with ImplicitMaterializer with JsonMarshalling {
+trait CommandDispatcher extends GlobalOfficeClientSupport {
   this: Actor =>
-
-  type OfficeResponseToClientResponse = (Try[String]) => ToResponseMarshallable
 
   import context.dispatcher
 
   def offices: Set[RemoteOfficeId[_]]
 
-  def dispatch[A <: Command](implicit f: Formats, t: Timeout): Route = commandTimestamp { timestamp =>
-    commandManifest[A] { implicit cManifest =>
-      post {
-        entity(as[A]) { command =>
-          complete {
-            val target = officeActor(command)
-            if (target.isDefined) {
-              val cm = CommandMessage(command, uuid, timestamp.toDate)
-
-              delegate(cm, target.get) map toClientResponse
-
-            } else {
-                StatusCodes.UnprocessableEntity -> s"No office registered for command: ${command.getClass.getName}"
-            }
-          }
-        }
-      }
+  def dispatch[A <: Command](command: A)(implicit t: Timeout) = {
+    val target = officeActor(command)
+    if (target.isDefined) {
+      delegate(CommandMessage(command, uuid, new java.util.Date), target.get)
+    } else {
+      Future.failed(UnknownCommandClassException(command))
     }
   }
-
-  def toClientResponse: OfficeResponseToClientResponse =  {
-    case Success(msg) => StatusCodes.OK -> msg
-    case Failure(ex) => StatusCodes.InternalServerError -> ex.getMessage
-  }
-
 
   private def officeActor(c: Command): Option[ActorRef] =
     offices.find(
@@ -68,3 +42,5 @@ trait CommandDispatcher extends GlobalOfficeClientSupport with CommandDirectives
     }
 
 }
+
+case class UnknownCommandClassException(command: Command) extends RuntimeException(s"No office registered for command: ${command.getClass.getName}")
