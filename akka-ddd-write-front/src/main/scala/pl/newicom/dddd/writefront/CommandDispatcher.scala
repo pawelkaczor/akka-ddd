@@ -22,6 +22,8 @@ trait CommandDispatcher extends GlobalOfficeClientSupport with CommandDirectives
   with Directives with ImplicitMaterializer with JsonMarshalling {
   this: Actor =>
 
+  type OfficeResponseToClientResponse = (Try[String]) => ToResponseMarshallable
+
   import context.dispatcher
 
   def offices: Set[RemoteOfficeId[_]]
@@ -35,10 +37,7 @@ trait CommandDispatcher extends GlobalOfficeClientSupport with CommandDirectives
             if (target.isDefined) {
               val cm = CommandMessage(command, uuid, timestamp.toDate)
 
-              delegate(cm, target.get).map[ToResponseMarshallable] {
-                case Success(msg) => StatusCodes.OK -> msg
-                case Failure(ex)  => StatusCodes.InternalServerError -> ex.getMessage
-              }
+              delegate(cm, target.get) map toClientResponse
 
             } else {
                 StatusCodes.UnprocessableEntity -> s"No office registered for command: ${command.getClass.getName}"
@@ -48,6 +47,12 @@ trait CommandDispatcher extends GlobalOfficeClientSupport with CommandDirectives
       }
     }
   }
+
+  def toClientResponse: OfficeResponseToClientResponse =  {
+    case Success(msg) => StatusCodes.OK -> msg
+    case Failure(ex) => StatusCodes.InternalServerError -> ex.getMessage
+  }
+
 
   private def officeActor(c: Command): Option[ActorRef] =
     offices.find(

@@ -34,6 +34,3 @@ case class Office[E : ClassTag](officeId: LocalOfficeId[E], actor: ActorRef) {
   def id: EntityId = officeId.id
   def actorPath: ActorPath = actor.path
 }
-
-
-
