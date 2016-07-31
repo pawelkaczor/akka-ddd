@@ -7,40 +7,45 @@ import pl.newicom.dddd.aggregate.Command
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.office.RemoteOfficeId
-import pl.newicom.dddd.utils.UUIDSupport._
+import pl.newicom.dddd.writefront.CommandDispatcher.UnknownCommandClassException
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
+
+object CommandDispatcher {
+  case class UnknownCommandClassException(command: Command) extends RuntimeException(s"No office registered for command: ${command.getClass.getName}")
+}
 
 trait CommandDispatcher extends GlobalOfficeClientSupport {
   this: Actor =>
+
+  type OfficeResponse = Try[Any]
+
+  implicit def timeout: Timeout
 
   import context.dispatcher
 
   def offices: Set[RemoteOfficeId[_]]
 
-  def dispatch[A <: Command](command: A)(implicit t: Timeout) = {
-    val target = officeActor(command)
-    if (target.isDefined) {
-      delegate(CommandMessage(command, uuid, new java.util.Date), target.get)
-    } else {
-      Future.failed(UnknownCommandClassException(command))
+  def dispatch(msg: CommandMessage): Future[OfficeResponse] =
+    officeRepresentative(msg).map {
+      forward(msg)
+    }.getOrElse {
+      Future.failed(UnknownCommandClassException(msg.command))
     }
-  }
 
-  private def officeActor(c: Command): Option[ActorRef] =
+
+  private def officeRepresentative(msg: CommandMessage): Option[ActorRef] =
     offices.find(
-      _.messageClass.isAssignableFrom(c.getClass)
+      _.messageClass.isAssignableFrom(msg.command.getClass)
     ).map(
       officeActor
     )
 
-  private def delegate(cm: CommandMessage, target: ActorRef)(implicit t: Timeout): Future[Try[String]] =
-    target.ask(cm).flatMap {
-      case Processed(Success(_)) => Future(Success("Command processed. Thank you!"))
-      case Processed(Failure(ex)) => Future(Failure(ex))
-    }
+  private def forward(msg: CommandMessage)(officeRepresentative: ActorRef): Future[OfficeResponse] =
+    (officeRepresentative ? msg)
+      .mapTo[Processed]
+      .map(_.result)
 
 }
 
-case class UnknownCommandClassException(command: Command) extends RuntimeException(s"No office registered for command: ${command.getClass.getName}")

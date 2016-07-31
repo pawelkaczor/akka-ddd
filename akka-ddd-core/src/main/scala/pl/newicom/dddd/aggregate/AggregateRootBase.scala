@@ -63,7 +63,7 @@ trait AggregateRootBase extends BusinessEntity with CollaborationSupport with Gr
   def acknowledgeCommand(result: Any) =
     acknowledgeCommandProcessed(currentCommandMessage, Success(result))
 
-  def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("OK")) {
+  def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("Command processed. Thank you!")) {
     val deliveryReceipt = msg.deliveryReceipt(result)
     currentCommandSender ! deliveryReceipt
   }
