@@ -4,18 +4,24 @@ import akka.actor.ActorRef
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
-import pl.newicom.dddd.saga.{SagaOffice, SagaConfig}
+import pl.newicom.dddd.saga.{SagaConfig, SagaOffice}
 
 import scala.reflect.ClassTag
 
 object OfficeFactory {
 
-  def office[A <: BusinessEntity : BusinessEntityActorFactory : EntityIdResolution : OfficeFactory : LocalOfficeId: ClassTag]: Office[A] = {
-    Office(implicitly[LocalOfficeId[A]], implicitly[OfficeFactory[A]].getOrCreate())
-  }
+  def office[A <: BusinessEntity : BusinessEntityActorFactory : EntityIdResolution : OfficeFactory : LocalOfficeId : OfficeListener : ClassTag]: Office = {
 
-  def sagaOffice[A <: BusinessEntity : BusinessEntityActorFactory : EntityIdResolution : OfficeFactory : SagaConfig: ClassTag]: SagaOffice[A] = {
-    new SagaOffice(implicitly[SagaConfig[A]], implicitly[OfficeFactory[A]].getOrCreate())
+    val officeId = implicitly[LocalOfficeId[A]]
+    val actor = implicitly[OfficeFactory[A]].getOrCreate()
+
+    val office = officeId match {
+      case sc: SagaConfig[A]    =>   new SagaOffice[A](sc, actor)
+      case LocalOfficeId(_, _)  =>   new Office(officeId, actor)
+    }
+
+    implicitly[OfficeListener[A]].officeStarted(office)
+    office
   }
 
 }

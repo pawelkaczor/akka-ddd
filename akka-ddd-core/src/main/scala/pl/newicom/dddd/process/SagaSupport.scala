@@ -1,12 +1,17 @@
 package pl.newicom.dddd.process
 
 import akka.actor.{ActorRef, Props}
-import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
+import pl.newicom.dddd.actor.CreationSupport
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
-import pl.newicom.dddd.office.OfficeFactory
-import pl.newicom.dddd.saga.{SagaOffice, SagaConfig}
+import pl.newicom.dddd.process.SagaSupport.SagaManagerFactory
+import pl.newicom.dddd.saga.SagaOffice
 
-import scala.reflect.ClassTag
+trait SagaSupport {
+
+  implicit def sagaOfficeListener[E <: Saga : SagaManagerFactory](implicit cs: CreationSupport): SagaOfficeListener[E] =
+    new SagaOfficeListener[E]
+
+}
 
 object SagaSupport {
 
@@ -14,18 +19,10 @@ object SagaSupport {
 
   implicit def defaultCaseIdResolution[E <: Saga](): EntityIdResolution[E] = new EntityIdResolution[E]
 
-  def registerSaga[E <: Saga](office: SagaOffice[E])(implicit cs: CreationSupport, smf: SagaManagerFactory[E]): ActorRef = {
+
+  def sagaManager[E <: Saga](office: SagaOffice[E])(implicit cs: CreationSupport, smf: SagaManagerFactory[E]): ActorRef = {
     val sagaManagerProps = Props[SagaManager[E]](smf(office))
-    val sagaManager = cs.createChild(sagaManagerProps, s"SagaManager-${office.id}")
-
-    sagaManager
-  }
-
-  def registerSaga[E <: Saga : SagaConfig : EntityIdResolution : OfficeFactory : BusinessEntityActorFactory: ClassTag]
-    (implicit cs: CreationSupport, smf: SagaManagerFactory[E]): (SagaOffice[E], ActorRef) = {
-    
-    val sagaOffice = OfficeFactory.sagaOffice[E]
-    (sagaOffice, registerSaga(sagaOffice))
+    cs.createChild(sagaManagerProps, s"SagaManager-${office.id}")
   }
 
 }

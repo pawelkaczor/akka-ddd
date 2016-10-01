@@ -1,6 +1,6 @@
 package pl.newicom.dddd.test.support
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import org.scalacheck.Gen
@@ -8,6 +8,7 @@ import pl.newicom.dddd.aggregate.Command
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.command.CommandMessage
+import pl.newicom.dddd.office.Office
 import pl.newicom.dddd.utils.UUIDSupport._
 
 import scala.annotation.tailrec
@@ -20,7 +21,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   val timeoutGiven = Timeout(5.seconds)
   val timeoutThen  = Timeout(5.seconds)
 
-  def officeUnderTest: ActorRef
+  def officeUnderTest: Office
 
   def ensureOfficeTerminated(): Unit
 
@@ -62,7 +63,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     commands: Seq[C],
     pastEvents: PastEvents = PastEvents(),
     params: Seq[Any] = Seq.empty) {
-    def command = commands(0)
+    def command = commands.head
   }
 
   case class Given(givenFun: () => PastEvents) {
@@ -78,9 +79,9 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
         if (wc.commands.size > 1) {
           import akka.pattern.ask
           implicit val timeout = timeoutGiven
-          Await.ready(officeUnderTest ? cm, timeoutGiven.duration)
+          Await.ready(officeUnderTest.actor ? cm, timeoutGiven.duration)
         } else {
-          officeUnderTest ! cm
+          officeUnderTest.actor ! cm
         }
       }
     })
@@ -148,7 +149,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
       givenFun = () => {
         cs.map { c =>
           val cm = CommandMessage(c).withMetaData(commandMetaDataProvider(c))
-          Await.result((officeUnderTest ? cm).mapTo[Processed], timeout.duration)
+          Await.result((officeUnderTest.actor ? cm).mapTo[Processed], timeout.duration)
         }
       }
     )

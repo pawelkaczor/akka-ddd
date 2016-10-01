@@ -7,9 +7,11 @@ import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.EventMessage
+import pl.newicom.dddd.office.OfficeFactory._
+import pl.newicom.dddd.office.OfficeListener
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
-import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, registerSaga}
+import pl.newicom.dddd.process.SagaSupport.SagaManagerFactory
 import pl.newicom.dddd.persistence.{RegularSnapshottingConfig, SaveSnapshotRequest}
 import pl.newicom.dddd.saga.SagaOffice
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, CreateDummy, ValueChanged}
@@ -42,6 +44,8 @@ class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](So
 
   implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
+  implicit val _ = new OfficeListener[DummySaga]
+
   implicit val sagaManagerFactory: SagaManagerFactory[DummySaga] = (sagaOffice: SagaOffice[DummySaga]) => {
     new SagaManager[DummySaga]()(sagaOffice) with EventstoreSubscriber {
 
@@ -69,7 +73,8 @@ class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](So
     val changes = 2 to 101
 
     "deliver 100 events to a saga office" in {
-      val (so, sm) = registerSaga[DummySaga]
+      val so = office[DummySaga].asInstanceOf[SagaOffice[DummySaga]]
+      val sm = SagaSupport.sagaManager(so)
       sagaManager = sm; sagaOffice = so
 
       given {

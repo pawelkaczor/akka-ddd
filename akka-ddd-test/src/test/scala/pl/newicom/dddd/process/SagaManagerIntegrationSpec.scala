@@ -7,17 +7,19 @@ import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.EventMessage
+import pl.newicom.dddd.office.OfficeFactory.office
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
-import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, registerSaga}
+import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, sagaManager}
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
 import pl.newicom.dddd.saga.SagaOffice
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, CreateDummy, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
-import pl.newicom.dddd.test.dummy.{dummyOfficeId, DummyAggregateRoot, DummySaga}
+import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga, dummyOfficeId}
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.eventstore.EventstoreSubscriber
+
 import scala.concurrent.duration._
 
 object SagaManagerIntegrationSpec {
@@ -55,6 +57,14 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
     }
   }
 
+  var sm: ActorRef = _
+
+  implicit val _ = new SagaOfficeListener[DummySaga] {
+    override def officeStarted(office: SagaOffice[DummySaga], sagaManager: ActorRef): Unit = {
+      sm = sagaManager
+    }
+  }
+
 
   val sagaProbe = TestProbe()
   system.eventStream.subscribe(sagaProbe.ref, classOf[EventApplied])
@@ -62,7 +72,6 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
 
   "SagaManager" should {
 
-    var sagaManager: ActorRef = null
     var sagaOffice: SagaOffice[DummySaga] = null
 
     "deliver events to a saga office" in {
@@ -81,17 +90,17 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
       }
 
       // when
-      val (so, sm) = registerSaga[DummySaga]
-      sagaManager = sm; sagaOffice = so
+      val so = office[DummySaga].asInstanceOf[SagaOffice[DummySaga]]
+      sagaOffice = so
 
       // then
       expectNumberOfEventsAppliedBySaga(2)
-      expectNoUnconfirmedMessages(sagaManager)
+      expectNoUnconfirmedMessages(sm)
     }
 
     "persist unconfirmed events" in {
       // given
-      ensureActorUnderTestTerminated(sagaManager) // stop events delivery
+      ensureActorUnderTestTerminated(sm) // stop events delivery
       when {
         ChangeValue(dummyId, 3) // bump counter by 1, DummySaga should accept this event
       }
@@ -107,16 +116,16 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
       }
 
       // when
-      sagaManager = registerSaga[DummySaga](sagaOffice) // start events delivery, number of events to be delivered to DummySaga is 2
+      sm = sagaManager(sagaOffice) // start events delivery, number of events to be delivered to DummySaga is 2
 
       // then
       expectNumberOfEventsAppliedBySaga(1)
-      expectNumberOfUnconfirmedMessages(sagaManager, 1) // single unconfirmed event: ValueChanged(_, 5)
+      expectNumberOfUnconfirmedMessages(sm, 1) // single unconfirmed event: ValueChanged(_, 5)
     }
 
     "redeliver unconfirmed events to a saga office" in {
       // given
-      ensureActorUnderTestTerminated(sagaManager)
+      ensureActorUnderTestTerminated(sm)
       when {
         ChangeValue(dummyId, 4)
       }
@@ -125,11 +134,11 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
       }
 
       // when
-      sagaManager = registerSaga[DummySaga](sagaOffice)
+      sm = sagaManager(sagaOffice)
 
       // then
       expectNumberOfEventsAppliedBySaga(1)
-      expectNumberOfUnconfirmedMessages(sagaManager, 0)
+      expectNumberOfUnconfirmedMessages(sm, 0)
 
     }
   }

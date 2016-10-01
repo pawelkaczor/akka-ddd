@@ -6,7 +6,7 @@ import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.scheduling.Scheduler.SchedulerState
 
-object Scheduler {
+object Scheduler extends AggregateRootSupport {
 
   //
   // State
@@ -20,7 +20,6 @@ object Scheduler {
 
 class Scheduler(val pc: PassivationConfig) extends AggregateRoot[SchedulerState, Scheduler] {
   this: EventPublisher =>
-
 
   override def officeId = schedulingOfficeId
 

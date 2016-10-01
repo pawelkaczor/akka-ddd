@@ -6,10 +6,10 @@ import org.scalacheck.Gen
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, WordSpecLike}
 import org.slf4j.LoggerFactory.getLogger
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
-import pl.newicom.dddd.aggregate.{Command, BusinessEntity, EntityId}
+import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId}
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
 import pl.newicom.dddd.office.SimpleOffice._
-import pl.newicom.dddd.office.LocalOfficeId
+import pl.newicom.dddd.office.{LocalOfficeId, Office, OfficeListener}
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.test.support.OfficeSpec.sys
 import pl.newicom.dddd.utils.UUIDSupport._
@@ -32,14 +32,15 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: Loca
 
   val domain = arClassTag.runtimeClass.getSimpleName
 
-  override def officeUnderTest: ActorRef = {
-    if (_officeUnderTest == null) _officeUnderTest = office[A].actor
+  override def officeUnderTest: Office = {
+    implicit val _ = new OfficeListener[A]
+    if (_officeUnderTest == null) _officeUnderTest = office[A]
     _officeUnderTest
   }
 
-  private var _officeUnderTest: ActorRef = null
+  private var _officeUnderTest: Office = _
 
-  implicit var _aggregateIdGen: Gen[EntityId] = null
+  implicit var _aggregateIdGen: Gen[EntityId] = _
 
   val testSuiteId = uuid10
 
@@ -99,7 +100,7 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: Loca
 
   override def ensureOfficeTerminated(): Unit = {
     if (_officeUnderTest != null) {
-      ensureActorUnderTestTerminated(_officeUnderTest)
+      ensureActorUnderTestTerminated(_officeUnderTest.actor)
     }
     _officeUnderTest = null
   }

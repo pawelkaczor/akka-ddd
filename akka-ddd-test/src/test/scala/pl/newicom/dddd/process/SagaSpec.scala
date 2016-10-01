@@ -6,9 +6,10 @@ import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaData._
-import pl.newicom.dddd.messaging.event.{CaseId, OfficeEventMessage, EventMessage}
+import pl.newicom.dddd.messaging.event.{CaseId, EventMessage, OfficeEventMessage}
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.OfficeFactory._
+import pl.newicom.dddd.office.OfficeListener
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.ValueChanged
 import pl.newicom.dddd.test.dummy.DummySaga
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaConfig, EventApplied}
@@ -25,6 +26,8 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
   override def afterAll {
     TestKit.shutdownActorSystem(system)
   }
+
+  implicit val _ = new OfficeListener[DummySaga]
 
   implicit object TestSagaActorFactory extends SagaActorFactory[DummySaga] {
     override def props(pc: PassivationConfig): Props =

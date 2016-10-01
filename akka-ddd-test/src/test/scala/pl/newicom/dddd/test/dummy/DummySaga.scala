@@ -1,14 +1,14 @@
 package pl.newicom.dddd.test.dummy
 
-import akka.actor.{ActorPath, Props}
+import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
-import pl.newicom.dddd.office.LocalOfficeId
+import pl.newicom.dddd.office.{LocalOfficeId, Office}
 import pl.newicom.dddd.process._
 import pl.newicom.dddd.saga.SagaConfig
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{DummyCreated, ValueChanged}
-import pl.newicom.dddd.test.dummy.DummySaga.{DummyState, EventApplied, DummyCommand}
+import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyState, EventApplied}
 
 object DummySaga {
 
@@ -48,7 +48,7 @@ object DummySaga {
  */
 class DummySaga(val pc: PassivationConfig,
                 val officeId: LocalOfficeId[DummySaga],
-                dummyOffice: Option[ActorPath]) extends ProcessManager[DummyState] {
+                dummyOffice: Option[Office]) extends ProcessManager[DummyState] {
 
   startWhen {
 
@@ -64,7 +64,7 @@ class DummySaga(val pc: PassivationConfig,
         context.system.eventStream.publish(EventApplied(e))
 
         if (dummyOffice.isDefined) {
-          deliverCommand(dummyOffice.get, DummyCommand(id, counter))
+          deliverCommand(dummyOffice.get.actorPath, DummyCommand(id, counter))
         }
 
         DummyState(value)

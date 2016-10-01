@@ -30,7 +30,7 @@ case class LocalOfficeId[E : ClassTag](id: EntityId, department: String) extends
     implicitly[ClassTag[E]].runtimeClass.asInstanceOf[Class[E]]
 }
 
-case class Office[E : ClassTag](officeId: LocalOfficeId[E], actor: ActorRef) {
+class Office(val officeId: OfficeId, val actor: ActorRef) {
   def id: EntityId = officeId.id
   def actorPath: ActorPath = actor.path
 }
