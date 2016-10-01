@@ -64,7 +64,7 @@ class DummySaga(val pc: PassivationConfig,
         context.system.eventStream.publish(EventApplied(e))
 
         if (dummyOffice.isDefined) {
-          deliverCommand(dummyOffice.get.actorPath, DummyCommand(id, counter))
+          dummyOffice.get !! DummyCommand(id, counter)
         }
 
         DummyState(value)

@@ -6,11 +6,12 @@ import akka.persistence.{AtLeastOnceDelivery, PersistentActor}
 import org.joda.time.DateTime
 import pl.newicom.dddd.actor.GracefulPassivation
 import pl.newicom.dddd.aggregate._
+import pl.newicom.dddd.delivery.protocol.DeliveryHandler
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
-import pl.newicom.dddd.office.OfficeId
+import pl.newicom.dddd.office.{Office, OfficeId}
 import pl.newicom.dddd.persistence.PersistentActorLogging
 import pl.newicom.dddd.scheduling.ScheduleEvent
 
@@ -30,7 +31,7 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
 
   def currentEventMsg: EventMessage = _lastEventMessage.get
 
-  def schedulingOffice: Option[ActorPath] = None
+  def schedulingOffice: Option[Office] = None
 
   def officePath: ActorPath = context.parent.path.parent
 
@@ -40,6 +41,7 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
     })
   }
 
+
   def deliverCommand(office: ActorPath, command: Command): Unit = {
     deliverMsg(office, CommandMessage(command).causedBy(currentEventMsg))
   }
@@ -47,7 +49,7 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
   def schedule(event: DomainEvent, deadline: DateTime, correlationId: EntityId = sagaId): Unit = {
     schedulingOffice.fold(throw new UnsupportedOperationException("Scheduling Office is not defined.")) { schOffice =>
       val command = ScheduleEvent("global", officePath, deadline, event)
-      deliverMsg(schOffice, CommandMessage(command).withCorrelationId(correlationId))
+      schOffice deliver CommandMessage(command).withCorrelationId(correlationId)
     }
   }
 
@@ -68,5 +70,14 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
 
   override def handleDuplicated(msg: Message) =
     acknowledgeEvent(msg)
+
+
+  // DSL Helper
+  implicit def deliveryHandler: DeliveryHandler = {
+    (ap: ActorPath, msg: Any) => msg match {
+      case c: Command => deliverCommand(ap, c)
+      case m: Message => deliverMsg(ap, m)
+    }
+  }.tupled
 
 }

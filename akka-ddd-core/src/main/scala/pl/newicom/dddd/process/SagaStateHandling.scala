@@ -9,6 +9,7 @@ trait SagaState[T <: SagaState[T]]
 trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
   this: PersistentActor with PersistentActorLogging =>
 
+
   type StateFunction = PartialFunction[DomainEvent, S]
   type StateMachine  = PartialFunction[S, StateFunction]
 
@@ -18,6 +19,8 @@ trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
   private var stateMachine: StateMachine = _
 
   def state = Option(currentState).getOrElse(initiation(currentEvent))
+
+  implicit def implicitCurrentState(noState: Unit): S = state
 
   override def initialized: Boolean = Option(currentState).isDefined
 
@@ -42,7 +45,7 @@ trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
     val inputState = state
 
     def default: PartialFunction[DomainEvent, S] = {case _ => inputState} // accept delivery receipt
-    currentState = stateMachine.applyOrElse[S, StateFunction](inputState, {case _ => default}).applyOrElse(event, default)
+    currentState = stateMachine.applyOrElse[S, StateFunction](inputState, _ => default).applyOrElse(event, default)
 
     onEventApplied(event, inputState)
   }
