@@ -7,7 +7,7 @@ import pl.newicom.dddd.process.{Receptor, ReceptorBuilder, ReceptorConfig}
 
 object DeadlinesReceptor {
   def apply(businessUnit: EntityId): ReceptorConfig = ReceptorBuilder()
-    .reactTo(currentDeadlinesOfficeId.clerk(businessUnit))
+    .reactTo(CurrentDeadlinesOfficeId.clerk(businessUnit))
     .applyTransduction {
       case em @ EventMessage(_, EventScheduled(metadata, event)) =>
         EventMessage(event)

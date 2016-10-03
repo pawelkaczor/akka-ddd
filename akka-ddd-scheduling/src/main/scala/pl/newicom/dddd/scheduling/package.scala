@@ -6,6 +6,6 @@ package object scheduling {
 
   implicit val schedulingOfficeId: LocalOfficeId[Scheduler] = new LocalOfficeId[Scheduler]("deadlines", "scheduling")
 
-  val currentDeadlinesOfficeId = RemoteOfficeId("currentDeadlines", "scheduling", classOf[ScheduleEvent])
+  implicit object CurrentDeadlinesOfficeId extends RemoteOfficeId("currentDeadlines", "scheduling", classOf[ScheduleEvent])
 
 }
