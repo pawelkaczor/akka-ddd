@@ -1,8 +1,9 @@
 package pl.newicom.dddd.office
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, ActorSystem}
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.cluster
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.saga.{SagaConfig, SagaOffice}
 
@@ -23,6 +24,9 @@ object OfficeFactory {
     implicitly[OfficeListener[A]].officeStarted(office)
     office
   }
+
+  def office(officeId: RemoteOfficeId[_])(implicit as: ActorSystem): Office =
+    new Office(officeId, cluster.proxy(officeId))
 
 }
 
