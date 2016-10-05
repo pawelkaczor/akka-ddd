@@ -27,7 +27,12 @@ trait ShardingSupport {
         val entityProps = entityFactory.props(PassivationConfig(Passivate(PoisonPill), entityFactory.inactivityTimeout))
         val sr = implicitly[ShardResolution[A]]
 
-        ClusterSharding(system).start(typeName = officeId.id, entityProps = entityProps, settings = shardSettings, extractEntityId = sr.idExtractor, extractShardId = sr.shardResolver)
+        ClusterSharding(system).start(
+          typeName = officeId.id,
+          entityProps = entityProps,
+          settings = shardSettings,
+          extractEntityId = sr.idExtractor,
+          extractShardId = sr.shardResolver)
 
         ClusterClientReceptionist(system).registerService(region(officeId).get)
 
@@ -39,7 +44,11 @@ trait ShardingSupport {
   def proxy(officeId: OfficeId, sr: ShardResolution[_] = new DefaultShardResolution)(implicit system: ActorSystem): ActorRef = {
 
     def startProxy(): Unit = {
-      ClusterSharding(system).startProxy(typeName = officeId.id, role = None, extractEntityId = sr.idExtractor, extractShardId = sr.shardResolver)
+      ClusterSharding(system).startProxy(
+        typeName = officeId.id,
+        role = None,
+        extractEntityId = sr.idExtractor,
+        extractShardId = sr.shardResolver)
     }
 
     region(officeId).getOrElse {
