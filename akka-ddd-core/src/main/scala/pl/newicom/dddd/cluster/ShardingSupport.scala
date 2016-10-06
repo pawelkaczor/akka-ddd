@@ -13,7 +13,7 @@ trait ShardingSupport {
   implicit def globalOfficeFactory[A <: BusinessEntity : ShardResolution : BusinessEntityActorFactory : LocalOfficeId](implicit system: ActorSystem): OfficeFactory[A] = {
     new OfficeFactory[A] {
 
-      val shardSettings = ClusterShardingSettings(system)
+      val shardSettings = ClusterShardingSettings(system).withRole(officeId.department)
 
       override def getOrCreate(): ActorRef = {
         region(officeId).getOrElse {
@@ -34,8 +34,7 @@ trait ShardingSupport {
           extractEntityId = sr.idExtractor,
           extractShardId = sr.shardResolver)
 
-        ClusterClientReceptionist(system).registerService(region(officeId).get)
-
+          startClusterClientReceptionist(officeId)
       }
 
     }
@@ -46,9 +45,12 @@ trait ShardingSupport {
     def startProxy(): Unit = {
       ClusterSharding(system).startProxy(
         typeName = officeId.id,
-        role = None,
+        role = Some(officeId.department),
         extractEntityId = sr.idExtractor,
         extractShardId = sr.shardResolver)
+
+      startClusterClientReceptionist(officeId)
+
     }
 
     region(officeId).getOrElse {
@@ -56,6 +58,10 @@ trait ShardingSupport {
       region(officeId).get
     }
 
+  }
+
+  private def startClusterClientReceptionist(officeId: OfficeId)(implicit as: ActorSystem): Unit = {
+    ClusterClientReceptionist(as).registerService(region(officeId).get)
   }
 
   private def region(officeId: OfficeId)(implicit as: ActorSystem): Option[ActorRef] = {
