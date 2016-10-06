@@ -4,8 +4,8 @@ import pl.newicom.dddd.office.{LocalOfficeId, RemoteOfficeId}
 
 package object scheduling {
 
-  implicit val schedulingOfficeId: LocalOfficeId[Scheduler] = new LocalOfficeId[Scheduler]("deadlines", "scheduling")
+  def schedulingOfficeId(department: String) = new LocalOfficeId[Scheduler]("deadlines", department)
 
-  implicit object CurrentDeadlinesOfficeId extends RemoteOfficeId("currentDeadlines", "scheduling", classOf[ScheduleEvent])
+  def currentDeadlinesOfficeId(department: String) = RemoteOfficeId("currentDeadlines", department, classOf[ScheduleEvent])
 
 }

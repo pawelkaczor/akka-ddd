@@ -13,6 +13,8 @@ import scala.concurrent.duration._
 object SchedulerSpec {
   val businessUnit = "test"
 
+  implicit val schedulingOfficeID = schedulingOfficeId("Scheduling")
+
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[Scheduler] =
     new AggregateRootActorFactory[Scheduler] {
       override def props(pc: PassivationConfig): Props = Props(new Scheduler(pc) with LocalPublisher {
