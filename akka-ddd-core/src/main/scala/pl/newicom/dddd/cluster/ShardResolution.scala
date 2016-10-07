@@ -1,24 +1,22 @@
 package pl.newicom.dddd.cluster
 
-import akka.cluster.sharding.ShardRegion._
-import pl.newicom.dddd.cluster.ShardResolution._
 import pl.newicom.dddd.aggregate.Command
+import pl.newicom.dddd.cluster.DistributionStrategy.ExtractShardId
+import pl.newicom.dddd.cluster.ShardResolution.ExtractEntityId
 import pl.newicom.dddd.messaging.AddressableMessage
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.correlation.EntityIdResolution
-import pl.newicom.dddd.messaging.correlation.EntityIdResolution.EntityIdResolver
 
 object ShardResolution {
-  type ShardResolutionStrategy = EntityIdResolver => ExtractShardId
+  type ExtractEntityId = PartialFunction[Any, (String, Any)]
 }
 
-trait ShardResolution[A] extends EntityIdResolution[A] {
+class ShardResolution(strategy: DistributionStrategy) extends EntityIdResolution {
 
-  def shardResolutionStrategy: ShardResolutionStrategy
+  def shardResolver: ExtractShardId =
+    strategy(entityIdResolver)
 
-  def shardResolver: ExtractShardId = shardResolutionStrategy(entityIdResolver)
-
-  val idExtractor: ExtractEntityId = {
+  def idExtractor: ExtractEntityId = {
     case msg: AddressableMessage => (entityIdResolver(msg), msg)
     case c: Command => (entityIdResolver(c), CommandMessage(c))
   }

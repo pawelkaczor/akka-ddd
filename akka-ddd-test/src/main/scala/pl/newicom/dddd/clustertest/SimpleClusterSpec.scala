@@ -5,7 +5,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{MultiNodeConfig, MultiNodeSpec}
 import akka.testkit.ImplicitSender
 import com.typesafe.config.{ConfigFactory, Config}
-import pl.newicom.dddd.cluster.DefaultShardResolution
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -24,9 +23,7 @@ abstract class SimpleClusterSpec(config: Config)
 
   implicit val logger = system.log
 
-  implicit def defaultShardResolution[A] = new DefaultShardResolution[A]
-
-  def firstNode: RoleName = roles(0)
+  def firstNode: RoleName = roles.head
   def secondNode: RoleName = roles(1)
 
   def initialParticipants = roles.size
@@ -39,8 +36,8 @@ abstract class SimpleClusterSpec(config: Config)
   }
 
   def joinCluster() {
-    join(startOn = roles(0), joinTo = roles(0))
-    join(startOn = roles(1), joinTo = roles(0))
+    join(startOn = roles.head, joinTo = roles.head)
+    join(startOn = roles(1), joinTo = roles.head)
     enterBarrier("after-2")
   }
 

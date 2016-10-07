@@ -11,7 +11,7 @@ import scala.reflect.ClassTag
 
 object OfficeFactory {
 
-  def office[A <: BusinessEntity : BusinessEntityActorFactory : EntityIdResolution : OfficeFactory : LocalOfficeId : OfficeListener : ClassTag]: Office = {
+  def office[A <: BusinessEntity : BusinessEntityActorFactory : OfficeFactory : LocalOfficeId : OfficeListener : ClassTag]: Office = {
 
     val officeId = implicitly[LocalOfficeId[A]]
     val actor = implicitly[OfficeFactory[A]].getOrCreate()
@@ -30,7 +30,7 @@ object OfficeFactory {
 
 }
 
-abstract class OfficeFactory[A <: BusinessEntity : BusinessEntityActorFactory : EntityIdResolution: LocalOfficeId] {
+abstract class OfficeFactory[A <: BusinessEntity : BusinessEntityActorFactory : LocalOfficeId] {
   def officeId = implicitly[LocalOfficeId[A]]
   def getOrCreate(): ActorRef
 }

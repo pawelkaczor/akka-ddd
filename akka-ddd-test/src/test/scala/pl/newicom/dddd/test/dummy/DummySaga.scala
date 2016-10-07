@@ -3,7 +3,6 @@ package pl.newicom.dddd.test.dummy
 import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.office.{LocalOfficeId, Office}
 import pl.newicom.dddd.process._
 import pl.newicom.dddd.saga.SagaConfig
@@ -11,8 +10,6 @@ import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{DummyCreated, ValueChanged
 import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyState, EventApplied}
 
 object DummySaga {
-
-  implicit def defaultSagaIdResolution[A]: EntityIdResolution[A] = new EntityIdResolution[A]
 
   class DummySagaConfig(bpsName: String) extends SagaConfig[DummySaga](bpsName) {
 

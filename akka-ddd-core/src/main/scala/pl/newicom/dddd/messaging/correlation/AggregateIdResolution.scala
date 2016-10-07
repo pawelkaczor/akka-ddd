@@ -1,9 +1,9 @@
 package pl.newicom.dddd.messaging.correlation
 
 import pl.newicom.dddd.aggregate.Command
-import pl.newicom.dddd.messaging.correlation.EntityIdResolution.EntityIdResolver
+import pl.newicom.dddd.cluster.DistributionStrategy.EntityIdResolver
 
-class AggregateIdResolution[A] extends EntityIdResolution[A] {
+class AggregateIdResolution extends EntityIdResolution {
 
   override def entityIdResolver: EntityIdResolver = {
     super.entityIdResolver.orElse {

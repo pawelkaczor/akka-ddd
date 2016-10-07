@@ -7,7 +7,6 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, WordSpecLike}
 import org.slf4j.LoggerFactory.getLogger
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
 import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId}
-import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.{LocalOfficeId, Office, OfficeListener}
 import pl.newicom.dddd.office.OfficeFactory._
@@ -83,8 +82,6 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: Loca
       }
     }
   }
-
-  implicit def defaultCaseIdResolution[AA]: AggregateIdResolution[AA] = new AggregateIdResolution[AA]
 
   def ensureActorUnderTestTerminated(actor: ActorRef) = {
     watch(actor)

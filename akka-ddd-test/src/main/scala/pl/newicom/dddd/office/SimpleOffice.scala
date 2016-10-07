@@ -5,14 +5,14 @@ import pl.newicom.dddd.actor.{ActorContextCreationSupport, BusinessEntityActorFa
 import pl.newicom.dddd.aggregate.{BusinessEntity, Command}
 import pl.newicom.dddd.messaging.AddressableMessage
 import pl.newicom.dddd.messaging.command.CommandMessage
-import pl.newicom.dddd.messaging.correlation.EntityIdResolution
+import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 import scala.concurrent.duration._
 
 object SimpleOffice {
 
-  implicit def simpleOfficeFactory[A <: BusinessEntity: BusinessEntityActorFactory: EntityIdResolution : LocalOfficeId](implicit system: ActorSystem): OfficeFactory[A] = {
+  implicit def simpleOfficeFactory[A <: BusinessEntity: BusinessEntityActorFactory : LocalOfficeId](implicit system: ActorSystem): OfficeFactory[A] = {
     new OfficeFactory[A] {
       override def getOrCreate(): ActorRef = {
         system.actorOf(Props(new SimpleOffice[A]()), s"${officeId.id}_$uuid7")
@@ -21,12 +21,11 @@ object SimpleOffice {
   }
 }
 
-class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
-    inactivityTimeout: Duration = 1.minutes)(
-    implicit caseIdResolution: EntityIdResolution[A],
-    clerkFactory: BusinessEntityActorFactory[A])
+class SimpleOffice[A <: BusinessEntity: LocalOfficeId](inactivityTimeout: Duration = 1.minutes)(
+    implicit clerkFactory: BusinessEntityActorFactory[A])
   extends ActorContextCreationSupport with Actor with ActorLogging {
 
+  val caseIdResolution = new AggregateIdResolution
   val clerkProps = clerkFactory.props(PassivationConfig(Passivate(PoisonPill), clerkFactory.inactivityTimeout))
 
   override def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {

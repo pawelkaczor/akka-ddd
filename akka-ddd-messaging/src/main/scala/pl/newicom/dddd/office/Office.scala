@@ -2,6 +2,7 @@ package pl.newicom.dddd.office
 
 import akka.actor.{ActorPath, ActorRef}
 import pl.newicom.dddd.aggregate.{BusinessEntity, EntityId}
+import pl.newicom.dddd.cluster.DefaultDistributionStrategy
 import pl.newicom.dddd.delivery.protocol.DeliveryHandler
 
 import scala.reflect.ClassTag
@@ -13,6 +14,7 @@ trait OfficeId extends BusinessEntity {
   def clerk(clerkId: EntityId): BusinessEntity =
     Clerk(clerkGlobalId(clerkId), department)
 
+  def distributionStrategy = new DefaultDistributionStrategy
 }
 
 case class Clerk(id: EntityId, department: String) extends BusinessEntity
