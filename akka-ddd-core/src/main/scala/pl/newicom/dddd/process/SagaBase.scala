@@ -3,7 +3,8 @@ package pl.newicom.dddd.process
 import akka.actor.ActorPath
 import akka.contrib.pattern.ReceivePipeline
 import akka.persistence.{AtLeastOnceDelivery, PersistentActor}
-import org.joda.time.DateTime
+import org.joda.time.DateTime.now
+import org.joda.time.{DateTime, Period}
 import pl.newicom.dddd.actor.GracefulPassivation
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.DeliveryHandler
@@ -72,7 +73,9 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
     acknowledgeEvent(msg)
 
 
-  // DSL Helper
+  //
+  // DSL helpers
+  //
   implicit def deliveryHandler: DeliveryHandler = {
     (ap: ActorPath, msg: Any) => msg match {
       case c: Command => deliverCommand(ap, c)
@@ -80,4 +83,13 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
     }
   }.tupled
 
+
+  def schedule(event: DomainEvent) = new ToBeScheduled(event)
+
+  class ToBeScheduled(event: DomainEvent) {
+    def on(dateTime: DateTime)  = schedule(event, dateTime)
+    def at(dateTime: DateTime)  = on(dateTime)
+    def in(period: Period)      = on(now.plus(period))
+    def asap()                    = on(now)
+  }
 }
