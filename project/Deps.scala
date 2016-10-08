@@ -3,26 +3,26 @@ import sbt._
 object Deps {
 
   object Version {
-    val Akka                  = "2.4.2"
+    val Akka                  = "2.4.11"
 
-    val EventStoreClient      = "2.2.1"
-    val EventStoreAkkaJournal = "2.2.1"
+    val EventStoreClient      = "2.4.0"
+    val EventStoreAkkaJournal = "2.3.0"
     
-    val json4s                = "3.3.0"
+    val json4s                = "3.4.1"
 
-    val Slick                 = "3.1.0"
-    val PostgresqlSlickExt    = "0.10.0" // Slick 3.1.0
+    val Slick                 = "3.1.1"
+    val PostgresqlSlickExt    = "0.14.3" // Slick 3.1.1
     val H2Driver              = "1.4.189"
 
     // monitoring
     val Kamon                 = "0.6.0"
 
     // test
-    val ScalaTest             = "2.2.4"
-    val ScalaCheck            = "1.12.5"
+    val ScalaTest             = "3.0.0"
+    val ScalaCheck            = "1.13.2"
 
-    val LogbackClassic        = "1.1.3"
-    val nScalaTime            = "2.2.0"
+    val LogbackClassic        = "1.1.7"
+    val nScalaTime            = "2.12.0"
   }
 
   object Akka {
