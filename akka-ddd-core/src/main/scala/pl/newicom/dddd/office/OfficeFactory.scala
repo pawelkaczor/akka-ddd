@@ -4,7 +4,6 @@ import akka.actor.{ActorRef, ActorSystem}
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.cluster
-import pl.newicom.dddd.messaging.correlation.EntityIdResolution
 import pl.newicom.dddd.saga.{SagaConfig, SagaOffice}
 
 import scala.reflect.ClassTag
@@ -31,6 +30,6 @@ object OfficeFactory {
 }
 
 abstract class OfficeFactory[A <: BusinessEntity : BusinessEntityActorFactory : LocalOfficeId] {
-  def officeId = implicitly[LocalOfficeId[A]]
+  def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
   def getOrCreate(): ActorRef
 }

@@ -35,6 +35,7 @@ case class LocalOfficeId[E : ClassTag](id: EntityId, department: String) extends
 
 class Office(val officeId: OfficeId, val actor: ActorRef) {
   def id: EntityId = officeId.id
+  def department: String = officeId.department
   def actorPath: ActorPath = actor.path
 
   def deliver(msg: Any)(implicit dh: DeliveryHandler): Unit = {
