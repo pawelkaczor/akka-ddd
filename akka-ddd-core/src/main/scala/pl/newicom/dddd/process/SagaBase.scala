@@ -12,23 +12,26 @@ import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
-import pl.newicom.dddd.office.{Office, OfficeId}
+import pl.newicom.dddd.office.OfficeFactory.office
+import pl.newicom.dddd.office.{Office, OfficeId, RemoteOfficeId}
 import pl.newicom.dddd.persistence.PersistentActorLogging
 import pl.newicom.dddd.scheduling.ScheduleEvent
+
+import scala.reflect.ClassTag
 
 trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentActor
   with AtLeastOnceDelivery with ReceivePipeline with Deduplication with PersistentActorLogging {
 
   private var _lastEventMessage: Option[EventMessage] = None
 
-  def sagaId = self.path.name
+  def sagaId: String = self.path.name
 
   def officeId: OfficeId
 
   override def persistenceId: String = officeId.clerkGlobalId(id)
 
-  override def id = sagaId
-  override def department = officeId.department
+  override def id: EntityId = sagaId
+  override def department: String = officeId.department
 
   def currentEventMsg: EventMessage = _lastEventMessage.get
 
@@ -69,13 +72,19 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
     super.messageProcessed(msg)
   }
 
-  override def handleDuplicated(msg: Message) =
+  override def handleDuplicated(msg: Message): Unit =
     acknowledgeEvent(msg)
 
 
   //
   // DSL helpers
   //
+
+  def ⟶[C >: Command : ClassTag: RemoteOfficeId](command: C): Unit =
+    office(implicitly[RemoteOfficeId[C]])(context.system) deliver command
+
+  def ⟵(event: DomainEvent): ToBeScheduled = schedule(event)
+
   implicit def deliveryHandler: DeliveryHandler = {
     (ap: ActorPath, msg: Any) => msg match {
       case c: Command => deliverCommand(ap, c)
@@ -87,9 +96,9 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
   def schedule(event: DomainEvent) = new ToBeScheduled(event)
 
   class ToBeScheduled(event: DomainEvent) {
-    def on(dateTime: DateTime)  = schedule(event, dateTime)
-    def at(dateTime: DateTime)  = on(dateTime)
-    def in(period: Period)      = on(now.plus(period))
-    def asap()                    = on(now)
+    def on(dateTime: DateTime): Unit = schedule(event, dateTime)
+    def at(dateTime: DateTime): Unit = on(dateTime)
+    def in(period: Period): Unit = on(now.plus(period))
+    def asap(): Unit = on(now)
   }
 }

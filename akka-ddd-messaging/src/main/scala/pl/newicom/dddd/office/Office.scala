@@ -19,7 +19,7 @@ trait OfficeId extends BusinessEntity {
 
 case class Clerk(id: EntityId, department: String) extends BusinessEntity
 
-case class RemoteOfficeId[M : ClassTag](id: EntityId, department: String, messageClass: Class[M]) extends OfficeId
+case class RemoteOfficeId[+M: ClassTag](id: EntityId, department: String, messageClass: Class[_ <: M]) extends OfficeId
 
 object LocalOfficeId {
 

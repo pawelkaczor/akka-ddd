@@ -25,7 +25,7 @@ lazy val root = (project in file("."))
 lazy val `akka-ddd-messaging` = project
   .settings(
     commonSettings,
-    scalacOptions ++= Seq("-language:implicitConversions"),
+    scalacOptions ++= Seq("-language:existentials", "-language:implicitConversions"),
     libraryDependencies ++= Json.`4s` ++ Seq(Akka.stream, nscalaTime)
   )
 
