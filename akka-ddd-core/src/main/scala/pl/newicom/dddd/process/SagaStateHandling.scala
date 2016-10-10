@@ -9,23 +9,40 @@ trait SagaState[T <: SagaState[T]]
 trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
   this: PersistentActor with PersistentActorLogging =>
 
+  final case class StateTransition(triggeredBy: DomainEvent, fromState: S, toState: S, action: () => Unit) {
+    def execute(): S = {
+      action()
+      log.debug(s"Event ${triggeredBy.getClass.getSimpleName} applied: $fromState -> $toState")
+      toState
+    }
+  }
 
-  type StateFunction = PartialFunction[DomainEvent, S]
-  type StateMachine  = PartialFunction[S, StateFunction]
+  implicit def toStateTransition(state: S): StateTransition =
+    state(() => ())
+
+  implicit def toCurrentStateTransition(noState: Unit): StateTransition =
+    toStateTransition(state)
+
+  implicit class ToStateTransition(toState: S) {
+    def apply(action: => Unit): StateTransition =
+      StateTransition(currentEvent, currentState, toState, () => action)
+  }
+
+  type StateFunction   = PartialFunction[DomainEvent, StateTransition]
+  type StateMachine    = PartialFunction[S, StateFunction]
 
   private var currentState: S = _
   private var currentEvent: DomainEvent = _
   private var initiation: StateFunction = _
+
   private var stateMachine: StateMachine = _
 
-  def state = Option(currentState).getOrElse(initiation(currentEvent))
-
-  implicit def implicitCurrentState(noState: Unit): S = state
+  def state: S = Option(currentState).getOrElse(initiation(currentEvent).toState)
 
   override def initialized: Boolean = Option(currentState).isDefined
 
   class SagaBuilder(init: StateFunction) {
-    def andThen(sm: StateMachine)  = {
+    def andThen(sm: StateMachine): Unit = {
       initiation = init
       stateMachine = sm
     }
@@ -44,14 +61,9 @@ trait SagaStateHandling[S <: SagaState[S]] extends SagaAbstractStateHandling {
     currentEvent = event
     val inputState = state
 
-    def default: PartialFunction[DomainEvent, S] = {case _ => inputState} // accept delivery receipt
-    currentState = stateMachine.applyOrElse[S, StateFunction](inputState, _ => default).applyOrElse(event, default)
-
-    onEventApplied(event, inputState)
-  }
-
-  def onEventApplied(event: DomainEvent, oldState: S): Unit = {
-    log.debug(s"Event applied: $oldState -> $currentState")
+    def default: PartialFunction[DomainEvent, StateTransition] = { case _ => inputState } // accept delivery receipt
+    val stateTransition = stateMachine.applyOrElse[S, StateFunction](inputState, _ => default).applyOrElse(event, default)
+    currentState = stateTransition.execute()
   }
 
   private def canHandle(event: DomainEvent): Boolean = {

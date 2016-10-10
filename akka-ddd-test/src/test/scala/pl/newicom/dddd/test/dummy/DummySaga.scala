@@ -58,13 +58,15 @@ class DummySaga(val pc: PassivationConfig,
 
       case e @ ValueChanged(id, value, _) if state.counter + 1 == value =>
 
-        context.system.eventStream.publish(EventApplied(e))
+        DummyState(value) {
 
-        if (dummyOffice.isDefined) {
-          dummyOffice.get !! DummyCommand(id, counter)
+            context.system.eventStream.publish(EventApplied(e))
+            if (dummyOffice.isDefined) {
+              dummyOffice.get !! DummyCommand(id, counter)
+            }
+
         }
 
-        DummyState(value)
     }
 
   }
