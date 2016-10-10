@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 object SchedulerSpec {
   val businessUnit = "test"
 
-  implicit val schedulingOfficeID = schedulingOfficeId("Scheduling")
+  implicit val schedulingOfficeID = schedulingLocalOfficeId("Scheduling")
 
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[Scheduler] =
     new AggregateRootActorFactory[Scheduler] {

@@ -1,3 +1,3 @@
 package pl.newicom.dddd.process
 
-abstract class ProcessManager[S <: SagaState[S]] extends Saga with SagaStateHandling[S]
+abstract class ProcessManager[S <: SagaState[S]] extends Saga with SagaCollaboration with SagaStateHandling[S]

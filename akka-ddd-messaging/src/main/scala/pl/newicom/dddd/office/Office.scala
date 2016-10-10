@@ -1,7 +1,7 @@
 package pl.newicom.dddd.office
 
 import akka.actor.{ActorPath, ActorRef}
-import pl.newicom.dddd.aggregate.{BusinessEntity, EntityId}
+import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId}
 import pl.newicom.dddd.cluster.DefaultDistributionStrategy
 import pl.newicom.dddd.delivery.protocol.DeliveryHandler
 
@@ -19,7 +19,9 @@ trait OfficeId extends BusinessEntity {
 
 case class Clerk(id: EntityId, department: String) extends BusinessEntity
 
-case class RemoteOfficeId[+M: ClassTag](id: EntityId, department: String, messageClass: Class[_ <: M]) extends OfficeId
+case class RemoteOfficeId[M: ClassTag](id: EntityId, department: String, messageClass: Class[M]) extends OfficeId {
+  def handles(command: Command) = messageClass.isAssignableFrom(command.getClass)
+}
 
 object LocalOfficeId {
 

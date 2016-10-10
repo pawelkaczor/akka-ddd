@@ -3,7 +3,7 @@ package pl.newicom.dddd.test.dummy
 import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.office.{LocalOfficeId, Office}
+import pl.newicom.dddd.office.{LocalOfficeId, Office, RemoteOfficeId}
 import pl.newicom.dddd.process._
 import pl.newicom.dddd.saga.SagaConfig
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{DummyCreated, ValueChanged}
@@ -69,4 +69,5 @@ class DummySaga(val pc: PassivationConfig,
 
   }
 
+  override def processCollaborators: List[RemoteOfficeId[_]] = List()
 }
