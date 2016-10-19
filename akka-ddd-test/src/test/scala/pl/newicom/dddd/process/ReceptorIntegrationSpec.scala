@@ -61,8 +61,8 @@ class ReceptorIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integr
   var rc: ActorRef = _
 
   implicit val _ = new CoordinationOfficeListener[DummySaga] {
-    override def officeStarted(office: CoordinationOffice[DummySaga], sagaManager: ActorRef): Unit = {
-      rc = sagaManager
+    override def officeStarted(office: CoordinationOffice[DummySaga], receptor: ActorRef): Unit = {
+      rc = receptor
     }
   }
 
@@ -71,11 +71,11 @@ class ReceptorIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integr
   system.eventStream.subscribe(sagaProbe.ref, classOf[EventApplied])
   ignoreMsg({ case EventMessage(_, Processed(_)) => true })
 
-  "SagaManager" should {
+  "Receptor" should {
 
     var coordinationOffice: CoordinationOffice[DummySaga] = null
 
-    "deliver events to a saga office" in {
+    "deliver events to the receiver" in {
       // given
       given {
         List(
@@ -124,7 +124,7 @@ class ReceptorIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integr
       expectNumberOfUnconfirmedMessages(rc, 1) // single unconfirmed event: ValueChanged(_, 5)
     }
 
-    "redeliver unconfirmed events to a saga office" in {
+    "redeliver unconfirmed events to the receiver" in {
       // given
       ensureActorUnderTestTerminated(rc)
       when {

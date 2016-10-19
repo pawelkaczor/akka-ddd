@@ -65,14 +65,14 @@ class ReceptorStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(
   system.eventStream.subscribe(sagaProbe.ref, classOf[EventApplied])
   ignoreMsg({ case EventMessage(_, Processed(_)) => true })
 
-  "ProcessReceptor" should {
+  "Receptor" should {
 
     var receptor: ActorRef = null
     var coordinationOffice: CoordinationOffice[DummySaga] = null
 
     val changes = 2 to 101
 
-    "deliver 100 events to a process office" in {
+    "deliver 100 events to the receiver" in {
       val co = office[DummySaga].asInstanceOf[CoordinationOffice[DummySaga]]
       val sm = ReceptorSupport.receptor(co.receptorConfig)
       receptor = sm; coordinationOffice = co
