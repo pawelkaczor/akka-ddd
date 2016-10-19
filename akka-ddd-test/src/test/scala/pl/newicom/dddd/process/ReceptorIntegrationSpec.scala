@@ -9,10 +9,10 @@ import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.OfficeFactory.office
 import pl.newicom.dddd.office.SimpleOffice._
-import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
-import pl.newicom.dddd.process.SagaSupport.{SagaManagerFactory, sagaManager}
+import pl.newicom.dddd.process.ReceptorIntegrationSpec._
+import pl.newicom.dddd.process.SagaSupport.{ReceptorFactory, receptor}
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
-import pl.newicom.dddd.saga.SagaOffice
+import pl.newicom.dddd.saga.CoordinationOffice
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, CreateDummy, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga, dummyOfficeId}
@@ -22,7 +22,7 @@ import pl.newicom.eventstore.EventstoreSubscriber
 
 import scala.concurrent.duration._
 
-object SagaManagerIntegrationSpec {
+object ReceptorIntegrationSpec {
 
   case object GetNumberOfUnconfirmed
 
@@ -37,17 +37,17 @@ object SagaManagerIntegrationSpec {
 /**
  * Requires EventStore to be running on localhost!
  */
-class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("SagaManagerIntegrationSpec"))) {
+class ReceptorIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("ReceptorIntegrationSpec"))) {
 
   override val shareAggregateRoot = true
 
-  def dummyId = aggregateId
+  def dummyId: EntityId = aggregateId
 
   implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
-  implicit val sagaManagerFactory: SagaManagerFactory[DummySaga] = (sagaOffice: SagaOffice[DummySaga]) => {
-    new SagaManager[DummySaga]()(sagaOffice) with EventstoreSubscriber {
-      override def redeliverInterval = 1.seconds
+  implicit val processReceptorFactory: ReceptorFactory[DummySaga] = (office: CoordinationOffice[DummySaga]) => {
+    new Receptor(office.receptorConfig) with EventstoreSubscriber {
+      override def redeliverInterval: FiniteDuration = 1.seconds
       override def receiveCommand: Receive = myReceive.orElse(super.receiveCommand)
 
       def myReceive: Receive = {
@@ -57,11 +57,11 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
     }
   }
 
-  var sm: ActorRef = _
+  var rc: ActorRef = _
 
-  implicit val _ = new SagaOfficeListener[DummySaga] {
-    override def officeStarted(office: SagaOffice[DummySaga], sagaManager: ActorRef): Unit = {
-      sm = sagaManager
+  implicit val _ = new CoordinationOfficeListener[DummySaga] {
+    override def officeStarted(office: CoordinationOffice[DummySaga], sagaManager: ActorRef): Unit = {
+      rc = sagaManager
     }
   }
 
@@ -72,7 +72,7 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
 
   "SagaManager" should {
 
-    var sagaOffice: SagaOffice[DummySaga] = null
+    var coordinationOffice: CoordinationOffice[DummySaga] = null
 
     "deliver events to a saga office" in {
       // given
@@ -90,17 +90,17 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
       }
 
       // when
-      val so = office[DummySaga].asInstanceOf[SagaOffice[DummySaga]]
-      sagaOffice = so
+      val co = office[DummySaga].asInstanceOf[CoordinationOffice[DummySaga]]
+      coordinationOffice = co
 
       // then
       expectNumberOfEventsAppliedBySaga(2)
-      expectNoUnconfirmedMessages(sm)
+      expectNoUnconfirmedMessages(rc)
     }
 
     "persist unconfirmed events" in {
       // given
-      ensureActorUnderTestTerminated(sm) // stop events delivery
+      ensureActorUnderTestTerminated(rc) // stop events delivery
       when {
         ChangeValue(dummyId, 3) // bump counter by 1, DummySaga should accept this event
       }
@@ -116,16 +116,16 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
       }
 
       // when
-      sm = sagaManager(sagaOffice) // start events delivery, number of events to be delivered to DummySaga is 2
+      rc = receptor(coordinationOffice) // start events delivery, number of events to be delivered to DummySaga is 2
 
       // then
       expectNumberOfEventsAppliedBySaga(1)
-      expectNumberOfUnconfirmedMessages(sm, 1) // single unconfirmed event: ValueChanged(_, 5)
+      expectNumberOfUnconfirmedMessages(rc, 1) // single unconfirmed event: ValueChanged(_, 5)
     }
 
     "redeliver unconfirmed events to a saga office" in {
       // given
-      ensureActorUnderTestTerminated(sm)
+      ensureActorUnderTestTerminated(rc)
       when {
         ChangeValue(dummyId, 4)
       }
@@ -134,11 +134,11 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
       }
 
       // when
-      sm = sagaManager(sagaOffice)
+      rc = receptor(coordinationOffice)
 
       // then
       expectNumberOfEventsAppliedBySaga(1)
-      expectNumberOfUnconfirmedMessages(sm, 0)
+      expectNumberOfUnconfirmedMessages(rc, 0)
 
     }
   }
@@ -149,14 +149,14 @@ class SagaManagerIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(int
     }
   }
 
-  def expectNoUnconfirmedMessages(sagaManager: ActorRef): Unit = {
-    expectNumberOfUnconfirmedMessages(sagaManager, 0)
+  def expectNoUnconfirmedMessages(receptor: ActorRef): Unit = {
+    expectNumberOfUnconfirmedMessages(receptor, 0)
   }
 
-  def expectNumberOfUnconfirmedMessages(sagaManager: ActorRef, expectedNumberOfMessages: Int): Unit = within(5.seconds) {
-    sagaManager ! SaveSnapshotRequest
+  def expectNumberOfUnconfirmedMessages(receptor: ActorRef, expectedNumberOfMessages: Int): Unit = within(5.seconds) {
+    receptor ! SaveSnapshotRequest
     awaitAssert {
-      sagaManager ! GetNumberOfUnconfirmed
+      receptor ! GetNumberOfUnconfirmed
       expectMsg(expectedNumberOfMessages)
     }
   }

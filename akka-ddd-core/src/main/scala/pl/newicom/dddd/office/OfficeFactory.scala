@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.cluster
-import pl.newicom.dddd.saga.{SagaConfig, SagaOffice}
+import pl.newicom.dddd.saga.{ProcessConfig, CoordinationOffice}
 
 import scala.reflect.ClassTag
 
@@ -16,7 +16,7 @@ object OfficeFactory {
     val actor = implicitly[OfficeFactory[A]].getOrCreate()
 
     val office = officeId match {
-      case sc: SagaConfig[A]    =>   new SagaOffice[A](sc, actor)
+      case pc: ProcessConfig[A] =>   new CoordinationOffice[A](pc, actor)
       case LocalOfficeId(_, _)  =>   new Office(officeId, actor)
     }
 

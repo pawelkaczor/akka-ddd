@@ -2,8 +2,9 @@ package pl.newicom.dddd.scheduling
 
 import akka.actor.ActorPath
 import pl.newicom.dddd.aggregate.EntityId
-import pl.newicom.dddd.messaging.event.{EventStreamSubscriber, EventMessage}
-import pl.newicom.dddd.process.{Receptor, ReceptorBuilder, ReceptorConfig}
+import pl.newicom.dddd.coordination.{ReceptorBuilder, ReceptorConfig}
+import pl.newicom.dddd.messaging.event.{EventMessage, EventStreamSubscriber}
+import pl.newicom.dddd.process.Receptor
 
 object DeadlinesReceptor {
   def apply(businessUnit: EntityId, department: String): ReceptorConfig = ReceptorBuilder()
@@ -20,7 +21,7 @@ object DeadlinesReceptor {
     }
 }
 
-abstract class DeadlinesReceptor extends Receptor {
+abstract class DeadlinesReceptor(config: ReceptorConfig) extends Receptor(config) {
   this: EventStreamSubscriber =>
 
   override def isSupporting_MustFollow_Attribute: Boolean = false

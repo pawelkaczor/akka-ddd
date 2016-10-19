@@ -3,80 +3,32 @@ package pl.newicom.dddd.process
 import akka.actor.ActorPath
 import akka.contrib.pattern.ReceivePipeline
 import akka.persistence.PersistentActor
-import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.coordination.ReceptorConfig
 import pl.newicom.dddd.delivery.AtLeastOnceDeliverySupport
-import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{DemandConfig, DemandCallback}
+import pl.newicom.dddd.messaging.Message
+import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{DemandCallback, DemandConfig}
 import pl.newicom.dddd.messaging.event._
-import pl.newicom.dddd.messaging.{Message, MetaData}
-import pl.newicom.dddd.office.LocalOfficeId
-import pl.newicom.dddd.process.ReceptorConfig.{ReceiverResolver, StimuliSource, Transduction}
-import pl.newicom.dddd.persistence.{RegularSnapshottingConfig, RegularSnapshotting}
+import pl.newicom.dddd.persistence.{RegularSnapshotting, RegularSnapshottingConfig}
+import scala.concurrent.duration._
 
-object ReceptorConfig {
-  type Transduction = PartialFunction[EventMessage, Message]
-  type ReceiverResolver = PartialFunction[Message, ActorPath]
-  type StimuliSource = BusinessEntity
-}
-
-case class ReceptorConfig(
-   stimuliSource: StimuliSource,
-   transduction: Transduction,
-   receiverResolver: ReceiverResolver,
-   capacity: Int
-)
-
-trait ReceptorGrammar {
-  def reactTo[A : LocalOfficeId]:                                     ReceptorGrammar
-  def applyTransduction(transduction: Transduction):                  ReceptorGrammar
-  def route(receiverResolver: ReceiverResolver):                      ReceptorConfig
-  def propagateTo(receiver: ActorPath):                               ReceptorConfig
-}
-
-case class ReceptorBuilder(
-    stimuliSource:    StimuliSource = null,
-    transduction:     Transduction = {case em => em},
-    receiverResolver: ReceiverResolver = null,
-    capacity:         Int = 1000)
-  extends ReceptorGrammar {
-
-  def reactTo[A : LocalOfficeId]: ReceptorBuilder = {
-    reactTo(implicitly[LocalOfficeId[A]].asInstanceOf[BusinessEntity])
-  }
-
-  def reactTo(observable: BusinessEntity): ReceptorBuilder = {
-    copy(stimuliSource = observable)
-  }
-
-  def applyTransduction(transduction: Transduction): ReceptorBuilder =
-    copy(transduction = transduction)
-
-  def route(receiverResolver: ReceiverResolver): ReceptorConfig =
-    ReceptorConfig(stimuliSource, transduction, receiverResolver, capacity)
-
-  def propagateTo(receiver: ActorPath): ReceptorConfig =
-    route({case _ => receiver})
-
-  def withCapacity(capacity: Int): ReceptorBuilder =
-    copy(capacity = capacity)
-}
 
 trait ReceptorPersistence extends ReceivePipeline with RegularSnapshotting {
   this: PersistentActor =>
 
   override def journalPluginId = "akka.persistence.journal.inmem"
-
 }
 
-abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersistence {
+abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySupport with ReceptorPersistence {
   this: EventStreamSubscriber =>
 
-  def config: ReceptorConfig
+  override def redeliverInterval = 30.seconds
+  override def warnAfterNumberOfUnconfirmedAttempts = 15
 
   val snapshottingConfig = RegularSnapshottingConfig(
     interest = receiveEvent,
     interval = config.capacity) // TODO: snapshoting interval should be configured independently of the receptor capacity ?
 
-  def deadLetters = context.system.deadLetters.path
+  def deadLetters: ActorPath = context.system.deadLetters.path
 
   def destination(msg: Message): ActorPath =
     config.receiverResolver.applyOrElse(msg, (any: Message) => {
@@ -110,15 +62,12 @@ abstract class Receptor extends AtLeastOnceDeliverySupport with ReceptorPersiste
 
   def receiveEvent: Receive = {
     case EventMessageEntry(em, position, _) =>
-      val msgToDeliver = em.withMetaData(metaDataProvider(em))
-      config.transduction.lift(msgToDeliver).foreach { msg =>
+      config.transduction.lift(em).foreach { msg =>
         deliver(msg, deliveryId = position)
       }
   }
 
   override def deliveryConfirmed(deliveryId: Long): Unit =
     demandCallback.foreach(_.onEventProcessed())
-
-  def metaDataProvider(em: OfficeEventMessage): Option[MetaData] = None
 
 }

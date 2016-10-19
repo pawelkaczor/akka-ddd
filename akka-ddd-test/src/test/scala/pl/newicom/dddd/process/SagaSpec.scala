@@ -35,7 +35,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
   }
 
   def processId = uuid10
-  lazy val sagaOffice = office[DummySaga].actor
+  lazy val coordinationOffice = office[DummySaga].actor
 
   "Saga" should {
     "not process previously processed events" in {
@@ -46,8 +46,8 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
       val em1 = toEventMessage(ValueChanged(processId, 1, 1L))
 
       // When
-      sagaOffice ! em1
-      sagaOffice ! em1
+      coordinationOffice ! em1
+      coordinationOffice ! em1
 
       // Then
       probe.expectMsgClass(classOf[EventApplied])
@@ -64,12 +64,12 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
       val em1 = toEventMessage(ValueChanged(processId, 1, 1L))
 
       // When
-      sagaOffice ! em1
+      coordinationOffice ! em1
       // Then
       probe.expectMsgClass(classOf[EventApplied])
 
       // When
-      sagaOffice ! toEventMessage(ValueChanged(processId, 2, 2L), previouslySentMsg = Some(em1))
+      coordinationOffice ! toEventMessage(ValueChanged(processId, 2, 2L), previouslySentMsg = Some(em1))
       // Then
       probe.expectMsgClass(classOf[EventApplied])
       probe.expectNoMsg(1.seconds)
@@ -87,12 +87,12 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
         .withMustFollow(Some("0"))
 
       // When
-      sagaOffice ! em1
+      coordinationOffice ! em1
       // Then
       probe.expectMsgClass(classOf[EventApplied])
 
       // When
-      sagaOffice ! em2
+      coordinationOffice ! em2
       // Then
       probe.expectNoMsg(1.seconds)
     }
@@ -104,10 +104,10 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
       val em1 = toEventMessage(ValueChanged(processId, 1, 1L))
 
       // When/Then
-      sagaOffice ! em1
+      coordinationOffice ! em1
       expectMsgClass(classOf[Delivered])
 
-      sagaOffice ! em1
+      coordinationOffice ! em1
       expectMsgClass(classOf[Delivered])
     }
   }

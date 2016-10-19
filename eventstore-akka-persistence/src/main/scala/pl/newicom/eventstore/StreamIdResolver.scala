@@ -4,13 +4,13 @@ import eventstore.EventStream.{Plain, System}
 import eventstore.{EventStream => ESEventStream}
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.office.{LocalOfficeId, RemoteOfficeId}
-import pl.newicom.dddd.saga.SagaConfig
+import pl.newicom.dddd.saga.ProcessConfig
 
 object StreamIdResolver {
 
   def streamId(observable: BusinessEntity): ESEventStream.Id = observable match {
 
-    case o: SagaConfig[_] =>
+    case o: ProcessConfig[_] =>
       Plain(s"${o.id}")
 
     case LocalOfficeId(id, _) =>

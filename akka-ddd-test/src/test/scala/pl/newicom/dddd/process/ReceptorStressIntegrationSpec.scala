@@ -10,10 +10,10 @@ import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.office.OfficeListener
 import pl.newicom.dddd.office.SimpleOffice._
-import pl.newicom.dddd.process.SagaManagerIntegrationSpec._
-import pl.newicom.dddd.process.SagaSupport.SagaManagerFactory
+import pl.newicom.dddd.process.ReceptorIntegrationSpec._
+import pl.newicom.dddd.process.SagaSupport.ReceptorFactory
 import pl.newicom.dddd.persistence.{RegularSnapshottingConfig, SaveSnapshotRequest}
-import pl.newicom.dddd.saga.SagaOffice
+import pl.newicom.dddd.saga.CoordinationOffice
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, CreateDummy, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga, dummyOfficeId}
@@ -23,7 +23,7 @@ import pl.newicom.eventstore.EventstoreSubscriber
 
 import scala.concurrent.duration._
 
-object SagaManagerStressIntegrationSpec {
+object ReceptorStressIntegrationSpec {
 
   case object GetNumberOfUnconfirmed
 
@@ -38,16 +38,16 @@ object SagaManagerStressIntegrationSpec {
 /**
   * Requires EventStore to be running on localhost!
   */
-class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("SagaManagerStressSpec"))) {
+class ReceptorStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("ReceptorStressSpec"))) {
 
-  def dummyId = aggregateId
+  def dummyId: EntityId = aggregateId
 
   implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
   implicit val _ = new OfficeListener[DummySaga]
 
-  implicit val sagaManagerFactory: SagaManagerFactory[DummySaga] = (sagaOffice: SagaOffice[DummySaga]) => {
-    new SagaManager[DummySaga]()(sagaOffice) with EventstoreSubscriber {
+  implicit val processReceptorFactory: ReceptorFactory[DummySaga] = (office: CoordinationOffice[DummySaga]) => {
+    new Receptor(office.receptorConfig.copy(capacity = 1000)) with EventstoreSubscriber {
 
       override def receiveCommand: Receive = myReceive.orElse(super.receiveCommand)
 
@@ -55,7 +55,6 @@ class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](So
         case GetNumberOfUnconfirmed => sender() ! numberOfUnconfirmed
       }
 
-      override lazy val config: ReceptorConfig = defaultConfig.copy(capacity = 1000)
       override val snapshottingConfig = RegularSnapshottingConfig(receiveEvent, interval = 50)
     }
   }
@@ -65,17 +64,17 @@ class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](So
   system.eventStream.subscribe(sagaProbe.ref, classOf[EventApplied])
   ignoreMsg({ case EventMessage(_, Processed(_)) => true })
 
-  "SagaManager" should {
+  "ProcessReceptor" should {
 
-    var sagaManager: ActorRef = null
-    var sagaOffice: SagaOffice[DummySaga] = null
+    var receptor: ActorRef = null
+    var coordinationOffice: CoordinationOffice[DummySaga] = null
 
     val changes = 2 to 101
 
-    "deliver 100 events to a saga office" in {
-      val so = office[DummySaga].asInstanceOf[SagaOffice[DummySaga]]
-      val sm = SagaSupport.sagaManager(so)
-      sagaManager = sm; sagaOffice = so
+    "deliver 100 events to a process office" in {
+      val co = office[DummySaga].asInstanceOf[CoordinationOffice[DummySaga]]
+      val sm = SagaSupport.receptor(co)
+      receptor = sm; coordinationOffice = co
 
       given {
         List(
@@ -91,7 +90,7 @@ class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](So
       )
 
       expectNumberOfEventsAppliedBySaga(changes.size + 1)
-      expectNoUnconfirmedMessages(sagaManager)
+      expectNoUnconfirmedMessages(receptor)
     }
 
   }
@@ -102,14 +101,14 @@ class SagaManagerStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](So
     }
   }
 
-  def expectNoUnconfirmedMessages(sagaManager: ActorRef): Unit = {
-    expectNumberOfUnconfirmedMessages(sagaManager, 0)
+  def expectNoUnconfirmedMessages(receptor: ActorRef): Unit = {
+    expectNumberOfUnconfirmedMessages(receptor, 0)
   }
 
-  def expectNumberOfUnconfirmedMessages(sagaManager: ActorRef, expectedNumberOfMessages: Int): Unit = within(3.seconds) {
-    sagaManager ! SaveSnapshotRequest
+  def expectNumberOfUnconfirmedMessages(receptor: ActorRef, expectedNumberOfMessages: Int): Unit = within(3.seconds) {
+    receptor ! SaveSnapshotRequest
     awaitAssert {
-      sagaManager ! GetNumberOfUnconfirmed
+      receptor ! GetNumberOfUnconfirmed
       expectMsg(expectedNumberOfMessages)
     }
   }

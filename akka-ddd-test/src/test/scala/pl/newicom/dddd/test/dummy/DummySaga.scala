@@ -5,13 +5,13 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.office.{LocalOfficeId, Office, RemoteOfficeId}
 import pl.newicom.dddd.process._
-import pl.newicom.dddd.saga.SagaConfig
+import pl.newicom.dddd.saga.ProcessConfig
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{DummyCreated, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyState, EventApplied}
 
 object DummySaga {
 
-  class DummySagaConfig(bpsName: String) extends SagaConfig[DummySaga](bpsName) {
+  class DummySagaConfig(bpsName: String) extends ProcessConfig[DummySaga](bpsName) {
 
     override val id = bpsName
 
