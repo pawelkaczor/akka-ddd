@@ -18,7 +18,8 @@ case class ReceptorConfig(
                            stimuliSource: StimuliSource,
                            transduction: Transduction,
                            receiverResolver: ReceiverResolver,
-                           capacity: Int
+                           capacity: Int,
+                           isSupporting_MustFollow_Attribute: Boolean = true
 )
 
 

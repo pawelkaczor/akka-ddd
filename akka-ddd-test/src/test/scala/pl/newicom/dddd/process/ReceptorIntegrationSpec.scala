@@ -4,14 +4,15 @@ import akka.actor._
 import akka.testkit.TestProbe
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
+import pl.newicom.dddd.coordination.ReceptorConfig
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.OfficeFactory.office
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.ReceptorIntegrationSpec._
-import pl.newicom.dddd.process.SagaSupport.{ReceptorFactory, receptor}
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
+import pl.newicom.dddd.process.ReceptorSupport.{ReceptorFactory, receptor}
 import pl.newicom.dddd.saga.CoordinationOffice
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, CreateDummy, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
@@ -45,8 +46,8 @@ class ReceptorIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integr
 
   implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
-  implicit val processReceptorFactory: ReceptorFactory[DummySaga] = (office: CoordinationOffice[DummySaga]) => {
-    new Receptor(office.receptorConfig) with EventstoreSubscriber {
+  implicit val receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {
+    new Receptor(config) with EventstoreSubscriber {
       override def redeliverInterval: FiniteDuration = 1.seconds
       override def receiveCommand: Receive = myReceive.orElse(super.receiveCommand)
 
@@ -116,7 +117,7 @@ class ReceptorIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integr
       }
 
       // when
-      rc = receptor(coordinationOffice) // start events delivery, number of events to be delivered to DummySaga is 2
+      rc = receptor(coordinationOffice.receptorConfig) // start events delivery, number of events to be delivered to DummySaga is 2
 
       // then
       expectNumberOfEventsAppliedBySaga(1)
@@ -134,7 +135,7 @@ class ReceptorIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integr
       }
 
       // when
-      rc = receptor(coordinationOffice)
+      rc = receptor(coordinationOffice.receptorConfig)
 
       // then
       expectNumberOfEventsAppliedBySaga(1)

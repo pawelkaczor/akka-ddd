@@ -4,6 +4,7 @@ import akka.actor._
 import akka.testkit.TestProbe
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
+import pl.newicom.dddd.coordination.ReceptorConfig
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.EventMessage
@@ -11,8 +12,8 @@ import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.office.OfficeListener
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.ReceptorIntegrationSpec._
-import pl.newicom.dddd.process.SagaSupport.ReceptorFactory
 import pl.newicom.dddd.persistence.{RegularSnapshottingConfig, SaveSnapshotRequest}
+import pl.newicom.dddd.process.ReceptorSupport.ReceptorFactory
 import pl.newicom.dddd.saga.CoordinationOffice
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, CreateDummy, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
@@ -46,8 +47,8 @@ class ReceptorStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(
 
   implicit val _ = new OfficeListener[DummySaga]
 
-  implicit val processReceptorFactory: ReceptorFactory[DummySaga] = (office: CoordinationOffice[DummySaga]) => {
-    new Receptor(office.receptorConfig.copy(capacity = 1000)) with EventstoreSubscriber {
+  implicit val receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {
+    new Receptor(config.copy(capacity = 1000)) with EventstoreSubscriber {
 
       override def receiveCommand: Receive = myReceive.orElse(super.receiveCommand)
 
@@ -73,7 +74,7 @@ class ReceptorStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(
 
     "deliver 100 events to a process office" in {
       val co = office[DummySaga].asInstanceOf[CoordinationOffice[DummySaga]]
-      val sm = SagaSupport.receptor(co)
+      val sm = ReceptorSupport.receptor(co.receptorConfig)
       receptor = sm; coordinationOffice = co
 
       given {
