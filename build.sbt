@@ -9,6 +9,8 @@ version      in ThisBuild := "1.3.2-SNAPSHOT"
 organization in ThisBuild := "pl.newicom.dddd"
 scalaVersion in ThisBuild := "2.11.8"
 
+//crossScalaVersions := Seq("2.12.0")
+
 scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-deprecation", "-feature", "-language:postfixOps")
 publishMavenStyle in ThisBuild := true
 homepage          in ThisBuild := Some(new URL("http://github.com/pawelkaczor/akka-ddd"))
@@ -103,7 +105,7 @@ lazy val `http-support` = project
   .settings(
     commonSettings,
     scalacOptions ++= Seq("-language:implicitConversions"),
-    libraryDependencies ++= Akka.http
+    libraryDependencies ++= AkkaHttp.all
   ).dependsOn(`akka-ddd-messaging`)
 
 

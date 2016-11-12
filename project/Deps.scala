@@ -3,12 +3,13 @@ import sbt._
 object Deps {
 
   object Version {
-    val Akka                  = "2.4.11"
+    val Akka                  = "2.4.12"
+    val AkkaHttp              = "3.0.0-RC1"
 
-    val EventStoreClient      = "2.4.0"
-    val EventStoreAkkaJournal = "2.3.0"
+    val EventStoreClient      = "3.0.2"
+    val EventStoreAkkaJournal = "3.0.5"
     
-    val json4s                = "3.4.1"
+    val json4s                = "3.5.0"
 
     val Slick                 = "3.1.1"
     val PostgresqlSlickExt    = "0.14.3" // Slick 3.1.1
@@ -22,7 +23,7 @@ object Deps {
     val ScalaCheck            = "1.13.2"
 
     val LogbackClassic        = "1.1.7"
-    val nScalaTime            = "2.12.0"
+    val nScalaTime            = "2.14.0"
   }
 
   object Akka {
@@ -30,9 +31,6 @@ object Deps {
     val clusterTools      = apply("cluster-tools")
     val clusterSharding   = apply("cluster-sharding")
     val contributions     = apply("contrib")
-    val httpCore          = apply("http-experimental")
-    val httpTestKit       = apply("http-testkit")
-    val http              = Seq(httpCore, httpTestKit)
     val multiNodeTestkit  = apply("multi-node-testkit")
     val persistence       = apply("persistence")
     val slf4j             = apply("slf4j")
@@ -40,6 +38,14 @@ object Deps {
     val testkit           = apply("testkit")
 
     private def apply(moduleName: String) = "com.typesafe.akka" %% s"akka-$moduleName" % Version.Akka
+  }
+
+  object AkkaHttp {
+    val httpCore          = apply("http")
+    val httpTestKit       = apply("http-testkit")
+    val all              = Seq(httpCore, httpTestKit)
+
+    private def apply(moduleName: String) = "com.typesafe.akka" %% s"akka-$moduleName" % Version.AkkaHttp
   }
 
   object Json {
