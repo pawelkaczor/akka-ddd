@@ -65,4 +65,4 @@ Allows easy creation of test of Aggregate Root implementations. Supports both "s
 #### akka-ddd-write-front
 [![Dependencies](https://app.updateimpact.com/badge/766637912447127552/pl.newicom.dddd%3Aakka-ddd-write-front_2.11%3A1.2.2.svg?config=compile)](https://app.updateimpact.com/latest/766637912447127552/pl.newicom.dddd%3Aakka-ddd-write-front_2.11%3A1.2.2)
 
-Artifacts for building http server with use of [Akka Http](http://doc.akka.io/docs/akka-stream-and-http-experimental/1.0/scala/http/index.html) and [Akka Cluster Client](http://doc.akka.io/docs/akka/current/scala/cluster-client.html) responsible for handling commands sent as json messages. Provides infrastructure for demarshalling commands and forwarding them to write-backend application.
+Artifacts for building http server with use of [Akka Http](http://doc.akka.io/docs/akka-http/current/scala.html) and [Akka Cluster Client](http://doc.akka.io/docs/akka/current/scala/cluster-client.html) responsible for handling commands sent as json messages. Provides infrastructure for demarshalling commands and forwarding them to write-backend application.
