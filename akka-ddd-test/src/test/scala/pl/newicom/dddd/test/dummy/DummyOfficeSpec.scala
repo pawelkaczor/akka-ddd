@@ -2,12 +2,15 @@ package pl.newicom.dddd.test.dummy
 
 import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.AggregateRootActorFactory
+import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, EntityId}
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 import DummyOfficeSpec._
+import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
+import pl.newicom.dddd.office.Office
+
 import scala.concurrent.duration.{Duration, _}
 
 object DummyOfficeSpec {
@@ -24,9 +27,9 @@ object DummyOfficeSpec {
 
 class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
 
-  def dummyOffice = officeUnderTest
+  def dummyOffice: Office = officeUnderTest
 
-  def dummyId = aggregateId
+  def dummyId: EntityId = aggregateId
 
   "Dummy office" should {
 
@@ -37,6 +40,24 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
       .expect { c =>
         DummyCreated(c.id, c.name, c.description, c.value)
       }
+    }
+
+    "reject update of non-existing Dummy" in {
+      when {
+        ChangeName(dummyId, "some other dummy name")
+      }
+      .expectException[AggregateRootNotInitializedException]()
+    }
+
+    "reject CreateDummy if Dummy already exists" in {
+      val dId = dummyId
+      given {
+        CreateDummy(dId, "dummy name", "dummy description", 100)
+      }
+      when {
+        CreateDummy(dId, "dummy name", "dummy description", 100)
+      }
+      .expectException[RuntimeException]()
     }
 
     "update Dummy's name" in {
