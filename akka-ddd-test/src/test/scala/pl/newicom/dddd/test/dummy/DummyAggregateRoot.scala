@@ -2,13 +2,15 @@ package pl.newicom.dddd.test.dummy
 
 import java.util.UUID
 
+import akka.actor.ActorRef
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate
-import pl.newicom.dddd.aggregate.{AggregateRoot, AggregateState, EntityId}
+import pl.newicom.dddd.aggregate.{AggregateRoot, AggregateState, DomainEvent, EntityId}
 import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 import pl.newicom.dddd.test.dummy.ValueGeneratorActor.GenerateRandom
 import pl.newicom.dddd.utils.UUIDSupport.uuidObj
+
 import scala.concurrent.duration._
 
 object DummyAggregateRoot {
@@ -45,12 +47,13 @@ object DummyAggregateRoot {
   case class CandidateValue(value: Int, confirmationToken: UUID)
 
   case class DummyState(value: Int, candidateValue: Option[CandidateValue] = None) extends AggregateState[DummyState] {
-    override def apply = {
+    override def apply: PartialFunction[DomainEvent, DummyState] = {
       case ValueChanged(_, newValue, _) =>
         copy(value = newValue, candidateValue = None)
       case ValueGenerated(_, newValue, confirmationToken) =>
         copy(candidateValue = Some(CandidateValue(newValue, confirmationToken)))
-      case _ => this
+      case _: NameChanged => this
+      case _: DescriptionChanged => this
     }
 
     def candidateValue(confirmationToken: UUID): Option[Int] = {
@@ -67,7 +70,7 @@ class DummyAggregateRoot extends AggregateRoot[DummyState, DummyAggregateRoot] {
 
   def valueGenerator: Int = (Math.random() * 100).toInt
 
-  val valueGeneratorActor = context.actorOf(ValueGeneratorActor.props(valueGenerator))
+  val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(valueGenerator))
 
   override val factory: AggregateRootFactory = {
     case DummyAggregateRoot.DummyCreated(_, _, _, value) => DummyState(value)
@@ -76,18 +79,11 @@ class DummyAggregateRoot extends AggregateRoot[DummyState, DummyAggregateRoot] {
   override def handleCommand: Receive = {
 
     case CreateDummy(id, name, description, value) =>
-      if (initialized) {
-        sys.error("Dummy already exists")
+      if (value < 0) {
+        sys.error("negative value not allowed")
       } else {
-        if (value < 0) {
-          sys.error("negative value not allowed")
-        } else {
-          raise(DummyCreated(id, name, description, value))
-        }
+        raise(DummyCreated(id, name, description, value))
       }
-
-    case _: UpdateCommand if !initialized =>
-      sys.error("Unknown Dummy")
 
     case ChangeName(id, name) =>
       raise(NameChanged(id, name))
@@ -119,7 +115,7 @@ class DummyAggregateRoot extends AggregateRoot[DummyState, DummyAggregateRoot] {
       }
   }
 
-  def generateConfirmationToken = uuidObj
+  def generateConfirmationToken: UUID = uuidObj
 
   override val pc = PassivationConfig()
 }

@@ -5,12 +5,13 @@ import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOfficeId
-
 import scala.concurrent.duration.{Duration, _}
 
 trait AggregateState[T <: AggregateState[T]] {
   type StateMachine = PartialFunction[DomainEvent, T]
   def apply: StateMachine
+  def eventHandlerDefined(e: DomainEvent): Boolean = apply.isDefinedAt(e)
+
 }
 
 abstract class AggregateRootActorFactory[A <: AggregateRoot[_, A]: LocalOfficeId] extends BusinessEntityActorFactory[A] {
@@ -29,9 +30,9 @@ abstract class AggregateRoot[S <: AggregateState[S], A <: AggregateRoot[S, A] : 
 
   private lazy val sm = StateManager(factory, onStateChanged = messageProcessed)
 
-  def initialized = sm.initialized
+  def initialized: Boolean = sm.initialized
 
-  def state = sm.state
+  def state: S = sm.state
 
   override def receiveCommand: Receive = {
     case cm: CommandMessage => handleCommand.applyOrElse(cm.command, unhandled)
@@ -44,29 +45,56 @@ abstract class AggregateRoot[S <: AggregateState[S], A <: AggregateRoot[S, A] : 
   def handleCommand: Receive
 
   def raise(event: DomainEvent) {
-    persist(toEventMessage(event).causedBy(currentCommandMessage)) {
-      persisted => {
-        sm.apply(persisted)
-        handle(currentCommandSender, toOfficeEventMessage(persisted))
-      }
+    val handler = sm.eventMessageHandler(event).andThen { em =>
+      handle(currentCommandSender, toOfficeEventMessage(em))
     }
+
+    val em = toEventMessage(event).causedBy(currentCommandMessage)
+
+    persist(em)(handler)
   }
 
 
-  private case class StateManager(factory: AggregateRootFactory, onStateChanged: (EventMessage) => Unit) {
+  case class StateManager(factory: AggregateRootFactory, onStateChanged: (EventMessage) => Unit) {
     private var s: Option[S] = None
 
     def apply(em: EventMessage): Unit = {
-      s = s match {
-        case Some(as) => Some(as.apply(em.event))
-        case None => Some(factory.apply(em.event))
+      apply(eventHandler(em.event), em)
+    }
+
+    def eventMessageHandler(event: DomainEvent): (EventMessage) => EventMessage = {
+      val eh = eventHandler(event)
+      (em: EventMessage) => {
+        apply(eh, em)
+        em
       }
+    }
+
+    def initialized: Boolean = s.isDefined
+
+    def state: S = if (initialized) s.get else throw new AggregateRootNotInitializedException
+
+    private def apply(eventHandler: Function[DomainEvent, S], em: EventMessage): Unit = {
+      s = Some(eventHandler(em.event))
       onStateChanged(em)
     }
 
-    def initialized = s.isDefined
+    private def eventHandler(event: DomainEvent): Function[DomainEvent, S] = {
+      def eventName = event.getClass.getSimpleName
+      def commandName = currentCommandMessage.command.getClass.getSimpleName
+      def arName = officeId.clerkClass.getSimpleName
+      s match {
+        case Some(state) if state.eventHandlerDefined(event) =>
+          state.apply
+        case Some(_) =>
+          sys.error(s"$commandName can not be processed. State transition not defined for event: $eventName!")
+        case None if factory.isDefinedAt(event) =>
+          factory
+        case _ =>
+          throw new AggregateRootNotInitializedException(s"$arName with ID $id does not exist. $commandName can not be processed: missing state initialization for event: $eventName!")
+      }
+    }
 
-    def state = if (initialized) s.get else throw new AggregateRootNotInitializedException
   }
 
 }
