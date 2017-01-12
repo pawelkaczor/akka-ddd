@@ -12,12 +12,16 @@ object Scheduler extends AggregateRootSupport {
   //
   // State
   //
-  sealed trait State extends AggregateState[State]
+  sealed trait State extends AggregateState[State] {
+    override def apply: StateMachine = apply(this)
 
-  implicit case object SchedulerState extends State with Uninitialized[State] with Initialized[State] {
-    override def apply: StateMachine = {
-      case EventScheduled(_, _) => this
+    def apply(result: State): StateMachine = {
+      case EventScheduled(_, _) => result
     }
+  }
+
+  implicit case object Uninitialized extends State with Uninitialized[State] {
+    override def apply: StateMachine = apply(result = new State {})
   }
 
 }

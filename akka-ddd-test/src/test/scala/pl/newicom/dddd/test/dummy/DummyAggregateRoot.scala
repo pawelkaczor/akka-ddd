@@ -25,7 +25,7 @@ object DummyAggregateRoot {
     }
   }
 
-  sealed trait Dummy extends DummyState with Initialized[DummyState]
+  sealed trait Dummy extends DummyState
 
   case class Active(value: Int) extends Dummy {
 

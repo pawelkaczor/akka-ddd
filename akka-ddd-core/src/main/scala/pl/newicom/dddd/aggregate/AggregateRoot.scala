@@ -17,12 +17,7 @@ trait AggregateState[S <: AggregateState[S]] {
   type StateMachine = PartialFunction[DomainEvent, S]
   def apply: StateMachine
   def eventHandlerDefined(e: DomainEvent): Boolean = apply.isDefinedAt(e)
-  def initialized: Boolean
-}
-
-trait Initialized[S <: AggregateState[S]] {
-  this: AggregateState[S] =>
-  override def initialized = true
+  def initialized: Boolean = true
 }
 
 trait Uninitialized[S <: AggregateState[S]] {
