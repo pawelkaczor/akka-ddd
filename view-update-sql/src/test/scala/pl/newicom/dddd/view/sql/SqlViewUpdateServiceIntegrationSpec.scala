@@ -8,8 +8,8 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
-import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{DummyEvent, CreateDummy, DummyCreated}
-import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, _}
+import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyEvent, CreateDummy, DummyCreated}
+import pl.newicom.dddd.test.dummy._
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.view.sql.Projection.ProjectionAction
@@ -58,7 +58,7 @@ class SqlViewUpdateServiceIntegrationSpec
 
       system.actorOf(Props(
         new SqlViewUpdateService with SqlViewStoreConfiguration with EventSourceProvider {
-          def config = SqlViewUpdateServiceIntegrationSpec.this.config
+          def config: Config = SqlViewUpdateServiceIntegrationSpec.this.config
           def vuConfigs = List(SqlViewUpdateConfig("test-view", dummyOfficeId, new Projection {
 
             def failIfRequired(msg: String) =

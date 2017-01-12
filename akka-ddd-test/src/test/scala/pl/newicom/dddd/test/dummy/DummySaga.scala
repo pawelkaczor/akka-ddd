@@ -6,16 +6,16 @@ import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.office.{LocalOfficeId, Office, RemoteOfficeId}
 import pl.newicom.dddd.process._
 import pl.newicom.dddd.saga.ProcessConfig
-import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{DummyCreated, ValueChanged}
+import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyCreated, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyState, EventApplied}
 
 object DummySaga {
 
   class DummySagaConfig(bpsName: String) extends ProcessConfig[DummySaga](bpsName) {
 
-    override val id = bpsName
+    override val id: EntityId = bpsName
 
-    def correlationIdResolver = {
+    def correlationIdResolver: PartialFunction[DomainEvent, EntityId] = {
       case ValueChanged(pId, _, _) => pId
       case DummyCreated(pId, _, _, _) => pId
       case other => throw new scala.RuntimeException(s"unknown event: ${other.getClass.getName}")
@@ -50,7 +50,7 @@ class DummySaga(val pc: PassivationConfig,
   startWhen {
 
     case e: DummyCreated => DummyState(e.value)
-    case e: ValueChanged => DummyState(0)
+    case _: ValueChanged => DummyState(0)
 
   } andThen {
 

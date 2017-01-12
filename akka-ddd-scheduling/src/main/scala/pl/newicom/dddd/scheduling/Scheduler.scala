@@ -5,32 +5,31 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.office.LocalOfficeId
-import pl.newicom.dddd.scheduling.Scheduler.SchedulerState
+import pl.newicom.dddd.scheduling.Scheduler.State
 
 object Scheduler extends AggregateRootSupport {
 
   //
   // State
   //
-  case class SchedulerState() extends AggregateState[SchedulerState] {
-    override def apply = {
-      case e: EventScheduled => this
+  sealed trait State extends AggregateState[State]
+
+  implicit case object SchedulerState extends State with Uninitialized[State] with Initialized[State] {
+    override def apply: StateMachine = {
+      case EventScheduled(_, _) => this
     }
   }
+
 }
 
-class Scheduler(val pc: PassivationConfig)(implicit val officeID: LocalOfficeId[Scheduler]) extends AggregateRoot[SchedulerState, Scheduler] {
+class Scheduler(val pc: PassivationConfig)(implicit val officeID: LocalOfficeId[Scheduler]) extends AggregateRoot[State, Scheduler] {
   this: EventPublisher =>
 
   // Skip recovery
   override def recovery = Recovery(toSequenceNr = 0L)
 
   // Disable automated recovery on restart
-  override def preRestart(reason: Throwable, message: Option[Any]) = ()
-
-  override val factory: AggregateRootFactory = {
-    case EventScheduled(_, _) => SchedulerState()
-  }
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = ()
 
   override def handleCommand: Receive = {
     case ScheduleEvent(_, target, deadline, event) =>
