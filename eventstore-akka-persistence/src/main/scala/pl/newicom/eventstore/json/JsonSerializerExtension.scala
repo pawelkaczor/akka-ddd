@@ -1,20 +1,20 @@
 package pl.newicom.eventstore.json
 
 import java.nio.charset.Charset
+
 import akka.actor._
 import akka.persistence.eventstore.snapshot.EventStoreSnapshotStore.SnapshotEvent.Snapshot
 import akka.persistence.{PersistentRepr, SnapshotMetadata}
-import akka.serialization.{Serialization, SerializationExtension}
+import akka.serialization.{Serialization, SerializationExtension, SerializerWithStringManifest}
 import org.json4s.Extraction.decompose
-import org.json4s.JsonAST.{JField, JObject, JString}
+import org.json4s.JsonAST._
 import org.json4s.native.Serialization.{read, write}
-import org.json4s.reflect.TypeInfo
-import org.json4s.{Formats, FullTypeHints, _}
+import org.json4s.{CustomSerializer, Formats, FullTypeHints, JValue, Serializer, TypeInfo}
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.delivery.protocol.alod.{Processed => AlodProcessed}
 import pl.newicom.dddd.messaging.MetaData
-import pl.newicom.dddd.scheduling.{ScheduledEventMetadata, EventScheduled}
-import pl.newicom.dddd.serialization.{JsonSerHints, JsonExtraSerHints}
+import pl.newicom.dddd.scheduling.{EventScheduled, ScheduledEventMetadata}
+import pl.newicom.dddd.serialization.{JsonExtraSerHints, JsonSerHints}
 import pl.newicom.dddd.serialization.JsonSerHints._
 
 /**
@@ -28,14 +28,13 @@ class JsonSerializerExtensionImpl(system: ExtendedActorSystem) extends Extension
 
   val extraHints = JsonExtraSerHints(
     typeHints =
-      new FullTypeHints(
-        List(classOf[MetaData], classOf[Processed], classOf[AlodProcessed], classOf[PersistentRepr], classOf[EventScheduled])
-      ),
+      FullTypeHints(
+        List(classOf[MetaData], classOf[Processed], classOf[AlodProcessed], classOf[PersistentRepr], classOf[EventScheduled])),
     serializers =
-      List(ActorRefSerializer, ActorPathSerializer, new ScheduledEventSerializer, new SnapshotJsonSerializer(system))
+      List(ActorRefSerializer, ActorPathSerializer, new ScheduledEventSerializer, SnapshotJsonSerializer(system))
   )
 
-  val UTF8 = Charset.forName("UTF-8")
+  val UTF8: Charset = Charset.forName("UTF-8")
 
   def fromBinary[A](bytes: Array[Byte], clazz: Class[A], hints: JsonSerHints): A = {
     implicit val formats: Formats = hints ++ extraHints
@@ -49,12 +48,12 @@ class JsonSerializerExtensionImpl(system: ExtendedActorSystem) extends Extension
     }
   }
 
-  def toBinary(o: AnyRef, hints: JsonSerHints) = {
+  def toBinary(o: AnyRef, hints: JsonSerHints): Array[Byte] = {
     implicit val formats: Formats = hints ++ extraHints
     write(o).getBytes(UTF8)
   }
 
-  object ActorRefSerializer extends CustomSerializer[ActorRef](format => (
+  object ActorRefSerializer extends CustomSerializer[ActorRef](_ => (
     {
       case JString(s) => system.provider.resolveActorRef(s)
       case JNull => null
@@ -69,19 +68,19 @@ class JsonSerializerExtensionImpl(system: ExtendedActorSystem) extends Extension
 object JsonSerializerExtension extends ExtensionId[JsonSerializerExtensionImpl] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem) = new JsonSerializerExtensionImpl(system)
   override def lookup(): ExtensionId[_ <: Extension] = JsonSerializerExtension
-  override def get(system: ActorSystem) = super.get(system)
+  override def get(system: ActorSystem): JsonSerializerExtensionImpl = super.get(system)
 
 }
 
-object ActorPathSerializer extends CustomSerializer[ActorPath](format => (
+object ActorPathSerializer extends CustomSerializer[ActorPath](_ => (
   { case JString(s) => ActorPath.fromString(s) },
   { case x: ActorPath => JString(x.toSerializationFormat) }
   ))
 
 class ScheduledEventSerializer extends Serializer[EventScheduled] {
-  val Clazz = classOf[EventScheduled]
+  val Clazz: Class[EventScheduled] = classOf[EventScheduled]
 
-  def deserialize(implicit formats: Formats) = {
+  def deserialize(implicit formats: Formats): PartialFunction[(TypeInfo, JValue), EventScheduled] = {
     case (TypeInfo(Clazz, _), JObject(List(
             JField("metadata", metadata),
             JField("eventClass", JString(eventClassName)),
@@ -92,7 +91,7 @@ class ScheduledEventSerializer extends Serializer[EventScheduled] {
               EventScheduled(metadataObj, eventObj)
   }
 
-  def serialize(implicit formats: Formats) = {
+  def serialize(implicit formats: Formats): PartialFunction[Any, JObject] = {
     case EventScheduled(metadata, event) =>
       JObject(
         "jsonClass"   -> JString(classOf[EventScheduled].getName),
@@ -103,38 +102,53 @@ class ScheduledEventSerializer extends Serializer[EventScheduled] {
   }
 }
 
+case class SnapshotDataSerializationResult(data: String, serializerId: Option[Int], manifest: String)
+
 case class SnapshotJsonSerializer(sys: ActorSystem) extends Serializer[Snapshot] {
-  val Clazz = classOf[Snapshot]
+  val Clazz: Class[Snapshot] = classOf[Snapshot]
+  val EmptySerializerId: Int = 0
 
   import akka.serialization.{Serialization => SysSerialization}
   lazy val serialization: SysSerialization = SerializationExtension(sys)
 
-  def deserialize(implicit format: Formats) = {
+  def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), Snapshot] = {
     case (TypeInfo(Clazz, _), JObject(List(
             JField("dataClass", JString(dataClass)),
+            JField("dataSerializerId", JInt(serializerId)),
             JField("data", JString(x)),
             JField("metadata", metadata)))) =>
               import Base64._
-              val data = serialization.deserialize(x.toByteArray, Class.forName(dataClass)).get
+
+              val data = if (serializerId.intValue == EmptySerializerId) {
+                serialization.deserialize(x.toByteArray, Class.forName(dataClass)).get
+              } else {
+                serialization.deserialize(x.toByteArray, serializerId.intValue, dataClass).get
+              }
               val metaData = metadata.extract[SnapshotMetadata]
               Snapshot(data, metaData)
   }
 
-  def serializeAnyRef(data: AnyRef)(implicit format: Formats): String = {
-    import Base64._
-    serialization.serialize(data).get.toBase64
-  }
+  def serialize(implicit format: Formats): PartialFunction[Any, JObject] = {
 
-  def serialize(implicit format: Formats) = {
     case Snapshot(data, metadata) =>
-      val dataSerialized: String = data match {
-        case data: AnyRef => serializeAnyRef(data)
-        case _ => data.toString
+      val serResult = data match {
+        case data: AnyRef =>
+          val serializer = serialization.serializerFor(data.getClass)
+          val manifest:String = serializer match {
+            case s:SerializerWithStringManifest => s.manifest(data.asInstanceOf[AnyRef])
+            case _                              => data.getClass.getName
+          }
+          import Base64._
+          SnapshotDataSerializationResult(serializer.toBinary(data).toBase64, Some(serializer.identifier), manifest)
+        case _ =>
+          SnapshotDataSerializationResult(data.toString, None, classOf[String].getName)
       }
+
       JObject(
         "jsonClass" -> JString(Clazz.getName),
-        "dataClass" -> JString(data.getClass.getName),
-        "data"      -> JString(dataSerialized),
+        "dataClass" -> JString(serResult.manifest),
+        "dataSerializerId" -> JInt(serResult.serializerId.getOrElse[Int](EmptySerializerId)),
+        "data"      -> JString(serResult.data),
         "metadata"  -> decompose(metadata)
       )
   }
