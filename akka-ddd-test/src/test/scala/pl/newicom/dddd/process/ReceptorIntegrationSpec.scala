@@ -14,7 +14,7 @@ import pl.newicom.dddd.process.ReceptorIntegrationSpec._
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
 import pl.newicom.dddd.process.ReceptorSupport.{ReceptorFactory, receptor}
 import pl.newicom.dddd.saga.CoordinationOffice
-import pl.newicom.dddd.test.dummy.DummyAggregateRoot.{ChangeValue, CreateDummy, ValueChanged}
+import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga, dummyOfficeId}
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
@@ -145,7 +145,7 @@ class ReceptorIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integr
   }
 
   def expectNumberOfEventsAppliedBySaga(expectedNumberOfEvents: Int): Unit = {
-    for (i <- 1 to expectedNumberOfEvents) {
+    for (_ <- 1 to expectedNumberOfEvents) {
       sagaProbe.expectMsgClass(classOf[EventApplied])
     }
   }

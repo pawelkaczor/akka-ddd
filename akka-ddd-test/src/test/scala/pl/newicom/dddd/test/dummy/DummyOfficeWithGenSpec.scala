@@ -3,12 +3,14 @@ package pl.newicom.dddd.test.dummy
 import akka.actor.Props
 import org.scalacheck.Gen
 import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.AggregateRootActorFactory
+import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, EntityId}
 import pl.newicom.dddd.eventhandling.LocalPublisher
-import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
+import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig._
 import DummyOfficeWithGenSpec._
+import pl.newicom.dddd.office.Office
+
 import scala.concurrent.duration.{Duration, _}
 
 object DummyOfficeWithGenSpec {
@@ -21,9 +23,9 @@ object DummyOfficeWithGenSpec {
 
 class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
 
-  def dummyOffice = officeUnderTest
+  def dummyOffice: Office = officeUnderTest
 
-  def dummyId = aggregateId
+  def dummyId: EntityId = aggregateId
 
   //
   // Command generators

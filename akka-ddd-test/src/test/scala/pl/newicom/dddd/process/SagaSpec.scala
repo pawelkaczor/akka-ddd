@@ -4,13 +4,14 @@ import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 import pl.newicom.dddd.actor.PassivationConfig
+import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaData._
 import pl.newicom.dddd.messaging.event.{CaseId, EventMessage, OfficeEventMessage}
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.office.OfficeListener
-import pl.newicom.dddd.test.dummy.DummyAggregateRoot.ValueChanged
+import pl.newicom.dddd.test.dummy.DummyProtocol.ValueChanged
 import pl.newicom.dddd.test.dummy.DummySaga
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaConfig, EventApplied}
 import pl.newicom.dddd.test.support.TestConfig
@@ -34,8 +35,8 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
       Props(new DummySaga(pc, officeId, None))
   }
 
-  def processId = uuid10
-  lazy val coordinationOffice = office[DummySaga].actor
+  def processId: EntityId = uuid10
+  lazy val coordinationOffice: ActorRef = office[DummySaga].actor
 
   "Saga" should {
     "not process previously processed events" in {
@@ -120,7 +121,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
     )).withMustFollow(previouslySentMsg.map(msg => msg.id))
   }
 
-  def ensureActorTerminated(actor: ActorRef) = {
+  def ensureActorTerminated(actor: ActorRef): Any = {
     watch(actor)
     actor ! PoisonPill
     fishForMessage(1.seconds) {
