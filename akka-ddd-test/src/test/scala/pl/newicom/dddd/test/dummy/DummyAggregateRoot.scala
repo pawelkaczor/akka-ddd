@@ -48,37 +48,37 @@ object DummyAggregateRoot {
   }
 }
 
-class DummyAggregateRoot extends AggregateRoot[DummyState, DummyAggregateRoot] {
+class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyState, DummyAggregateRoot] {
   this: EventPublisher =>
 
   val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(valueGenerator))
 
-  override def handleCommand: Receive = state match {
+  def handleCommand: HandleCommand = state match {
 
     case s: Uninitialized.type => {
       case CreateDummy(id, name, description, value) =>
         s.validate(value)
-        raise(DummyCreated(id, name, description, value))
+        DummyCreated(id, name, description, value)
     }
 
     case s @ Active(currentValue) => {
 
       case ChangeName(id, name) =>
-        raise(NameChanged(id, name))
+        NameChanged(id, name)
 
       case ChangeDescription(id, description) =>
-        raise(DescriptionChanged(id, description))
+        DescriptionChanged(id, description)
 
       case ChangeValue(id, value) =>
         s.validate(value)
-        raise(ValueChanged(id, value, lastSequenceNr))
+        ValueChanged(id, value, lastSequenceNr)
 
       case GenerateValue(id) =>
         implicit val timeout = 3.seconds
         (valueGeneratorActor !< GenerateRandom) {
           case ValueGeneratorActor.ValueGenerated(value) =>
             s.validate(value)
-            raise(ValueGenerated(id, value, confirmationToken = generateConfirmationToken))
+            ValueGenerated(id, value, confirmationToken = generateConfirmationToken)
         }
     }
 
@@ -86,7 +86,9 @@ class DummyAggregateRoot extends AggregateRoot[DummyState, DummyAggregateRoot] {
 
       case ConfirmGeneratedValue(id, confirmationToken) =>
         if (candidateValue.confirmationToken == confirmationToken) {
-          raise(ValueChanged(id, candidateValue.value, lastSequenceNr))
+          ValueChanged(id, candidateValue.value, lastSequenceNr)
+        } else {
+          sys.error("Invalid confirmation token")
         }
     }
 

@@ -2,16 +2,16 @@ package pl.newicom.dddd.aggregate
 
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
+import pl.newicom.dddd.messaging.CollaborationSupport
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOfficeId
 
-import scala.concurrent.duration.{Duration, _}
+import scala.concurrent.duration._
 
-abstract class AggregateRootActorFactory[A <: AggregateRoot[_, A]: LocalOfficeId] extends BusinessEntityActorFactory[A] {
+abstract class AggregateRootActorFactory[A <: AggregateRoot[_, _, A]: LocalOfficeId] extends BusinessEntityActorFactory[A] {
   def inactivityTimeout: Duration = 1.minute
 }
-
 
 trait AggregateState[S <: AggregateState[S]] {
   type StateMachine = PartialFunction[DomainEvent, S]
@@ -25,7 +25,9 @@ trait Uninitialized[S <: AggregateState[S]] {
   override def initialized = false
 }
 
-abstract class AggregateRoot[S <: AggregateState[S] : Uninitialized, A <: AggregateRoot[S, A] : LocalOfficeId] extends AggregateRootBase {
+abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Uninitialized, A <: AggregateRoot[Event, S, A] : LocalOfficeId] extends AggregateRootBase with CollaborationSupport[Event] {
+
+  type HandleCommand = PartialFunction[Any, Eventually[Event]]
 
   override def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
   override def department: String = officeId.department
@@ -37,7 +39,11 @@ abstract class AggregateRoot[S <: AggregateState[S] : Uninitialized, A <: Aggreg
   def state: S = sm.state
 
   override def receiveCommand: Receive = {
-    case cm: CommandMessage => handleCommand.applyOrElse(cm.command, unhandledCommand)
+    case cm: CommandMessage =>
+      handleCommand.andThen {
+        case c: Collaboration => c.execute(raise)
+        case Immediately(event) => raise(event)
+      }.applyOrElse(cm.command, unhandledCommand)
   }
 
   def unhandledCommand(command: Any): Unit = {
@@ -54,9 +60,9 @@ abstract class AggregateRoot[S <: AggregateState[S] : Uninitialized, A <: Aggreg
     case em: EventMessage => sm.apply(em)
   }
 
-  def handleCommand: Receive
+  def handleCommand: HandleCommand
 
-  def raise(event: DomainEvent) {
+  protected def raise(event: Event): Unit = {
     val handler = sm.eventMessageHandler(event).andThen { em =>
       handle(currentCommandSender, toOfficeEventMessage(em))
     }
@@ -67,7 +73,7 @@ abstract class AggregateRoot[S <: AggregateState[S] : Uninitialized, A <: Aggreg
   }
 
 
-  class StateManager(onStateChanged: (EventMessage) => Unit) {
+  private class StateManager(onStateChanged: (EventMessage) => Unit) {
     private var s: S = implicitly[Uninitialized[S]].asInstanceOf[S]
 
     def state: S = s

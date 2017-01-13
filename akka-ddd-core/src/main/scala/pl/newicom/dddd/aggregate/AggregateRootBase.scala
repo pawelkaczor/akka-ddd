@@ -8,21 +8,21 @@ import pl.newicom.dddd.actor.GracefulPassivation
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{CaseId, EventMessage, OfficeEventMessage}
-import pl.newicom.dddd.messaging.{CollaborationSupport, Deduplication, Message}
+import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.office.OfficeId
 import pl.newicom.dddd.persistence.PersistentActorLogging
 
 import scala.util.{Failure, Success, Try}
 
 
-trait AggregateRootBase extends BusinessEntity with CollaborationSupport with GracefulPassivation with PersistentActor
+trait AggregateRootBase extends BusinessEntity with GracefulPassivation with PersistentActor
     with EventHandler with EventMessageFactory with ReceivePipeline with Deduplication with PersistentActorLogging {
 
-  override def id = self.path.name
+  override def id: EntityId = self.path.name
 
   def officeId: OfficeId
 
-  override def persistenceId = officeId.clerkGlobalId(id)
+  override def persistenceId: String = officeId.clerkGlobalId(id)
 
   /**
     * Sender of the currently processed command. Not available during recovery
@@ -60,7 +60,7 @@ trait AggregateRootBase extends BusinessEntity with CollaborationSupport with Gr
     acknowledgeCommandProcessed(currentCommandMessage)
   }
 
-  def acknowledgeCommand(result: Any) =
+  def acknowledgeCommand(result: Any): Unit =
     acknowledgeCommandProcessed(currentCommandMessage, Success(result))
 
   def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("Command processed. Thank you!")) {
@@ -68,7 +68,7 @@ trait AggregateRootBase extends BusinessEntity with CollaborationSupport with Gr
     currentCommandSender ! deliveryReceipt
   }
 
-  def handleDuplicated(msg: Message) =
+  def handleDuplicated(msg: Message): Unit =
     acknowledgeCommandProcessed(msg)
 
   def toOfficeEventMessage(em: EventMessage) = OfficeEventMessage(em, CaseId(id, lastSequenceNr))

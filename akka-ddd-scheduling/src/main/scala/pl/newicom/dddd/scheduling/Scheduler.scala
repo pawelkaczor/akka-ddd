@@ -26,7 +26,7 @@ object Scheduler extends AggregateRootSupport {
 
 }
 
-class Scheduler(val pc: PassivationConfig)(implicit val officeID: LocalOfficeId[Scheduler]) extends AggregateRoot[State, Scheduler] {
+class Scheduler(val pc: PassivationConfig)(implicit val officeID: LocalOfficeId[Scheduler]) extends AggregateRoot[SchedulerEvent, State, Scheduler] {
   this: EventPublisher =>
 
   // Skip recovery
@@ -35,7 +35,7 @@ class Scheduler(val pc: PassivationConfig)(implicit val officeID: LocalOfficeId[
   // Disable automated recovery on restart
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = ()
 
-  override def handleCommand: Receive = {
+  override def handleCommand: HandleCommand = {
     case ScheduleEvent(_, target, deadline, event) =>
       val metadata = ScheduledEventMetadata(
         businessUnit = id,
@@ -43,6 +43,6 @@ class Scheduler(val pc: PassivationConfig)(implicit val officeID: LocalOfficeId[
         deadline.withSecondOfMinute(0).withMillisOfSecond(0),
         deadline.getMillis)
 
-      raise(EventScheduled(metadata, event))
+      EventScheduled(metadata, event)
   }
 }

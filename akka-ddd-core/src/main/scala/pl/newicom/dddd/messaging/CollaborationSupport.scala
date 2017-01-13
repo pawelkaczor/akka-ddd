@@ -1,6 +1,8 @@
 package pl.newicom.dddd.messaging
 
 import akka.actor.{ActorRef, Stash}
+import pl.newicom.dddd.aggregate.{AggregateRoot, DomainEvent}
+
 import scala.concurrent.duration._
 
 object CollaborationSupport {
@@ -17,32 +19,45 @@ object CollaborationSupport {
 
 }
 
-trait CollaborationSupport extends Stash {
+trait CollaborationSupport[Event <: DomainEvent] extends Stash {
+  this: AggregateRoot[Event, _, _] =>
   import CollaborationSupport._
 
+  sealed trait Eventually[E <: Event]
+
+  case class Immediately[E <: Event](e: E) extends Eventually[E]
+
+  implicit def toEventually(e: Event): Eventually[Event] = Immediately(e)
+
   implicit class CollaborationBuilder(val target: ActorRef) {
-    def !<(msg: Any): Collaboration = Collaboration(target, msg)
+    def !<(msg: Any): Collaboration = Collaboration(target, msg, PartialFunction.empty, null)
   }
 
-  case class Collaboration(target: ActorRef, msg: Any) {
-    def apply(receive: Receive)(implicit timeout: FiniteDuration): Unit = {
-      target ! msg
-      internalExpectOnce(target, receive)
+  case class Collaboration(target: ActorRef, msg: Any, receive: HandleCommand, timeout: FiniteDuration) extends Eventually[Event] {
+    def apply(receive: HandleCommand)(implicit timeout: FiniteDuration): Collaboration = {
+      copy(receive = receive, timeout = timeout)
     }
 
-    def expectOnce(receive: Receive)(implicit timeout: FiniteDuration): Unit = apply(receive)
+    def expectOnce(receive: HandleCommand)(implicit timeout: FiniteDuration): Unit = apply(receive)
+
+    def execute(callback: Event => Unit): Unit = {
+      target ! msg
+      internalExpectOnce(target, receive, callback)(timeout)
+    }
   }
 
-  private def internalExpectOnce(target: ActorRef, receive: Receive)(implicit timeout: FiniteDuration): Unit = {
+  private def internalExpectOnce(target: ActorRef, receive: HandleCommand, callback: Event => Unit)(implicit timeout: FiniteDuration): Unit = {
     import context.dispatcher
     val scheduledTimeout = context.system.scheduler.scheduleOnce(timeout, self, ReceiveTimeout)
 
     context.become(
-      receive andThen {
-        case _ => // expected response received
-          scheduledTimeout.cancel()
-          unstashAll()
-          context.unbecome()
+      receive.andThen { // expected response received
+        case Immediately(event) => callback(event)
+        case _: Collaboration => sys.error("Nested collaboration not supported")
+      }.andThen { _ =>
+        scheduledTimeout.cancel()
+        unstashAll()
+        context.unbecome()
       } orElse {
         case ReceiveTimeout =>
           throw NoResponseReceived(timeout)
