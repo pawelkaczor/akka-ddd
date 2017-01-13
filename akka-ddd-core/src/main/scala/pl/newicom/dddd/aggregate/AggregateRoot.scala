@@ -2,7 +2,6 @@ package pl.newicom.dddd.aggregate
 
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
-import pl.newicom.dddd.messaging.CollaborationSupport
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOfficeId
@@ -62,7 +61,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
 
   def handleCommand: HandleCommand
 
-  protected def raise(event: Event): Unit = {
+  private def raise(event: Event): Unit = {
     val handler = sm.eventMessageHandler(event).andThen { em =>
       handle(currentCommandSender, toOfficeEventMessage(em))
     }

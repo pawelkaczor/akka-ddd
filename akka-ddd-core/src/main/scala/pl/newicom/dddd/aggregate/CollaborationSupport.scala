@@ -1,7 +1,6 @@
-package pl.newicom.dddd.messaging
+package pl.newicom.dddd.aggregate
 
 import akka.actor.{ActorRef, Stash}
-import pl.newicom.dddd.aggregate.{AggregateRoot, DomainEvent}
 
 import scala.concurrent.duration._
 
