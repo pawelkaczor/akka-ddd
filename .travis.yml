@@ -19,6 +19,6 @@
   - sudo apt-get install -y -qq httpie
 
  before_script:
-  - docker run --name ecommerce-event-store -d -p 2113:2113 -p 1113:1113 ruudud/eventstore:3.4.0
+  - docker run --name ecommerce-event-store -d -p 2113:2113 -p 1113:1113 eventstore/eventstore
   - sleep 5
   - http -a admin:changeit POST ':2113/projection/$by_category/command/enable'
