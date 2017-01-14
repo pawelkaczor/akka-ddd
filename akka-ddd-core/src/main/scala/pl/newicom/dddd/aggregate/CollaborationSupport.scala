@@ -52,7 +52,7 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash {
     context.become(
       receive.andThen { // expected response received
         case Immediately(event) => callback(event)
-        case _: Collaboration => sys.error("Nested collaboration not supported")
+        case c: Collaboration => c.execute(callback)
       }.andThen { _ =>
         scheduledTimeout.cancel()
         unstashAll()

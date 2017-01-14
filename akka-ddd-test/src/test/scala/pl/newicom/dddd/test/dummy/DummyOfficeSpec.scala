@@ -8,6 +8,7 @@ import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 import DummyOfficeSpec._
+import pl.newicom.dddd.aggregate.CollaborationSupport.NoResponseReceived
 import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
 import pl.newicom.dddd.office.Office
 
@@ -93,14 +94,14 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
     }
 
 
-    "reject negative generated value" in {
+    "eventually reject negative generated value" in {
         given {
           CreateDummy(dummyId, "dummy name", "dummy description", 100)
         }
         .when {
           GenerateValue(dummyId)
         }
-        .expectException[RuntimeException]("negative value not allowed")
+        .expectException[NoResponseReceived]()
     }
 
   }

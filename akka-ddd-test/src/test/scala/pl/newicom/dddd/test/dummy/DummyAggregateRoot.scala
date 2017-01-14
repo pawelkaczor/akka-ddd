@@ -12,6 +12,7 @@ import pl.newicom.dddd.test.dummy.ValueGeneratorActor.GenerateRandom
 import pl.newicom.dddd.utils.UUIDSupport.uuidObj
 
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 object DummyAggregateRoot {
 
@@ -61,7 +62,7 @@ class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyState, DummyAggr
         DummyCreated(id, name, description, value)
     }
 
-    case s @ Active(currentValue) => {
+    case s @ Active(_) => {
 
       case ChangeName(id, name) =>
         NameChanged(id, name)
@@ -73,16 +74,11 @@ class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyState, DummyAggr
         s.validate(value)
         ValueChanged(id, value, lastSequenceNr)
 
-      case GenerateValue(id) =>
-        implicit val timeout = 3.seconds
-        (valueGeneratorActor !< GenerateRandom) {
-          case ValueGeneratorActor.ValueGenerated(value) =>
-            s.validate(value)
-            ValueGenerated(id, value, confirmationToken = generateConfirmationToken)
-        }
+      case GenerateValue(_) =>
+        valueGeneration
     }
 
-    case WaitingForConfirmation(currentValue, candidateValue) => {
+    case WaitingForConfirmation(_, candidateValue) => {
 
       case ConfirmGeneratedValue(id, confirmationToken) =>
         if (candidateValue.confirmationToken == confirmationToken) {
@@ -94,9 +90,23 @@ class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyState, DummyAggr
 
   }
 
+  private def valueGeneration: Collaboration = {
+    implicit val timeout = 1.seconds
+    (valueGeneratorActor !< GenerateRandom) {
+      case ValueGeneratorActor.ValueGenerated(value) =>
+        try {
+          state.validate(value)
+          ValueGenerated(id, value, confirmationToken = generateConfirmationToken)
+        } catch {
+            case NonFatal(_) => // try again
+              valueGeneration
+        }
+    }
+  }
+
   def generateConfirmationToken: UUID = uuidObj
 
-  def valueGenerator: Int = (Math.random() * 100).toInt
+  def valueGenerator: Int = (Math.random() * 100).toInt - 50 //  -50 < v < 50
 
   override val pc = PassivationConfig()
 }
