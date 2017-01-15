@@ -7,7 +7,9 @@
    - oraclejdk8
 
  script:
-  - sbt test it:test
+  - sbt test
+  - sbt "it:testOnly pl.newicom.dddd.process.ReceptorIntegrationSpec"
+  - sbt "it:testOnly pl.newicom.dddd.view.sql.SqlViewUpdateServiceIntegrationSpec"
 
  sudo: required
 
