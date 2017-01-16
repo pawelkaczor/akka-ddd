@@ -105,8 +105,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     def expectEvent[E](e: E)(implicit t: ClassTag[E]): Unit = {
       expectEventMatching[E](
         matcher = {
-          case actual
-            if actual == e => e
+          case actual if actual == e => e
         },
         hint = e.toString
       )

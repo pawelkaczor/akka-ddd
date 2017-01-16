@@ -41,7 +41,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
     case cm: CommandMessage =>
       handleCommand.andThen {
         case c: Collaboration => c.execute(raise)
-        case Immediately(event) => raise(event)
+        case Immediately(events) => raise(events)
       }.applyOrElse(cm.command, unhandledCommand)
   }
 
@@ -61,14 +61,19 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
 
   def handleCommand: HandleCommand
 
-  private def raise(event: Event): Unit = {
-    val handler = sm.eventMessageHandler(event).andThen { em =>
-      handle(currentCommandSender, toOfficeEventMessage(em))
-    }
+  private def raise(events: Seq[Event]): Unit = {
+    var eventsCount = 0
+    val eventMessages = events.map(toEventMessage).map(_.causedBy(currentCommandMessage))
 
-    val em = toEventMessage(event).causedBy(currentCommandMessage)
+    val handler =
+      sm.eventMessageHandler.andThen { _ =>
+        eventsCount += 1
+        if (eventsCount == events.size) {
+           handle(currentCommandSender, eventMessages.map(toOfficeEventMessage))
+        }
+      }
 
-    persist(em)(handler)
+    persistAll(eventMessages.toList)(handler)
   }
 
 
@@ -78,15 +83,12 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
     def state: S = s
 
     def apply(em: EventMessage): Unit = {
-      apply(eventHandler(em.event), em)
+      apply(eventHandler, em)
     }
 
-    def eventMessageHandler(event: DomainEvent): (EventMessage) => EventMessage = {
-      val eh = eventHandler(event)
-      (em: EventMessage) => {
-        apply(eh, em)
-        em
-      }
+    def eventMessageHandler: (EventMessage) => EventMessage = em => {
+      apply(eventHandler, em)
+      em
     }
 
     private def apply(eventHandler: Function[DomainEvent, S], em: EventMessage): Unit = {
@@ -94,13 +96,13 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
       onStateChanged(em)
     }
 
-    private def eventHandler(event: DomainEvent): Function[DomainEvent, S] = {
+    private def eventHandler: Function[DomainEvent, S] = event => {
       def eventName = event.getClass.getSimpleName
       def commandName = currentCommandMessage.command.getClass.getSimpleName
       def arName = officeId.clerkClass.getSimpleName
       s match {
         case state if state.eventHandlerDefined(event) =>
-          state.apply
+          state.apply(event)
         case state if state.initialized =>
           sys.error(s"$commandName can not be processed. State transition not defined for event: $eventName!")
         case _ =>

@@ -5,9 +5,9 @@ import pl.newicom.dddd.messaging.event.OfficeEventMessage
 
 trait EventPublisher extends EventHandler {
 
-  override abstract def handle(senderRef: ActorRef, event: OfficeEventMessage): Unit = {
-    publish(event)
-    super.handle(senderRef, event)
+  override abstract def handle(senderRef: ActorRef, events: Seq[OfficeEventMessage]): Unit = {
+    events.foreach(publish)
+    super.handle(senderRef, events)
   }
 
   def publish(event: OfficeEventMessage)

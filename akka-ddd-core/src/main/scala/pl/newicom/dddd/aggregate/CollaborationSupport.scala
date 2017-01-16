@@ -24,9 +24,11 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash {
 
   sealed trait Eventually[E <: Event]
 
-  case class Immediately[E <: Event](e: E) extends Eventually[E]
+  implicit def toEventually(e: Event): Immediately[Event] = Immediately(Seq(e))
 
-  implicit def toEventually(e: Event): Eventually[Event] = Immediately(e)
+  case class Immediately[E <: Event](events: Seq[E]) extends Eventually[E] {
+    def &(next: Event): Immediately[Event] = Immediately(events :+ next)
+  }
 
   implicit class CollaborationBuilder(val target: ActorRef) {
     def !<(msg: Any): Collaboration = Collaboration(target, msg, PartialFunction.empty, null)
@@ -39,19 +41,19 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash {
 
     def expectOnce(receive: HandleCommand)(implicit timeout: FiniteDuration): Unit = apply(receive)
 
-    def execute(callback: Event => Unit): Unit = {
+    def execute(callback: Seq[Event] => Unit): Unit = {
       target ! msg
       internalExpectOnce(target, receive, callback)(timeout)
     }
   }
 
-  private def internalExpectOnce(target: ActorRef, receive: HandleCommand, callback: Event => Unit)(implicit timeout: FiniteDuration): Unit = {
+  private def internalExpectOnce(target: ActorRef, receive: HandleCommand, callback: Seq[Event] => Unit)(implicit timeout: FiniteDuration): Unit = {
     import context.dispatcher
     val scheduledTimeout = context.system.scheduler.scheduleOnce(timeout, self, ReceiveTimeout)
 
     context.become(
       receive.andThen { // expected response received
-        case Immediately(event) => callback(event)
+        case Immediately(events) => callback(events)
         case c: Collaboration => c.execute(callback)
       }.andThen { _ =>
         scheduledTimeout.cancel()

@@ -9,9 +9,11 @@ import scala.util.Success
 trait LocalPublisher extends EventPublisher {
   this: Actor =>
 
-  override abstract def handle(senderRef: ActorRef, event: OfficeEventMessage): Unit = {
-    publish(event)
-    senderRef ! Processed(Success(event.payload))
+  override abstract def handle(senderRef: ActorRef, events: Seq[OfficeEventMessage]): Unit = {
+    events.foreach { em =>
+      publish(em)
+      senderRef ! Processed(Success(em.payload))
+    }
   }
 
   override def publish(em: OfficeEventMessage) {

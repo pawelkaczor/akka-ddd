@@ -76,6 +76,9 @@ class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyState, DummyAggr
 
       case GenerateValue(_) =>
         valueGeneration
+
+      case Reset(id, name) =>
+        NameChanged(id, name) & ValueChanged(id, 0, lastSequenceNr)
     }
 
     case WaitingForConfirmation(_, candidateValue) => {

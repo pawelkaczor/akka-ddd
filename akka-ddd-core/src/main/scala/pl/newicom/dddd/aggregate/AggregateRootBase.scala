@@ -56,7 +56,7 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
   /**
     * Event handler, not invoked during recovery.
     */
-  override def handle(senderRef: ActorRef, event: OfficeEventMessage) {
+  override def handle(senderRef: ActorRef, events: Seq[OfficeEventMessage]) {
     acknowledgeCommandProcessed(currentCommandMessage)
   }
 

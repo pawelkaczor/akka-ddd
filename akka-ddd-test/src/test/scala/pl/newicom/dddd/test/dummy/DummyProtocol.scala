@@ -22,6 +22,7 @@ object DummyProtocol {
   case class ChangeValue(id: EntityId, value: Int)                                    extends UpdateCommand
   case class GenerateValue(id: EntityId)                                              extends UpdateCommand
   case class ConfirmGeneratedValue(id: EntityId, confirmationToken: UUID)             extends UpdateCommand
+  case class Reset(id: EntityId, name: String)                                        extends UpdateCommand
 
   //
   // Events

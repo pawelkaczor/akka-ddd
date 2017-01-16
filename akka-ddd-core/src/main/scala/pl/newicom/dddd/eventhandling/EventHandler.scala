@@ -4,5 +4,5 @@ import akka.actor.ActorRef
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
 
 trait EventHandler {
-  def handle(senderRef: ActorRef, event: OfficeEventMessage)
+  def handle(senderRef: ActorRef, events: Seq[OfficeEventMessage])
 }

@@ -40,8 +40,8 @@ trait EventMessage extends Message with AddressableMessage {
   def id: String
   def timestamp: DateTime
 
-  override def destination = tryGetMetaAttribute[String](CorrelationId)
-  override def payload = event
+  override def destination: Option[String] = tryGetMetaAttribute[String](CorrelationId)
+  override def payload: DomainEvent = event
 
   override def toString: String = {
     s"EventMessage(event = $event, id = $id, timestamp = $timestamp, metaData = $metadata)"

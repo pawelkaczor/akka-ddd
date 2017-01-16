@@ -104,6 +104,18 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
         .expectException[NoResponseReceived]()
     }
 
+    "change value and name on reset" in {
+      given {
+        CreateDummy(dummyId, "dummy name", "dummy description", 100)
+      }
+      .when {
+        Reset(dummyId, "new dummy name")
+      }
+      .expectEvents[DummyEvent] (
+        ValueChanged(dummyId, value = 0, dummyVersion = 1), NameChanged(dummyId, "new dummy name")
+      )
+    }
+
   }
 
 }

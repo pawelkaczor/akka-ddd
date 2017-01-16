@@ -2,6 +2,7 @@ package pl.newicom.dddd.monitoring
 
 import akka.actor.ActorRef
 import akka.contrib.pattern.ReceivePipeline.Inner
+import kamon.trace.TraceContext
 import pl.newicom.dddd.aggregate.{AggregateRootBase, EventMessageFactory}
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
@@ -11,10 +12,10 @@ import pl.newicom.dddd.monitoring.Stage._
 trait AggregateRootMonitoring extends EventHandler with EventMessageFactory with TraceContextSupport {
   this: AggregateRootBase =>
 
-  override abstract def handle(senderRef: ActorRef, event: OfficeEventMessage): Unit = {
-    super.handle(senderRef, event)
+  override abstract def handle(senderRef: ActorRef, events: Seq[OfficeEventMessage]): Unit = {
+    super.handle(senderRef, events)
     finishCurrentTraceContext()
-    log.debug("Event stored: {}", event.payload)
+    log.debug("Events stored: {}", events.map(_.payload))
   }
 
   pipelineOuter {
@@ -44,5 +45,5 @@ trait AggregateRootMonitoring extends EventHandler with EventMessageFactory with
   }
 
 
-  def commandTraceContext = currentTraceContext
+  def commandTraceContext: TraceContext = currentTraceContext
 }
