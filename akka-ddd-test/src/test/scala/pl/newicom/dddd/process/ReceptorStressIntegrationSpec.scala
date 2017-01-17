@@ -11,7 +11,7 @@ import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.office.OfficeListener
 import pl.newicom.dddd.office.SimpleOffice._
-import pl.newicom.dddd.process.ReceptorIntegrationSpec._
+import pl.newicom.dddd.process.SagaIntegrationSpec._
 import pl.newicom.dddd.persistence.{RegularSnapshottingConfig, SaveSnapshotRequest}
 import pl.newicom.dddd.process.ReceptorSupport.ReceptorFactory
 import pl.newicom.dddd.saga.CoordinationOffice
@@ -68,15 +68,15 @@ class ReceptorStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(
   "Receptor" should {
 
     var receptor: ActorRef = null
-    var coordinationOffice: CoordinationOffice[DummySaga] = null
+    var coordOffice: CoordinationOffice[DummySaga] = null
 
     val changes = 2 to 101
 
     // TODO: DOES NOT WORK ON TRAVIS
     "deliver 100 events to the receiver" ignore {
-      val co = office[DummySaga].asInstanceOf[CoordinationOffice[DummySaga]]
+      val co = coordinationOffice[DummySaga]
       val sm = ReceptorSupport.receptor(co.receptorConfig)
-      receptor = sm; coordinationOffice = co
+      receptor = sm; coordOffice = co
 
       given {
         List(

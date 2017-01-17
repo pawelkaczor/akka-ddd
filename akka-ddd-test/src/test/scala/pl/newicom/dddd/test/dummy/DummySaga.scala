@@ -7,9 +7,11 @@ import pl.newicom.dddd.office.{LocalOfficeId, Office, RemoteOfficeId}
 import pl.newicom.dddd.process._
 import pl.newicom.dddd.saga.ProcessConfig
 import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyCreated, ValueChanged}
-import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyState, EventApplied}
+import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyState, EventApplied, Poison}
 
 object DummySaga {
+
+  val Poison: Int = 100
 
   class DummySagaConfig(bpsName: String) extends ProcessConfig[DummySaga](bpsName) {
 
@@ -56,7 +58,10 @@ class DummySaga(val pc: PassivationConfig,
 
     case DummyState(counter) => {
 
-      case e @ ValueChanged(id, value, _) if state.counter + 1 == value =>
+      case ValueChanged(_, Poison, _) =>
+        sys.error("Poison value detected!")
+
+      case e @ ValueChanged(id, value, _) if counter + 1 == value =>
 
         DummyState(value) {
 

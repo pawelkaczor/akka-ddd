@@ -8,7 +8,7 @@
 
  script:
   - sbt test
-  - sbt "it:testOnly pl.newicom.dddd.view.sql.SqlViewUpdateServiceIntegrationSpec"
+  - sbt "it:test"
 
  sudo: required
 

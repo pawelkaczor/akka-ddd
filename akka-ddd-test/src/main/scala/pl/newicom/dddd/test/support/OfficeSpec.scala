@@ -83,9 +83,8 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: Loca
     }
   }
 
-  def ensureActorUnderTestTerminated(actor: ActorRef) = {
-    watch(actor)
-    actor ! PoisonPill
+  def ensureTerminated(actor: ActorRef) = {
+    watch(actor) ! PoisonPill
     fishForMessage(1.seconds) {
       case Terminated(_) =>
         unwatch(actor)
@@ -97,7 +96,7 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: Loca
 
   override def ensureOfficeTerminated(): Unit = {
     if (_officeUnderTest != null) {
-      ensureActorUnderTestTerminated(_officeUnderTest.actor)
+      ensureTerminated(_officeUnderTest.actor)
     }
     _officeUnderTest = null
   }

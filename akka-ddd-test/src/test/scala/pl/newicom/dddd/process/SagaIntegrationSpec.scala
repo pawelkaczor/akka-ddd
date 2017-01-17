@@ -8,14 +8,14 @@ import pl.newicom.dddd.coordination.ReceptorConfig
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.EventMessage
-import pl.newicom.dddd.office.OfficeFactory.office
+import pl.newicom.dddd.office.OfficeFactory.coordinationOffice
 import pl.newicom.dddd.office.SimpleOffice._
-import pl.newicom.dddd.process.ReceptorIntegrationSpec._
+import pl.newicom.dddd.process.SagaIntegrationSpec._
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
-import pl.newicom.dddd.process.ReceptorSupport.{ReceptorFactory, receptor}
+import pl.newicom.dddd.process.ReceptorSupport.{ReceptorFactory, receptor => createReceptor}
 import pl.newicom.dddd.saga.CoordinationOffice
 import pl.newicom.dddd.test.dummy.DummyProtocol._
-import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
+import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied, Poison}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga, dummyOfficeId}
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
 import pl.newicom.dddd.test.support.OfficeSpec
@@ -23,7 +23,7 @@ import pl.newicom.eventstore.EventstoreSubscriber
 
 import scala.concurrent.duration._
 
-object ReceptorIntegrationSpec {
+object SagaIntegrationSpec {
 
   case object GetNumberOfUnconfirmed
 
@@ -38,7 +38,7 @@ object ReceptorIntegrationSpec {
 /**
  * Requires EventStore to be running on localhost!
  */
-class ReceptorIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("ReceptorIntegrationSpec"))) {
+class SagaIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("ReceptorIntegrationSpec"))) {
 
   override val shareAggregateRoot = true
 
@@ -58,11 +58,11 @@ class ReceptorIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integr
     }
   }
 
-  var rc: ActorRef = _
+  var receptor: ActorRef = _
 
   implicit val _ = new CoordinationOfficeListener[DummySaga] {
-    override def officeStarted(office: CoordinationOffice[DummySaga], receptor: ActorRef): Unit = {
-      rc = receptor
+    override def officeStarted(office: CoordinationOffice[DummySaga], receptorRef: ActorRef): Unit = {
+      receptor = receptorRef
     }
   }
 
@@ -71,77 +71,78 @@ class ReceptorIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integr
   system.eventStream.subscribe(sagaProbe.ref, classOf[EventApplied])
   ignoreMsg({ case EventMessage(_, Processed(_)) => true })
 
-  "Receptor" should {
+  "Saga" should {
 
-    var coordinationOffice: CoordinationOffice[DummySaga] = null
+    var coordOffice: CoordinationOffice[DummySaga] = null
 
-    "deliver events to the receiver" in {
+    "confirm accepted event" in {
       // given
       given {
-        List(
-          CreateDummy(dummyId, "name", "description", 0),
-          ChangeValue(dummyId, 1)
-        )
+        CreateDummy(dummyId, "name", "description", 0)
       }
       .when {
-        ChangeValue(dummyId, 2)
+        ChangeValue(dummyId, 1)
+      }
+      .expect { c =>
+        ValueChanged(dummyId, c.value, 1L)
+      }
+
+      // when
+      val co = coordinationOffice[DummySaga]
+      coordOffice = co
+
+      // then
+      expectNumberOfEventsAppliedBySaga(1)
+      expectNoUnconfirmedMessages(receptor)
+    }
+
+    "confirm dropped event" in {
+      // given
+      ensureTerminated(receptor) // stop events delivery
+      when {
+        ChangeValue(dummyId, 3) // bump counter by 2, DummySaga should drop this event
       }
       .expect { c =>
         ValueChanged(dummyId, c.value, 2L)
       }
 
       // when
-      val co = office[DummySaga].asInstanceOf[CoordinationOffice[DummySaga]]
-      coordinationOffice = co
+      receptor = createReceptor(coordOffice.receptorConfig)
 
       // then
-      expectNumberOfEventsAppliedBySaga(2)
-      expectNoUnconfirmedMessages(rc)
+      expectNoUnconfirmedMessages(receptor)
     }
 
-    "persist unconfirmed events" in {
+    "not confirm event if event processing failed" in {
       // given
-      ensureActorUnderTestTerminated(rc) // stop events delivery
+      ensureTerminated(receptor)
       when {
-        ChangeValue(dummyId, 3) // bump counter by 1, DummySaga should accept this event
+        ChangeValue(dummyId, Poison) // Saga should fail
       }
       .expect { c =>
         ValueChanged(dummyId, c.value, 3L)
       }
 
-      when {
-        ChangeValue(dummyId, 5) // bump counter by 2, DummySaga should not accept this event
-      }
-      .expect { c =>
-        ValueChanged(dummyId, c.value, 4L)
-      }
-
       // when
-      rc = receptor(coordinationOffice.receptorConfig) // start events delivery, number of events to be delivered to DummySaga is 2
+      receptor = createReceptor(coordOffice.receptorConfig)
 
       // then
-      expectNumberOfEventsAppliedBySaga(1)
-      expectNumberOfUnconfirmedMessages(rc, 1) // single unconfirmed event: ValueChanged(_, 5)
+      expectNumberOfUnconfirmedMessages(receptor, 1)
+
     }
 
-    "redeliver unconfirmed events to the receiver" in {
+    "receive unconfirmed event after receptor restarted" in {
       // given
-      ensureActorUnderTestTerminated(rc)
-      when {
-        ChangeValue(dummyId, 4)
-      }
-      .expect { c =>
-        ValueChanged(dummyId, c.value, 5L)
-      }
+      ensureTerminated(receptor)
 
       // when
-      rc = receptor(coordinationOffice.receptorConfig)
+      receptor = createReceptor(coordOffice.receptorConfig)
 
       // then
-      expectNumberOfEventsAppliedBySaga(1)
-      expectNumberOfUnconfirmedMessages(rc, 0)
+      expectNumberOfUnconfirmedMessages(receptor, 1)
 
     }
+
   }
 
   def expectNumberOfEventsAppliedBySaga(expectedNumberOfEvents: Int): Unit = {

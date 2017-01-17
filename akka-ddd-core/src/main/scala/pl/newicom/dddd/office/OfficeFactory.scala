@@ -4,7 +4,8 @@ import akka.actor.{ActorRef, ActorSystem}
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.cluster
-import pl.newicom.dddd.saga.{ProcessConfig, CoordinationOffice}
+import pl.newicom.dddd.process.{Saga, SagaActorFactory}
+import pl.newicom.dddd.saga.{CoordinationOffice, ProcessConfig}
 
 import scala.reflect.ClassTag
 
@@ -27,6 +28,8 @@ object OfficeFactory {
   def office(officeId: RemoteOfficeId[_])(implicit as: ActorSystem): Office =
     new Office(officeId, cluster.proxy(officeId))
 
+  def coordinationOffice[A <: Saga : SagaActorFactory : OfficeFactory : ProcessConfig : OfficeListener : ClassTag]: CoordinationOffice[A] =
+    office[A].asInstanceOf[CoordinationOffice[A]]
 }
 
 abstract class OfficeFactory[A <: BusinessEntity : BusinessEntityActorFactory : LocalOfficeId] {
