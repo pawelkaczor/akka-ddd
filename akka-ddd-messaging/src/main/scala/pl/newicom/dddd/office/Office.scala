@@ -8,19 +8,19 @@ import pl.newicom.dddd.delivery.protocol.DeliveryHandler
 import scala.reflect.ClassTag
 
 trait OfficeId extends BusinessEntity {
-  def clerkGlobalId(clerkId: EntityId): String =
-    s"$id-$clerkId"
 
-  def clerk(clerkId: EntityId): BusinessEntity =
-    Clerk(clerkGlobalId(clerkId), department)
+  def caseRef(caseLocalId: EntityId): CaseRef =
+    CaseRef(s"$id-$caseLocalId", this, version = None)
 
   def distributionStrategy = new DefaultDistributionStrategy
 }
 
-case class Clerk(id: EntityId, department: String) extends BusinessEntity
+case class CaseRef(id: EntityId, responsible: BusinessEntity, version: Option[Long]) extends BusinessEntity {
+  def department: String = responsible.department
+}
 
 case class RemoteOfficeId[M: ClassTag](id: EntityId, department: String, messageClass: Class[M]) extends OfficeId {
-  def handles(command: Command) = messageClass.isAssignableFrom(command.getClass)
+  def handles(command: Command): Boolean = messageClass.isAssignableFrom(command.getClass)
 }
 
 object LocalOfficeId {
@@ -31,8 +31,10 @@ object LocalOfficeId {
 
 case class LocalOfficeId[E : ClassTag](id: EntityId, department: String) extends OfficeId {
 
-  def clerkClass: Class[E] =
+  def caseClass: Class[E] =
     implicitly[ClassTag[E]].runtimeClass.asInstanceOf[Class[E]]
+
+  def caseName: String = caseClass.getSimpleName
 }
 
 class Office(val officeId: OfficeId, val actor: ActorRef) {

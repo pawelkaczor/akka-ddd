@@ -27,9 +27,9 @@ trait EventSourceProvider extends EventstoreSerializationSupport
       )
     ).map {
       case EventRecord(_, number, eventData, created) =>
-        EventMessageEntry(toOfficeEventMessage(eventData).get, number.value, created)
+        EventMessageEntry(toOfficeEventMessage(eventData, observable).get, number.value, created)
       case ResolvedEvent(EventRecord(_, _, eventData, created), linkEvent) =>
-        EventMessageEntry(toOfficeEventMessage(eventData).get, linkEvent.number.value, created)
+        EventMessageEntry(toOfficeEventMessage(eventData, observable).get, linkEvent.number.value, created)
       case unexpected =>
         throw new RuntimeException(s"Unexpected msg received: $unexpected")
     }

@@ -9,7 +9,9 @@ import eventstore.{Content, ContentType, EventData}
 import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.MetaData
-import pl.newicom.dddd.messaging.event.{CaseId, EventMessage, OfficeEventMessage}
+import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
+import pl.newicom.dddd.office.CaseRef
+import pl.newicom.dddd.serialization.JsonSerHints
 import pl.newicom.dddd.serialization.JsonSerHints._
 import pl.newicom.eventstore.json.JsonSerializerExtension
 
@@ -27,7 +29,7 @@ import scala.util.{Failure, Success, Try}
 trait EventstoreSerializationSupport {
 
   lazy val jsonSerializer = JsonSerializerExtension(system)
-  lazy val serializationHints = fromConfig(system.settings.config)
+  lazy val serializationHints: JsonSerHints = fromConfig(system.settings.config)
 
   def system: ActorSystem
 
@@ -73,11 +75,11 @@ trait EventstoreSerializationSupport {
       Failure(sys.error(s"Cannot deserialize event as $manifest, event: $event"))
   }
 
-  def toOfficeEventMessage(eventData: EventData): Try[OfficeEventMessage] =
+  def toOfficeEventMessage(eventData: EventData, source: BusinessEntity): Try[OfficeEventMessage] =
     fromEvent(eventData, classOf[PersistentRepr]).map { pr =>
       val em = pr.payload.asInstanceOf[EventMessage]
-      val caseId = new CaseId(pr.persistenceId, pr.sequenceNr)
-      OfficeEventMessage(em, caseId)
+      val caseRef = CaseRef(pr.persistenceId, source, Some(pr.sequenceNr))
+      OfficeEventMessage(em, caseRef)
     }
 
   private def toPayloadAndMetadata(em: EventMessage): (DomainEvent, Option[MetaData]) =

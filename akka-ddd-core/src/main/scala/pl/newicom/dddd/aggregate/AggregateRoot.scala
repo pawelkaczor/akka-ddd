@@ -50,8 +50,8 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
     if (initialized) {
       sys.error(s"$commandName can not be processed: missing command handler!")
     } else {
-      val arName = officeId.clerkClass.getSimpleName
-      throw new AggregateRootNotInitializedException(s"$arName with ID $id does not exist. $commandName can not be processed: missing command handler!")
+      val caseName = officeId.caseName
+      throw new AggregateRootNotInitializedException(s"$caseName with ID $id does not exist. $commandName can not be processed: missing command handler!")
     }
   }
 
@@ -99,14 +99,14 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
     private def eventHandler: Function[DomainEvent, S] = event => {
       def eventName = event.getClass.getSimpleName
       def commandName = currentCommandMessage.command.getClass.getSimpleName
-      def arName = officeId.clerkClass.getSimpleName
+      def caseName = officeId.caseName
       s match {
         case state if state.eventHandlerDefined(event) =>
           state.apply(event)
         case state if state.initialized =>
           sys.error(s"$commandName can not be processed. State transition not defined for event: $eventName!")
         case _ =>
-          throw new AggregateRootNotInitializedException(s"$arName with ID $id does not exist. $commandName can not be processed: missing state initialization for event: $eventName!")
+          throw new AggregateRootNotInitializedException(s"$caseName with ID $id does not exist. $commandName can not be processed: missing state initialization for event: $eventName!")
       }
     }
 

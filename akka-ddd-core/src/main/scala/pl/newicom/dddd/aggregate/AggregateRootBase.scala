@@ -7,9 +7,9 @@ import akka.persistence.PersistentActor
 import pl.newicom.dddd.actor.GracefulPassivation
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
-import pl.newicom.dddd.messaging.event.{CaseId, EventMessage, OfficeEventMessage}
+import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
 import pl.newicom.dddd.messaging.{Deduplication, Message}
-import pl.newicom.dddd.office.OfficeId
+import pl.newicom.dddd.office.{CaseRef, OfficeId}
 import pl.newicom.dddd.persistence.PersistentActorLogging
 
 import scala.util.{Failure, Success, Try}
@@ -22,7 +22,7 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
 
   def officeId: OfficeId
 
-  override def persistenceId: String = officeId.clerkGlobalId(id)
+  override def persistenceId: String = officeId.caseRef(id).id
 
   /**
     * Sender of the currently processed command. Not available during recovery
@@ -71,6 +71,6 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
   def handleDuplicated(msg: Message): Unit =
     acknowledgeCommandProcessed(msg)
 
-  def toOfficeEventMessage(em: EventMessage) = OfficeEventMessage(em, CaseId(id, lastSequenceNr))
+  def toOfficeEventMessage(em: EventMessage) = OfficeEventMessage(em, CaseRef(persistenceId, officeId, Some(lastSequenceNr)))
 
 }

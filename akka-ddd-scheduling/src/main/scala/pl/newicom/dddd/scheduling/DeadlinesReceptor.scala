@@ -9,7 +9,7 @@ object DeadlinesReceptor {
 
   def apply(businessUnit: EntityId, department: String): ReceptorConfig =
     ReceptorBuilder()
-      .reactTo(currentDeadlinesOfficeId(department).clerk(businessUnit))
+      .reactTo(currentDeadlinesOfficeId(department).caseRef(businessUnit))
       .route {
         case em: EventMessage =>
           ActorPath.fromString(em.getMetaAttribute("target"))

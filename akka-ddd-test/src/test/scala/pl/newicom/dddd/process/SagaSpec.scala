@@ -7,10 +7,10 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaData._
-import pl.newicom.dddd.messaging.event.{CaseId, EventMessage, OfficeEventMessage}
+import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.OfficeFactory._
-import pl.newicom.dddd.office.OfficeListener
+import pl.newicom.dddd.office.{CaseRef, OfficeListener}
 import pl.newicom.dddd.test.dummy.DummyProtocol.ValueChanged
 import pl.newicom.dddd.test.dummy.DummySaga
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaConfig, EventApplied}
@@ -115,7 +115,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
 
   def toEventMessage(event: ValueChanged, previouslySentMsg: Option[EventMessage] = None): EventMessage = {
     val entityId = previouslySentMsg.flatMap(msg => msg.correlationId).getOrElse(processId)
-    OfficeEventMessage(CaseId(entityId, event.dummyVersion), event).withMetaData(Map(
+    OfficeEventMessage(CaseRef(entityId, testSagaConfig, Some(event.dummyVersion)), event).withMetaData(Map(
       CorrelationId -> entityId,
       DeliveryId -> 1L
     )).withMustFollow(previouslySentMsg.map(msg => msg.id))
