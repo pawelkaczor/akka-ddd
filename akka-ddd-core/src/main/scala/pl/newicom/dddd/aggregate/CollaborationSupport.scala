@@ -1,6 +1,7 @@
 package pl.newicom.dddd.aggregate
 
 import akka.actor.{ActorRef, Stash}
+import pl.newicom.dddd.aggregate.AggregateRootSupport.{Eventually, Immediately}
 
 import scala.concurrent.duration._
 
@@ -18,17 +19,12 @@ object CollaborationSupport {
 
 }
 
+
 trait CollaborationSupport[Event <: DomainEvent] extends Stash {
   this: AggregateRoot[Event, _, _] =>
   import CollaborationSupport._
 
-  sealed trait Eventually[E <: Event]
-
   implicit def toEventually(e: Event): Immediately[Event] = Immediately(Seq(e))
-
-  case class Immediately[E <: Event](events: Seq[E]) extends Eventually[E] {
-    def &(next: Event): Immediately[Event] = Immediately(events :+ next)
-  }
 
   implicit class CollaborationBuilder(val target: ActorRef) {
     def !<(msg: Any): Collaboration = Collaboration(target, msg, PartialFunction.empty, null)

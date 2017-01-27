@@ -7,7 +7,7 @@ import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.scheduling.Scheduler.State
 
-object Scheduler extends AggregateRootSupport {
+object Scheduler extends AggregateRootSupport[SchedulerEvent] {
 
   //
   // State

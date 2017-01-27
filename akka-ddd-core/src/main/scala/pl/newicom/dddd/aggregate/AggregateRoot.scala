@@ -1,6 +1,7 @@
 package pl.newicom.dddd.aggregate
 
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
+import pl.newicom.dddd.aggregate.AggregateRootSupport.{Eventually, Immediately}
 import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage

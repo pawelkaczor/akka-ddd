@@ -116,7 +116,7 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](Some(testSys
         ConfirmGeneratedValue(dummyId, past[ValueGenerated].confirmationToken)
       }
       .expect { implicit c =>
-        ValueChanged(c.id, past[ValueGenerated].value, dummyVersion = 2)
+        ValueChanged(c.id, past[ValueGenerated].value, dummyVersion = 1)
       }
     }
 
