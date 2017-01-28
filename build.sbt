@@ -11,7 +11,7 @@ scalaVersion in ThisBuild := "2.11.8"
 
 //crossScalaVersions := Seq("2.12.0")
 
-scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-deprecation", "-feature", "-language:postfixOps")
+scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-deprecation", "-feature", "-language:postfixOps", "-unchecked")
 publishMavenStyle in ThisBuild := true
 homepage          in ThisBuild := Some(new URL("http://github.com/pawelkaczor/akka-ddd"))
 licenses          in ThisBuild := ("Apache2", new URL("http://raw.githubusercontent.com/pawelkaczor/akka-ddd/master/LICENSE.md")) :: Nil
