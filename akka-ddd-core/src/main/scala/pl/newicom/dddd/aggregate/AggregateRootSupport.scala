@@ -1,6 +1,5 @@
 package pl.newicom.dddd.aggregate
 
-import pl.newicom.dddd.aggregate.AggregateRootSupport.{Eventually, Immediately}
 import pl.newicom.dddd.office.OfficeListener
 
 object AggregateRootSupport {
@@ -13,12 +12,8 @@ object AggregateRootSupport {
 
 }
 
-trait AggregateRootSupport[E <: DomainEvent] {
-
-  implicit def toEventually(e: E): Immediately[E] = Immediately(Seq(e))
+trait AggregateRootSupport {
 
   implicit def officeListener[A <: AggregateRoot[_, _, _]]: OfficeListener[A] = new OfficeListener[A]
-
-  type HandleCommand = PartialFunction[Any, Eventually[E]]
 
 }

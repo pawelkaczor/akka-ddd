@@ -11,18 +11,17 @@ import pl.newicom.dddd.utils.UUIDSupport.uuidObj
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-object DummyAggregateRoot extends AggregateRootSupport[DummyEvent] {
+object DummyAggregateRoot extends AggregateRootSupport {
 
-  sealed trait DummyState extends AggregateState[DummyState] {
+  sealed trait DummyBehaviour extends AggregateBehaviour[DummyEvent, DummyBehaviour] {
     def isActive = false
-
-    def validate(v: Int): Unit = if (v < 0) sys.error("negative value not allowed")
-    def handleCommand: HandleCommand
+    def validate(value: Int): Unit =
+      if (value < 0) sys.error("negative value not allowed")
   }
 
-  sealed trait Dummy extends DummyState
+  sealed trait Dummy extends DummyBehaviour
 
-  implicit case object Uninitialized extends DummyState with Uninitialized[DummyState] {
+  implicit case object Uninitialized extends DummyBehaviour with Uninitialized[DummyBehaviour] {
 
     def handleCommand = {
       case CreateDummy(id, name, description, value) =>
@@ -88,12 +87,12 @@ object DummyAggregateRoot extends AggregateRootSupport[DummyEvent] {
 
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
-class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyState, DummyAggregateRoot] {
+class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyBehaviour, DummyAggregateRoot] {
   this: EventPublisher =>
 
   val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(valueGenerator))
 
-  def handleCommand: HandleCommand = state.handleCommand.orElse {
+  override def handleCommand: HandleCommand = super.handleCommand.orElse {
       case GenerateValue(_) if state.isActive =>
         valueGeneration
   }

@@ -20,6 +20,13 @@ trait AggregateState[S <: AggregateState[S]] {
   def initialized: Boolean = true
 }
 
+trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends AggregateState[S] {
+  implicit def toEventually(e: E): Immediately[E] = Immediately(Seq(e))
+  type HandleCommand = PartialFunction[Any, Eventually[E]]
+
+  def handleCommand: HandleCommand
+}
+
 trait Uninitialized[S <: AggregateState[S]] {
   this: AggregateState[S] =>
   override def initialized = false
@@ -60,7 +67,8 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
     case em: EventMessage => sm.apply(em)
   }
 
-  def handleCommand: HandleCommand
+  def handleCommand: HandleCommand =
+    state.asInstanceOf[AggregateBehaviour[Event, S]].handleCommand
 
   private def raise(events: Seq[Event]): Unit = {
     var eventsCount = 0
