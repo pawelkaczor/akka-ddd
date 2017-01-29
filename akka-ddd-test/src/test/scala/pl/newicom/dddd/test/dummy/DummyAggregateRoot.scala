@@ -13,7 +13,7 @@ import scala.util.control.NonFatal
 
 object DummyAggregateRoot extends AggregateRootSupport {
 
-  sealed trait DummyBehaviour extends AggregateBehaviour[DummyEvent, DummyBehaviour] {
+  sealed trait DummyBehaviour extends AggregateActions[DummyEvent, DummyBehaviour] {
     def isActive = false
     def validate(value: Int): Unit =
       if (value < 0) sys.error("negative value not allowed")
@@ -23,65 +23,72 @@ object DummyAggregateRoot extends AggregateRootSupport {
 
   implicit case object Uninitialized extends DummyBehaviour with Uninitialized[DummyBehaviour] {
 
-    def handleCommand = {
-      case CreateDummy(id, name, description, value) =>
-        validate(value)
-        DummyCreated(id, name, description, value)
-    }
+    def actions: Actions =
 
-    def apply = {
-      case DummyCreated(_, _, _, value) =>
-        Active(value, 0)
-    }
+      handleCommands {
+        case CreateDummy(id, name, description, value) =>
+          validate(value)
+          DummyCreated(id, name, description, value)
+      }
+
+      .handleEvents {
+        case DummyCreated(_, _, _, value) =>
+          Active(value, 0)
+      }
   }
 
   case class Active(value: Int, version: Long) extends Dummy {
 
     override def isActive: Boolean = true
 
-    def handleCommand = {
-      case ChangeName(id, name) =>
-        NameChanged(id, name)
+    def actions: Actions =
 
-      case ChangeDescription(id, description) =>
-        DescriptionChanged(id, description)
+      handleCommands {
+        case ChangeName(id, name) =>
+          NameChanged(id, name)
 
-      case ChangeValue(id, value) =>
-        validate(value)
-        ValueChanged(id, value, version + 1)
+        case ChangeDescription(id, description) =>
+          DescriptionChanged(id, description)
 
-      case Reset(id, name) =>
-        NameChanged(id, name) & ValueChanged(id, 0, version + 1)
-    }
+        case ChangeValue(id, newValue) =>
+          validate(newValue)
+          ValueChanged(id, newValue, version + 1)
 
-    def apply = {
-      case ValueChanged(_, newValue, newVersion) =>
-        copy(value = newValue, version = newVersion)
+        case Reset(id, name) =>
+          NameChanged(id, name) & ValueChanged(id, 0, version + 1)
+      }
 
-      case ValueGenerated(_, newValue, confirmationToken) =>
-        WaitingForConfirmation(value, CandidateValue(newValue, confirmationToken), version)
+      .handleEvents {
+        case ValueChanged(_, newValue, newVersion) =>
+          copy(value = newValue, version = newVersion)
 
-      case _: NameChanged => this
+        case ValueGenerated(_, newValue, confirmationToken) =>
+          WaitingForConfirmation(value, CandidateValue(newValue, confirmationToken), version)
 
-      case _: DescriptionChanged => this
-    }
+        case _: NameChanged => this
+
+        case _: DescriptionChanged => this
+      }
   }
 
   case class WaitingForConfirmation(value: Int, candidateValue: CandidateValue, version: Long) extends Dummy {
 
-    def handleCommand = {
-      case ConfirmGeneratedValue(id, confirmationToken) =>
-        if (candidateValue.confirmationToken == confirmationToken) {
-          ValueChanged(id, candidateValue.value, version + 1)
-        } else {
-          sys.error("Invalid confirmation token")
-        }
-    }
+    def actions: Actions =
 
-    def apply = {
-      case ValueChanged(_, newValue, newVersion) =>
-        Active(value = newValue, version = newVersion)
-    }
+      handleCommands {
+        case ConfirmGeneratedValue(id, confirmationToken) =>
+          if (candidateValue.confirmationToken == confirmationToken) {
+            ValueChanged(id, candidateValue.value, version + 1)
+          } else {
+            sys.error("Invalid confirmation token")
+          }
+      }
+
+      .handleEvents {
+        case ValueChanged(_, newValue, newVersion) =>
+          Active(value = newValue, version = newVersion)
+      }
+
   }
 }
 

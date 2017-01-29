@@ -7,6 +7,7 @@ import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOfficeId
 
+import scala.PartialFunction.empty
 import scala.concurrent.duration._
 
 abstract class AggregateRootActorFactory[A <: AggregateRoot[_, _, A]: LocalOfficeId] extends BusinessEntityActorFactory[A] {
@@ -25,6 +26,25 @@ trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends Aggre
   type HandleCommand = PartialFunction[Any, Eventually[E]]
 
   def handleCommand: HandleCommand
+}
+
+trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends AggregateBehaviour[E, S] {
+
+  case class Actions(commandHandlers: Set[HandleCommand], eventHandlers: Set[StateMachine]) {
+    def handleEvents(eh: StateMachine): Actions = copy(eventHandlers = eventHandlers + eh)
+    def ++(other: Actions): Actions = copy(commandHandlers ++ other.commandHandlers, eventHandlers ++ other.eventHandlers)
+  }
+
+  def handleCommand: HandleCommand =
+    actions.commandHandlers.fold(empty)(_.orElse(_))
+
+  def apply: StateMachine =
+    actions.eventHandlers.fold(empty)(_.orElse(_))
+
+  protected def actions: Actions
+
+  protected def handleCommands(hc: HandleCommand) =
+    Actions(Set(hc), Set())
 }
 
 trait Uninitialized[S <: AggregateState[S]] {
