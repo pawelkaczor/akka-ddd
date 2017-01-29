@@ -9,7 +9,7 @@ import scala.collection.mutable
   * Keeps a set of message IDs that were received by the actor.
   *
   * Provides messageProcessed(Message) method that should be called during the "update-state" stage.
-  * The given message must contain [[pl.newicom.dddd.messaging.MetaData.CausationId]] attribute
+  * The given message must contain CausationId attribute
   * referring to the ID of the received message.
   */
 trait Deduplication {

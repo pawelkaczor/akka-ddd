@@ -7,7 +7,7 @@ import pl.newicom.dddd.coordination.ReceptorConfig
 object ReceptorSupport {
 
   /**
-   * Responsible of creating [[Receptor]] using provided [[ReceptorConfig]]
+   * Responsible of creating [[Receptor]] using provided ReceptorConfig
    */
   type ReceptorFactory = (ReceptorConfig) => Receptor
 
