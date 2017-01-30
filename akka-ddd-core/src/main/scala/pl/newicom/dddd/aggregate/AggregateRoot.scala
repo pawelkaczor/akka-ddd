@@ -36,8 +36,8 @@ trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends Aggrega
     def ++(other: Actions): Actions =
       Actions(commandHandlers.orElse(other.commandHandlers), eventHandlers.orElse(other.eventHandlers))
 
-    def orElse(other: AggregateActions[E, S], f: S => S = (a: S) => a): Actions = {
-      Actions(commandHandlers.orElse(other.handleCommand), eventHandlers.orElse(other.apply.andThen(f)))
+    def orElse[SS <: S](other: AggregateActions[E, S], f: SS => S = (a: SS) => a): Actions = {
+      Actions(commandHandlers.orElse(other.handleCommand), eventHandlers.orElse(other.apply.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f)))
     }
 
   }
