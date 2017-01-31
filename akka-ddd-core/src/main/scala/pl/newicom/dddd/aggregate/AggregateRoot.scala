@@ -22,23 +22,32 @@ trait AggregateState[S <: AggregateState[S]] {
 
 trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends AggregateState[S] {
   implicit def toEventually(e: E): Immediately[E] = Immediately(Seq(e))
-  type HandleCommand = PartialFunction[Any, Eventually[E]]
+  type Command = Any
+  type HandleCommand = PartialFunction[Command, Eventually[E]]
 
   def handleCommand: HandleCommand
 }
 
 trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends AggregateBehaviour[E, S] {
 
-  case class Actions(commandHandlers: HandleCommand, eventHandlers: StateMachine) {
+  case class Actions(commandHandlers: HandleCommand, eventHandlers: StateMachine = null) {
     def handleEvents(eh: StateMachine): Actions =
       copy(eventHandlers = eh)
 
-    def ++(other: Actions): Actions =
-      Actions(commandHandlers.orElse(other.commandHandlers), eventHandlers.orElse(other.eventHandlers))
+    def map[SS <: S](f: SS => S): Actions =
+      copy(eventHandlers = eventHandlers.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
 
-    def orElse[SS <: S](other: AggregateActions[E, S], f: SS => S = (a: SS) => a): Actions = {
-      Actions(commandHandlers.orElse(other.handleCommand), eventHandlers.orElse(other.apply.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f)))
-    }
+    def ++(other: Actions): Actions =
+      Actions(
+        commandHandlers.orElse(other.commandHandlers),
+        eventHandlers.orElse(other.eventHandlers)
+      )
+
+    def orElse[SS <: S](other: AggregateActions[E, S], f: SS => S = (a: SS) => a): Actions =
+      Actions(
+        commandHandlers.orElse(other.handleCommand),
+        eventHandlers.orElse(other.apply.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
+      )
 
   }
 
@@ -51,7 +60,8 @@ trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends Aggrega
   protected def actions: Actions
 
   protected def handleCommands(hc: HandleCommand) =
-    Actions(hc, null)
+    Actions(hc)
+
 }
 
 trait Uninitialized[S <: AggregateState[S]] {
