@@ -13,7 +13,7 @@ import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.office.{CaseRef, OfficeId}
 import pl.newicom.dddd.persistence.PersistentActorLogging
 
-import scala.util.Success
+import scala.util.{Failure, Success, Try}
 
 
 trait AggregateRootBase extends BusinessEntity with GracefulPassivation with PersistentActor
@@ -32,6 +32,11 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
       case ex: DomainException =>
         throw new HandleCommandException(currentCommandMessage, currentCommandSender, ex)
     }
+
+  override def preRestart(reason: Throwable, msgOpt: Option[Any]) {
+    acknowledgeCommandProcessed(currentCommandMessage, Failure(reason))
+    super.preRestart(reason, msgOpt)
+  }
 
   /**
     * Sender of the currently processed command. Not available during recovery
@@ -64,8 +69,8 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
     acknowledgeCommandProcessed(currentCommandMessage)
   }
 
-  def acknowledgeCommandProcessed(msg: Message, result: Any = "Command processed. Thank you!") {
-    val deliveryReceipt = msg.deliveryReceipt(Success(result))
+  def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("Command processed. Thank you!")) {
+    val deliveryReceipt = msg.deliveryReceipt(result)
     currentCommandSender ! deliveryReceipt
   }
 
