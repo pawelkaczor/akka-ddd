@@ -10,10 +10,10 @@ import pl.newicom.dddd.office.{LocalOfficeId, OfficeFactory, OfficeId}
 
 trait ShardingSupport {
 
-  implicit def globalOfficeFactory[A <: BusinessEntity : BusinessEntityActorFactory : LocalOfficeId](implicit as: ActorSystem): OfficeFactory[A] = {
+  implicit def distributedOfficeFactory[A <: BusinessEntity : BusinessEntityActorFactory : LocalOfficeId](implicit as: ActorSystem): OfficeFactory[A] = {
     new OfficeFactory[A] {
 
-      val shardSettings = ClusterShardingSettings(as).withRole(officeId.department)
+      val shardSettings: ClusterShardingSettings = ClusterShardingSettings(as).withRole(officeId.department)
 
       override def getOrCreate(): ActorRef = {
         region(officeId).getOrElse {
@@ -28,8 +28,8 @@ trait ShardingSupport {
         val sr = shardResolution(officeId)
 
         ClusterSharding(as).start(
-          typeName = officeId.id,
-          entityProps = entityProps,
+          typeName = s"Supervised ${officeId.id}",
+          entityProps = EntitySupervisor.props(entityProps ,officeId.caseName, clerkSupervisionStrategy),
           settings = shardSettings,
           extractEntityId = sr.idExtractor,
           extractShardId = sr.shardResolver)
@@ -73,8 +73,23 @@ trait ShardingSupport {
     try {
       Some(ClusterSharding(as).shardRegion(officeId.id))
     } catch {
-      case ex: IllegalArgumentException => None
+      case _: IllegalArgumentException => None
     }
+  }
+
+  object EntitySupervisor {
+    def props(entityProps: Props, caseName: String, ss: SupervisorStrategy): Props =
+      Props(new EntitySupervisor(entityProps, caseName, ss))
+  }
+
+  class EntitySupervisor(entityProps: Props, caseName: String, override val supervisorStrategy: SupervisorStrategy) extends Actor {
+
+    val entity: ActorRef = context.actorOf(entityProps, caseName)
+
+    def receive: Receive = {
+      case msg ⇒ entity forward msg
+    }
+
   }
 
 }

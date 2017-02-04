@@ -1,8 +1,9 @@
 package pl.newicom.dddd.office
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ActorInitializationException, ActorRef, ActorSystem, DeathPactException, OneForOneStrategy, SupervisorStrategy}
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.aggregate.error.HandleCommandException
 import pl.newicom.dddd.cluster
 import pl.newicom.dddd.process.{Saga, SagaActorFactory}
 import pl.newicom.dddd.saga.{CoordinationOffice, ProcessConfig}
@@ -35,4 +36,14 @@ object OfficeFactory {
 abstract class OfficeFactory[A <: BusinessEntity : BusinessEntityActorFactory : LocalOfficeId] {
   def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
   def getOrCreate(): ActorRef
+
+  val clerkSupervisionStrategy: OneForOneStrategy = OneForOneStrategy() {
+    case ex: HandleCommandException      ⇒
+      ex.sender ! ex.deliveryReceipt
+      SupervisorStrategy.Resume
+    case _: ActorInitializationException ⇒ SupervisorStrategy.Stop
+    case _: DeathPactException           ⇒ SupervisorStrategy.Stop
+    case _: Exception                    ⇒ SupervisorStrategy.Restart
+  }
+
 }

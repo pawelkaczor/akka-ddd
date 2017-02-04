@@ -2,31 +2,29 @@ package pl.newicom.dddd.office
 
 import akka.actor._
 import pl.newicom.dddd.actor.{ActorContextCreationSupport, BusinessEntityActorFactory, Passivate, PassivationConfig}
-import pl.newicom.dddd.aggregate.{BusinessEntity, Command}
+import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId}
 import pl.newicom.dddd.messaging.AddressableMessage
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
-
-import scala.concurrent.duration._
 
 object SimpleOffice {
 
   implicit def simpleOfficeFactory[A <: BusinessEntity: BusinessEntityActorFactory : LocalOfficeId](implicit system: ActorSystem): OfficeFactory[A] = {
     new OfficeFactory[A] {
       override def getOrCreate(): ActorRef = {
-        system.actorOf(Props(new SimpleOffice[A]()), s"${officeId.id}_$uuid7")
+        system.actorOf(Props(new SimpleOffice[A](clerkSupervisionStrategy)), s"${officeId.id}_$uuid7")
       }
     }
   }
 }
 
-class SimpleOffice[A <: BusinessEntity: LocalOfficeId](inactivityTimeout: Duration = 1.minutes)(
+class SimpleOffice[A <: BusinessEntity: LocalOfficeId](override val supervisorStrategy: SupervisorStrategy)(
     implicit clerkFactory: BusinessEntityActorFactory[A])
   extends ActorContextCreationSupport with Actor with ActorLogging {
 
   val caseIdResolution = new AggregateIdResolution
-  val clerkProps = clerkFactory.props(PassivationConfig(Passivate(PoisonPill), clerkFactory.inactivityTimeout))
+  val clerkProps: Props = clerkFactory.props(PassivationConfig(Passivate(PoisonPill), clerkFactory.inactivityTimeout))
 
   override def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
     receive.applyOrElse(msg match {
@@ -47,7 +45,7 @@ class SimpleOffice[A <: BusinessEntity: LocalOfficeId](inactivityTimeout: Durati
       clerk forward msg
   }
 
-  def resolveCaseId(msg: Any) = caseIdResolution.entityIdResolver(msg)
+  def resolveCaseId(msg: Any): EntityId = caseIdResolution.entityIdResolver(msg)
 
   def assignClerk(caseProps: Props, caseId: String): ActorRef = getOrCreateChild(caseProps, caseId)
 

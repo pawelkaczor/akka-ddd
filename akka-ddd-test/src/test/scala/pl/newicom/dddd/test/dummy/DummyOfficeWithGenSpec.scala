@@ -9,6 +9,7 @@ import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig._
 import DummyOfficeWithGenSpec._
+import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.office.Office
 
 import scala.concurrent.duration.{Duration, _}
@@ -129,7 +130,7 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](Some(testSys
         // alternatively:
         //arbitraryOf[CreateDummy](_ copy(value = -1))
       }
-      .expectException[RuntimeException]("negative value not allowed")
+      .expectException[DomainException]("negative value not allowed")
     }
   }
 

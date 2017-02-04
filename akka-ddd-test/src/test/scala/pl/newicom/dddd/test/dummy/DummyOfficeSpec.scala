@@ -9,7 +9,7 @@ import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 import DummyOfficeSpec._
 import pl.newicom.dddd.aggregate.CollaborationSupport.NoResponseReceived
-import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
+import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitializedException, DomainException}
 import pl.newicom.dddd.office.Office
 
 import scala.concurrent.duration.{Duration, _}
@@ -58,7 +58,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
       when {
         CreateDummy(dId, "dummy name", "dummy description", 100)
       }
-      .expectException[RuntimeException]()
+      .expectException[DomainException]()
     }
 
     "update Dummy's name" in {
@@ -90,7 +90,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
       when {
         CreateDummy(dummyId, "dummy name", "dummy description", value = -1)
       }
-      .expectException[RuntimeException]("negative value not allowed")
+      .expectException[DomainException]("negative value not allowed")
     }
 
 

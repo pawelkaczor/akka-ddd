@@ -16,7 +16,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
   sealed trait DummyBehaviour extends AggregateActions[DummyEvent, DummyBehaviour] {
     def isActive = false
     def validate(value: Int): Unit =
-      if (value < 0) sys.error("negative value not allowed")
+      if (value < 0) error("negative value not allowed")
   }
 
   sealed trait Dummy extends DummyBehaviour
@@ -80,7 +80,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
           if (candidateValue.confirmationToken == confirmationToken) {
             ValueChanged(id, candidateValue.value, version + 1)
           } else {
-            sys.error("Invalid confirmation token")
+            error("Invalid confirmation token")
           }
       }
 

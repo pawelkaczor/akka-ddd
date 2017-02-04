@@ -1,6 +1,7 @@
 package lottery.domain.model
 
 import lottery.domain.model.LotteryProtocol._
+import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.office.Office
 
 class LotterySpec extends LotterySpecSupport {
@@ -38,7 +39,7 @@ class LotterySpec extends LotterySpecSupport {
       .when {
         a [Run]
       }
-      .expectException[RuntimeException]("Lottery has no participants")
+      .expectException[DomainException]("Lottery has no participants")
     }
 
     "not add twice the same participant" in {
@@ -52,7 +53,7 @@ class LotterySpec extends LotterySpecSupport {
 
         AddParticipant(lotteryId, participant)
       }
-      .expectException[RuntimeException](s"Participant $participant already added!")
+      .expectException[DomainException](s"Participant $participant already added!")
     }
 
     "reset" in {

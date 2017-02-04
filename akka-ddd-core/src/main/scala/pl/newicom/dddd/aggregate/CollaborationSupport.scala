@@ -2,6 +2,7 @@ package pl.newicom.dddd.aggregate
 
 import akka.actor.{ActorRef, Stash}
 import pl.newicom.dddd.aggregate.AggregateRootSupport.{Eventually, Immediately}
+import pl.newicom.dddd.aggregate.error.DomainException
 
 import scala.concurrent.duration._
 
@@ -9,7 +10,7 @@ object CollaborationSupport {
   case object ReceiveTimeout
 
   @SerialVersionUID(1L)
-  class CollaborationFailed(msg: String) extends RuntimeException(msg)
+  class CollaborationFailed(msg: String) extends DomainException(msg)
 
   case class NoResponseReceived(timeout: FiniteDuration)
     extends CollaborationFailed(s"No response received within $timeout.")

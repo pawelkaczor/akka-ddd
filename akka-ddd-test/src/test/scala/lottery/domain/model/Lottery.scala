@@ -6,6 +6,7 @@ import lottery.domain.model.LotteryAggregateRoot.{Lottery, LotteryId}
 import lottery.domain.model.LotteryProtocol._
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
+import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.eventhandling.EventPublisher
 
 import scala.util.Random
@@ -34,7 +35,7 @@ object LotteryAggregateRoot extends AggregateRootSupport {
       handleCommands {
         // can't run if there is no participants
         case Run(_)  =>
-          sys.error("Lottery has no participants")
+          error("Lottery has no participants")
       }
 
 
@@ -67,7 +68,7 @@ object LotteryAggregateRoot extends AggregateRootSupport {
       handleCommands {
         // can't add participant twice
         case cmd: AddParticipant if hasParticipant(cmd.name) =>
-          sys.error(s"Participant ${cmd.name} already added!")
+          error(s"Participant ${cmd.name} already added!")
       }
     }
 
@@ -180,7 +181,7 @@ object LotteryProtocol {
 
 }
 
-class LotteryHasAlreadyAWinner(msg: String) extends RuntimeException(msg)
+class LotteryHasAlreadyAWinner(msg: String) extends DomainException(msg)
 
 class LotteryAggregateRoot extends AggregateRoot[LotteryEvent, Lottery, LotteryAggregateRoot] {
   this: EventPublisher =>

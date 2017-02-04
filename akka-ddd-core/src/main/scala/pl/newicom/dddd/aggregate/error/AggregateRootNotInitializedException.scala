@@ -1,3 +1,3 @@
 package pl.newicom.dddd.aggregate.error
 
-class AggregateRootNotInitializedException(message: String = null) extends RuntimeException(message)
+class AggregateRootNotInitializedException(message: String = null) extends DomainException(message)

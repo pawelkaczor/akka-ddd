@@ -5,6 +5,7 @@ import akka.contrib.pattern.ReceivePipeline
 import akka.contrib.pattern.ReceivePipeline.Inner
 import akka.persistence.PersistentActor
 import pl.newicom.dddd.actor.GracefulPassivation
+import pl.newicom.dddd.aggregate.error.{DomainException, HandleCommandException}
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
@@ -12,7 +13,7 @@ import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.office.{CaseRef, OfficeId}
 import pl.newicom.dddd.persistence.PersistentActorLogging
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Success
 
 
 trait AggregateRootBase extends BusinessEntity with GracefulPassivation with PersistentActor
@@ -23,6 +24,14 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
   def officeId: OfficeId
 
   override def persistenceId: String = officeId.caseRef(id).id
+
+  override def aroundReceive(receive: Receive, msg: Any): Unit =
+    try {
+      super.aroundReceive(receive, msg)
+    } catch {
+      case ex: DomainException =>
+        throw new HandleCommandException(currentCommandMessage, currentCommandSender, ex)
+    }
 
   /**
     * Sender of the currently processed command. Not available during recovery
@@ -41,11 +50,6 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
   // Thus we need to keep track of command sender as a variable.
   private var _currentCommandSender: Option[ActorRef] = None
 
-  override def preRestart(reason: Throwable, msgOpt: Option[Any]) {
-    acknowledgeCommandProcessed(currentCommandMessage, Failure(reason))
-    super.preRestart(reason, msgOpt)
-  }
-
   pipelineOuter {
     case cm: CommandMessage =>
       _currentCommandMessage = Some(cm)
@@ -60,11 +64,8 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
     acknowledgeCommandProcessed(currentCommandMessage)
   }
 
-  def acknowledgeCommand(result: Any): Unit =
-    acknowledgeCommandProcessed(currentCommandMessage, Success(result))
-
-  def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("Command processed. Thank you!")) {
-    val deliveryReceipt = msg.deliveryReceipt(result)
+  def acknowledgeCommandProcessed(msg: Message, result: Any = "Command processed. Thank you!") {
+    val deliveryReceipt = msg.deliveryReceipt(Success(result))
     currentCommandSender ! deliveryReceipt
   }
 

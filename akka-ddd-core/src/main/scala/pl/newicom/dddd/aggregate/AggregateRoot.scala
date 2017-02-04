@@ -2,7 +2,7 @@ package pl.newicom.dddd.aggregate
 
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.AggregateRootSupport.{Eventually, Immediately}
-import pl.newicom.dddd.aggregate.error.AggregateRootNotInitializedException
+import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitializedException, DomainException}
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOfficeId
@@ -33,6 +33,7 @@ trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends Aggre
   implicit def toEventually(events: Seq[E]): Immediately[E] =
     Immediately(events)
 
+  def error(msg: String) = throw new DomainException(msg)
 }
 
 trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends AggregateBehaviour[E, S] {
@@ -103,7 +104,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
   def unhandledCommand(command: Any): Unit = {
     val commandName = command.getClass.getSimpleName
     if (initialized) {
-      sys.error(s"$commandName can not be processed: missing command handler!")
+      throw new DomainException(s"$commandName can not be processed: missing command handler!")
     } else {
       val caseName = officeId.caseName
       throw new AggregateRootNotInitializedException(s"$caseName with ID $id does not exist. $commandName can not be processed: missing command handler!")
@@ -160,7 +161,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
         case state if state.eventHandlerDefined(event) =>
           state.apply(event)
         case state if state.initialized =>
-          sys.error(s"$commandName can not be processed. State transition not defined for event: $eventName!")
+          throw new DomainException(s"$commandName can not be processed. State transition not defined for event: $eventName!")
         case _ =>
           throw new AggregateRootNotInitializedException(s"$caseName with ID $id does not exist. $commandName can not be processed: missing state initialization for event: $eventName!")
       }
