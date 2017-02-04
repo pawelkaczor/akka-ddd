@@ -22,11 +22,17 @@ trait AggregateState[S <: AggregateState[S]] {
 }
 
 trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends AggregateState[S] {
-  implicit def toEventually(e: E): Immediately[E] = Immediately(Seq(e))
+
   type Command = Any
   type HandleCommand = PartialFunction[Command, Eventually[E]]
 
   def handleCommand: HandleCommand
+
+  implicit def toEventually(e: E): Immediately[E] =
+    Immediately(Seq(e))
+  implicit def toEventually(events: Seq[E]): Immediately[E] =
+    Immediately(events)
+
 }
 
 trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends AggregateBehaviour[E, S] {
