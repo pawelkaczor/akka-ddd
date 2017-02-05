@@ -28,8 +28,8 @@ trait ShardingSupport {
         val sr = shardResolution(officeId)
 
         ClusterSharding(as).start(
-          typeName = s"Supervised ${officeId.id}",
-          entityProps = EntitySupervisor.props(entityProps ,officeId.caseName, clerkSupervisionStrategy),
+          typeName = officeId.id,
+          entityProps = entityProps,
           settings = shardSettings,
           extractEntityId = sr.idExtractor,
           extractShardId = sr.shardResolver)
@@ -76,20 +76,4 @@ trait ShardingSupport {
       case _: IllegalArgumentException => None
     }
   }
-
-  object EntitySupervisor {
-    def props(entityProps: Props, caseName: String, ss: SupervisorStrategy): Props =
-      Props(new EntitySupervisor(entityProps, caseName, ss))
-  }
-
-  class EntitySupervisor(entityProps: Props, caseName: String, override val supervisorStrategy: SupervisorStrategy) extends Actor {
-
-    val entity: ActorRef = context.actorOf(entityProps, caseName)
-
-    def receive: Receive = {
-      case msg ⇒ entity forward msg
-    }
-
-  }
-
 }

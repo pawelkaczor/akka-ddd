@@ -9,6 +9,7 @@ import pl.newicom.dddd.office.LocalOfficeId
 
 import scala.PartialFunction.empty
 import scala.concurrent.duration._
+import scala.util.Failure
 
 abstract class AggregateRootActorFactory[A <: AggregateRoot[_, _, A]: LocalOfficeId] extends BusinessEntityActorFactory[A] {
   def inactivityTimeout: Duration = 1.minute
@@ -95,10 +96,12 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
 
   override def receiveCommand: Receive = {
     case cm: CommandMessage =>
-      handleCommand.andThen {
-        case c: Collaboration => c.execute(raise)
-        case Immediately(events) => raise(events)
-      }.applyOrElse(cm.command, unhandledCommand)
+      safely {
+        handleCommand.andThen {
+          case c: Collaboration => c.execute(raise)
+          case Immediately(events) => raise(events)
+        }.applyOrElse(cm.command, unhandledCommand)
+      }
   }
 
   def unhandledCommand(command: Any): Unit = {
@@ -130,7 +133,13 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
         }
       }
 
-    persistAll(eventMessages.toList)(handler)
+    persistAll(eventMessages.toList)(e => safely(handler(e)))
+  }
+
+  // do not escalate DomainException
+  private def safely(f: => Any): Unit = try f catch {
+    case ex: DomainException =>
+      acknowledgeCommandProcessed(currentCommandMessage, Failure(ex))
   }
 
 

@@ -13,13 +13,13 @@ object SimpleOffice {
   implicit def simpleOfficeFactory[A <: BusinessEntity: BusinessEntityActorFactory : LocalOfficeId](implicit system: ActorSystem): OfficeFactory[A] = {
     new OfficeFactory[A] {
       override def getOrCreate(): ActorRef = {
-        system.actorOf(Props(new SimpleOffice[A](clerkSupervisionStrategy)), s"${officeId.id}_$uuid7")
+        system.actorOf(Props(new SimpleOffice[A]), s"${officeId.id}_$uuid7")
       }
     }
   }
 }
 
-class SimpleOffice[A <: BusinessEntity: LocalOfficeId](override val supervisorStrategy: SupervisorStrategy)(
+class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
     implicit clerkFactory: BusinessEntityActorFactory[A])
   extends ActorContextCreationSupport with Actor with ActorLogging {
 

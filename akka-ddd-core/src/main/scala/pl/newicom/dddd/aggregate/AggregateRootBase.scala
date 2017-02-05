@@ -5,7 +5,7 @@ import akka.contrib.pattern.ReceivePipeline
 import akka.contrib.pattern.ReceivePipeline.Inner
 import akka.persistence.PersistentActor
 import pl.newicom.dddd.actor.GracefulPassivation
-import pl.newicom.dddd.aggregate.error.{DomainException, HandleCommandException}
+import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
@@ -24,14 +24,6 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
   def officeId: OfficeId
 
   override def persistenceId: String = officeId.caseRef(id).id
-
-  override def aroundReceive(receive: Receive, msg: Any): Unit =
-    try {
-      super.aroundReceive(receive, msg)
-    } catch {
-      case ex: DomainException =>
-        throw new HandleCommandException(currentCommandMessage, currentCommandSender, ex)
-    }
 
   override def preRestart(reason: Throwable, msgOpt: Option[Any]) {
     acknowledgeCommandProcessed(currentCommandMessage, Failure(reason))
@@ -69,13 +61,13 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
     acknowledgeCommandProcessed(currentCommandMessage)
   }
 
-  def acknowledgeCommandProcessed(msg: Message, result: Try[Any] = Success("Command processed. Thank you!")) {
+  def acknowledgeCommandProcessed(msg: CommandMessage, result: Try[Any] = Success("Command processed. Thank you!")) {
     val deliveryReceipt = msg.deliveryReceipt(result)
     currentCommandSender ! deliveryReceipt
   }
 
   def handleDuplicated(msg: Message): Unit =
-    acknowledgeCommandProcessed(msg)
+    acknowledgeCommandProcessed(msg.asInstanceOf[CommandMessage])
 
   def toOfficeEventMessage(em: EventMessage) = OfficeEventMessage(em, CaseRef(persistenceId, officeId, Some(lastSequenceNr)))
 
