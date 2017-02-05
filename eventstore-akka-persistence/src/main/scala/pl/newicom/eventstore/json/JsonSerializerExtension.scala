@@ -3,6 +3,7 @@ package pl.newicom.eventstore.json
 import java.nio.charset.Charset
 
 import akka.actor._
+import akka.persistence.eventstore.snapshot.EventStoreSnapshotStore.SnapshotEvent
 import akka.persistence.eventstore.snapshot.EventStoreSnapshotStore.SnapshotEvent.Snapshot
 import akka.persistence.{PersistentRepr, SnapshotMetadata}
 import akka.serialization.{Serialization, SerializationExtension, SerializerWithStringManifest}
@@ -104,14 +105,14 @@ class ScheduledEventSerializer extends Serializer[EventScheduled] {
 
 case class SnapshotDataSerializationResult(data: String, serializerId: Option[Int], manifest: String)
 
-case class SnapshotJsonSerializer(sys: ActorSystem) extends Serializer[Snapshot] {
-  val Clazz: Class[Snapshot] = classOf[Snapshot]
+case class SnapshotJsonSerializer(sys: ActorSystem) extends Serializer[SnapshotEvent] {
+  val Clazz: Class[SnapshotEvent] = classOf[SnapshotEvent]
   val EmptySerializerId: Int = 0
 
   import akka.serialization.{Serialization => SysSerialization}
   lazy val serialization: SysSerialization = SerializationExtension(sys)
 
-  def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), Snapshot] = {
+  def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), SnapshotEvent] = {
     case (TypeInfo(Clazz, _), JObject(List(
             JField("dataClass", JString(dataClass)),
             JField("dataSerializerId", JInt(serializerId)),
