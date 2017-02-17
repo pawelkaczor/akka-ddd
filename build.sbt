@@ -7,9 +7,8 @@ name := "akka-ddd"
 
 version      in ThisBuild := "1.5.0-SNAPSHOT"
 organization in ThisBuild := "pl.newicom.dddd"
-scalaVersion in ThisBuild := "2.11.8"
-
-//crossScalaVersions := Seq("2.12.0")
+scalaVersion in ThisBuild := "2.12.1"
+crossScalaVersions in ThisBuild := Seq("2.12.1", "2.11.8")
 
 scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-deprecation", "-feature", "-language:postfixOps", "-unchecked")
 publishMavenStyle in ThisBuild := true

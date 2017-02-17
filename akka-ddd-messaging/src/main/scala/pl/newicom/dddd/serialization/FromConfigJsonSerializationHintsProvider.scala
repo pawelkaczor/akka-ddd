@@ -5,8 +5,8 @@ import org.json4s.Formats
 import pl.newicom.dddd.serialization.JsonSerHints.NoExtraHints
 import pl.newicom.dddd.serialization.JsonSerializationHintsProvider.settingKey
 import pl.newicom.dddd.serialization.{JsonAbstractSerHints => AbstractHints, JsonExtraSerHints => ExtraHints, JsonSerHints => FinalizedHints}
-import collection.JavaConversions._
 
+import collection.JavaConverters._
 import scala.util.Try
 
 class FromConfigJsonSerializationHintsProvider(val config: Config) extends JsonSerializationHintsProvider {
@@ -25,7 +25,8 @@ class FromConfigJsonSerializationHintsProvider(val config: Config) extends JsonS
      .asInstanceOf[JsonSerializationHintsProvider].hints(default)
   }
 
-  private def providers: List[String] =
-    Try(config.getStringList(settingKey).toList).getOrElse(List.empty)
+  private def providers: List[String] = {
+    Try(config.getStringList(settingKey).asScala.toList).getOrElse(List.empty)
+  }
 
 }

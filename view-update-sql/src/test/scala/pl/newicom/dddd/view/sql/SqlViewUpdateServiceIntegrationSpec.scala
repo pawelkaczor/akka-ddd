@@ -15,7 +15,7 @@ import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.view.sql.Projection.ProjectionAction
 import pl.newicom.dddd.view.sql.SqlViewUpdateServiceIntegrationSpec._
 import pl.newicom.eventstore.EventSourceProvider
-import slick.backend.DatabaseComponent
+import slick.basic.BasicBackend
 import slick.dbio._
 import slick.dbio.DBIOAction.{failed, successful}
 import slick.dbio.Effect.All
@@ -34,9 +34,9 @@ object SqlViewUpdateServiceIntegrationSpec {
 
   case class ViewUpdated(event: DummyEvent)
 
-  case class PublishAction(eventStream: EventStream, event: ViewUpdated) extends SynchronousDatabaseAction[Unit, NoStream, DatabaseComponent, Effect] {
+  case class PublishAction(eventStream: EventStream, event: ViewUpdated) extends SynchronousDatabaseAction[Unit, NoStream, BasicBackend, Effect] {
     def getDumpInfo = DumpInfo("success", "unit")
-    def run(ctx: DatabaseComponent#Context): Unit = {
+    def run(ctx: BasicBackend#Context): Unit = {
       eventStream.publish(event)
     }
   }
@@ -61,7 +61,7 @@ class SqlViewUpdateServiceIntegrationSpec
           def config: Config = SqlViewUpdateServiceIntegrationSpec.this.config
           def vuConfigs = List(SqlViewUpdateConfig("test-view", dummyOfficeId, new Projection {
 
-            def failIfRequired(msg: String) =
+            def failIfRequired(msg: String): DBIOAction[Unit, NoStream, Effect] =
               if (shouldFail) failed(new RuntimeException(msg)) else successful(())
 
             def consume(em: OfficeEventMessage): ProjectionAction[All] = {

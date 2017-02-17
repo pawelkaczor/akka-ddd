@@ -5,7 +5,7 @@ import pl.newicom.dddd.view.ViewUpdateService
 import pl.newicom.dddd.view.ViewUpdateService.ViewUpdateInitiated
 import slick.dbio.DBIO
 import slick.dbio.DBIOAction.successful
-import slick.driver.JdbcProfile
+import slick.jdbc.JdbcProfile
 
 import scala.concurrent.Future
 

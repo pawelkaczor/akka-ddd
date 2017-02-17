@@ -1,8 +1,8 @@
 package pl.newicom.dddd.view.sql
 
 import com.typesafe.config.Config
-import slick.backend.DatabaseConfig
-import slick.driver.JdbcProfile
+import slick.basic.DatabaseConfig
+import slick.jdbc.JdbcProfile
 import slick.jdbc.JdbcBackend
 
 trait SqlViewStoreConfiguration {

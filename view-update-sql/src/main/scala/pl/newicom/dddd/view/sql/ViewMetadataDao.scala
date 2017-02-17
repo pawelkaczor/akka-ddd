@@ -1,6 +1,6 @@
 package pl.newicom.dddd.view.sql
 
-import slick.driver.JdbcProfile
+import slick.jdbc.JdbcProfile
 import slick.jdbc.meta.MTable.getTables
 
 import scala.concurrent.ExecutionContext

@@ -5,7 +5,7 @@ import com.typesafe.config.Config
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
 import pl.newicom.dddd.view.ViewHandler
 import slick.dbio.DBIOAction.sequence
-import slick.driver.JdbcProfile
+import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ExecutionContext, Future}
 
