@@ -23,7 +23,7 @@ object Deps {
     val ScalaCheck            = "1.13.4"
 
     val LogbackClassic        = "1.1.7"
-    val nScalaTime            = "2.14.0"
+    val nScalaTime            = "2.16.0"
   }
 
   object Akka {
