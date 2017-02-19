@@ -13,14 +13,16 @@ class SqlViewHandler(override val config: Config, override val vuConfig: SqlView
                     (implicit val profile: JdbcProfile, ex: ExecutionContext)
   extends ViewHandler(vuConfig) with SqlViewStoreConfiguration with FutureHelpers {
 
+  import profile.api._
+
   private lazy val viewMetadataDao = new ViewMetadataDao
 
   def viewMetadataId = ViewMetadataId(viewName, vuConfig.office.id)
 
   def handle(eventMessage: OfficeEventMessage, eventNumber: Long): Future[Done] =
     viewStore.run {
-      sequence(vuConfig.projections.map(_.consume(eventMessage))) >>
-      viewMetadataDao.insertOrUpdate(viewMetadataId, eventNumber)
+      (sequence(vuConfig.projections.map(_.consume(eventMessage))) >>
+        viewMetadataDao.insertOrUpdate(viewMetadataId, eventNumber)).transactionally
     }.mapToDone
 
   def lastEventNumber: Future[Option[Long]] =
