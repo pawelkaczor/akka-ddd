@@ -11,7 +11,7 @@ object Deps {
     
     val json4s                = "3.5.0"
 
-    val Slick                 = "3.2.0-RC1"
+    val Slick                 = "3.2.0"
     val PostgresqlSlickExt    = "0.15.0-M4" // Slick 3.2.0
     val H2Driver              = "1.4.189"
 
@@ -19,7 +19,7 @@ object Deps {
     val Kamon                 = "0.6.5"
 
     // test
-    val ScalaTest             = "3.0.0"
+    val ScalaTest             = "3.0.1"
     val ScalaCheck            = "1.13.4"
 
     val LogbackClassic        = "1.1.7"
