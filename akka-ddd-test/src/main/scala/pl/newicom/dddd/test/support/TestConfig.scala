@@ -13,7 +13,7 @@ object TestConfig {
       |akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       |akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       |app.view-store.config {
-      |  driver = "slick.driver.H2Driver$"
+      |  profile = "slick.jdbc.H2Profile$"
       |  db {
       |    driver = "org.h2.Driver"
       |    url = "jdbc:h2:mem:view_update_sql_test;DB_CLOSE_DELAY=-1"
