@@ -4,7 +4,7 @@ object Deps {
 
   object Version {
     val Akka                  = "2.4.16"
-    val AkkaHttp              = "10.0.3"
+    val AkkaHttp              = "10.0.4"
 
     val EventStoreClient      = "3.0.7"
     val EventStoreAkkaJournal = "3.0.7"
@@ -16,7 +16,7 @@ object Deps {
     val H2Driver              = "1.4.189"
 
     // monitoring
-    val Kamon                 = "0.6.5"
+    val Kamon                 = "0.6.6"
 
     // test
     val ScalaTest             = "3.0.1"
