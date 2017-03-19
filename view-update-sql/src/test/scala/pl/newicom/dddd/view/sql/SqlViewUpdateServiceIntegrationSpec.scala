@@ -49,7 +49,7 @@ class SqlViewUpdateServiceIntegrationSpec
   extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("SqlViewUpdateServiceIntegrationSpec")))
   with SqlViewStoreTestSupport {
 
-  override val viewStore = new SqlViewStore(config)
+  override def viewStore = new SqlViewStore(config)
 
   "SqlViewUpdateService" should {
     "propagate events from event store to configured projection" in {
