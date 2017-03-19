@@ -1,7 +1,6 @@
 package pl.newicom.dddd.view.sql
 
 import akka.Done
-import com.typesafe.config.Config
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
 import pl.newicom.dddd.view.ViewHandler
 import slick.dbio.DBIOAction.sequence
@@ -9,9 +8,9 @@ import slick.jdbc.JdbcProfile
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class SqlViewHandler(override val config: Config, override val vuConfig: SqlViewUpdateConfig)
+class SqlViewHandler(val viewStore: SqlViewStore, override val vuConfig: SqlViewUpdateConfig)
                     (implicit val profile: JdbcProfile, ex: ExecutionContext)
-  extends ViewHandler(vuConfig) with SqlViewStoreConfiguration with FutureHelpers {
+  extends ViewHandler(vuConfig) with FutureHelpers {
 
   import profile.api._
 

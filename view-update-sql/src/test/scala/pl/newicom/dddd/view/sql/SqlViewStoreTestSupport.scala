@@ -10,8 +10,10 @@ import slick.jdbc.H2Profile
 
 import scala.concurrent.ExecutionContext
 
-trait SqlViewStoreTestSupport extends SqlViewStoreConfiguration with BeforeAndAfterAll with ScalaFutures {
+trait SqlViewStoreTestSupport extends BeforeAndAfterAll with ScalaFutures {
   this: Suite =>
+
+  def viewStore: SqlViewStore
 
   val log: Logger = getLogger(getClass)
 

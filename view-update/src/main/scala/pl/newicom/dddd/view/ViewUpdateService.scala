@@ -21,6 +21,7 @@ object ViewUpdateService {
 
   case object InitiateViewUpdate
   case object ViewUpdateInitiated
+  case class  ViewUpdateFailed(reason: Throwable)
 
   case class ViewUpdateConfigured(viewUpdate: ViewUpdate)
 
@@ -51,6 +52,8 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
   def onViewUpdateInit: Future[ViewUpdateInitiated.type] =
     Future.successful(ViewUpdateInitiated)
 
+  def onViewUpdateFailed(reason: Throwable): Future[ViewUpdateFailed] =
+    Future.successful(ViewUpdateFailed(reason))
 
   @scala.throws[Exception](classOf[Exception])
   override def preStart(): Unit = {
@@ -82,17 +85,21 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
         log.debug(s"Starting: $vu")
         runnable.run() pipeTo self
 
-    case Failure(ex) =>
-      throw ex
-
     case EnsureViewStoreAvailable =>
       ensureViewStoreAvailable pipeTo sender()
 
     case EnsureEventStoreAvailable =>
       ensureEventStoreAvailable pipeTo sender()
 
+    case Failure(ex) =>
+      onViewUpdateFailed(ex) pipeTo self
+
+    case ViewUpdateFailed(reason) =>
+      throw reason
+
     case unexpected =>
-      throw new RuntimeException(s"Unexpected message received: $unexpected")
+      onViewUpdateFailed(new RuntimeException(s"Unexpected message received: $unexpected")) pipeTo self
+
   }
 
 

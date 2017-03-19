@@ -10,6 +10,8 @@ class ViewMetadataDaoSpec extends WordSpecLike with Matchers with SqlViewStoreTe
 
   def config: Config = TestConfig.config
 
+  override val viewStore = new SqlViewStore(config)
+
   val dao = new ViewMetadataDao()
 
   val id = ViewMetadataId("test view", "test stream")

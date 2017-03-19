@@ -49,6 +49,8 @@ class SqlViewUpdateServiceIntegrationSpec
   extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("SqlViewUpdateServiceIntegrationSpec")))
   with SqlViewStoreTestSupport {
 
+  override val viewStore = new SqlViewStore(config)
+
   "SqlViewUpdateService" should {
     "propagate events from event store to configured projection" in {
       // Given
@@ -57,8 +59,7 @@ class SqlViewUpdateServiceIntegrationSpec
       system.eventStream.subscribe(probe.ref, classOf[ViewUpdated])
 
       system.actorOf(Props(
-        new SqlViewUpdateService with SqlViewStoreConfiguration with EventSourceProvider {
-          def config: Config = SqlViewUpdateServiceIntegrationSpec.this.config
+        new SqlViewUpdateService(viewStore) with EventSourceProvider {
           def vuConfigs = List(SqlViewUpdateConfig("test-view", dummyOfficeId, new Projection {
 
             def failIfRequired(msg: String): DBIOAction[Unit, NoStream, Effect] =
@@ -100,6 +101,6 @@ class SqlViewUpdateServiceIntegrationSpec
   override def ensureSchemaCreated = viewMetadataDao.ensureSchemaCreated
 
 
-  override def config: Config = system.settings.config
+  def config: Config = system.settings.config
 
 }
