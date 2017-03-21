@@ -45,7 +45,7 @@ class SagaIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integratio
 
   implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
-  implicit val receptorActorFactory: ReceptorActorFactory[DummySaga] = new ReceptorActorFactory[DummySaga] {
+  implicit lazy val receptorActorFactory: ReceptorActorFactory[DummySaga] = new ReceptorActorFactory[DummySaga] {
     override def receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {
       new Receptor(config) with EventstoreSubscriber {
         override def redeliverInterval: FiniteDuration = 1.seconds
@@ -61,7 +61,7 @@ class SagaIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integratio
 
   var receptor: ActorRef = _
 
-  implicit val officeListener = new CoordinationOfficeListener[DummySaga] {
+  implicit lazy val officeListener = new CoordinationOfficeListener[DummySaga] {
     override def officeStarted(office: CoordinationOffice[DummySaga], receptorRef: ActorRef): Unit = {
       receptor = receptorRef
     }

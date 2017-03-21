@@ -44,9 +44,9 @@ class ReceptorStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(
 
   implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
-  implicit val _ = new OfficeListener[DummySaga]
+  implicit lazy val officeListener = new OfficeListener[DummySaga]
 
-  implicit val receptorActorFactory: ReceptorActorFactory[DummySaga] = new ReceptorActorFactory[DummySaga] {
+  implicit lazy val receptorActorFactory: ReceptorActorFactory[DummySaga] = new ReceptorActorFactory[DummySaga] {
     override def receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {
       new Receptor(config.copy(capacity = 1000)) with EventstoreSubscriber {
 
