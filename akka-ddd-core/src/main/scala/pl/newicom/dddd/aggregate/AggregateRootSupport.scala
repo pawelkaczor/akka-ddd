@@ -1,6 +1,6 @@
 package pl.newicom.dddd.aggregate
 
-import pl.newicom.dddd.office.OfficeListener
+import pl.newicom.dddd.office.{LocalOfficeId, OfficeListener}
 
 object AggregateRootSupport {
 
@@ -14,6 +14,6 @@ object AggregateRootSupport {
 
 trait AggregateRootSupport {
 
-  implicit def officeListener[A <: AggregateRoot[_, _, _]]: OfficeListener[A] = new OfficeListener[A]
+  implicit def officeListener[A <: AggregateRoot[_, _, _] : LocalOfficeId]: OfficeListener[A] = new OfficeListener[A]
 
 }

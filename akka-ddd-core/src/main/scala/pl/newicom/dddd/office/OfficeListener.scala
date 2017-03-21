@@ -2,7 +2,7 @@ package pl.newicom.dddd.office
 
 import org.slf4j.LoggerFactory._
 
-class OfficeListener[A] {
+class OfficeListener[A : LocalOfficeId] {
 
     lazy val log = getLogger(getClass.getName)
 

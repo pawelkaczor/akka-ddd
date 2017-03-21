@@ -13,7 +13,6 @@ import pl.newicom.dddd.office.OfficeListener
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.SagaIntegrationSpec._
 import pl.newicom.dddd.persistence.{RegularSnapshottingConfig, SaveSnapshotRequest}
-import pl.newicom.dddd.process.ReceptorSupport.ReceptorFactory
 import pl.newicom.dddd.saga.CoordinationOffice
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
@@ -47,16 +46,18 @@ class ReceptorStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(
 
   implicit val _ = new OfficeListener[DummySaga]
 
-  implicit val receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {
-    new Receptor(config.copy(capacity = 1000)) with EventstoreSubscriber {
+  implicit val receptorActorFactory: ReceptorActorFactory[DummySaga] = new ReceptorActorFactory[DummySaga] {
+    override def receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {
+      new Receptor(config.copy(capacity = 1000)) with EventstoreSubscriber {
 
-      override def receiveCommand: Receive = myReceive.orElse(super.receiveCommand)
+        override def receiveCommand: Receive = myReceive.orElse(super.receiveCommand)
 
-      def myReceive: Receive = {
-        case GetNumberOfUnconfirmed => sender() ! numberOfUnconfirmed
+        def myReceive: Receive = {
+          case GetNumberOfUnconfirmed => sender() ! numberOfUnconfirmed
+        }
+
+        override val snapshottingConfig = RegularSnapshottingConfig(receiveEvent, interval = 50)
       }
-
-      override val snapshottingConfig = RegularSnapshottingConfig(receiveEvent, interval = 50)
     }
   }
 
@@ -75,7 +76,7 @@ class ReceptorStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(
     // TODO: DOES NOT WORK ON TRAVIS
     "deliver 100 events to the receiver" ignore {
       val co = coordinationOffice[DummySaga]
-      val sm = ReceptorSupport.receptor(co.receptorConfig)
+      val sm = receptorActorFactory(co.receptorConfig)
       receptor = sm; coordOffice = co
 
       given {

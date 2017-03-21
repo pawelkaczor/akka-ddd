@@ -4,7 +4,7 @@ import akka.actor._
 
 import scala.language.implicitConversions
 
-trait CreationSupport {
+abstract class CreationSupport[A] {
   def getChild(name: String): Option[ActorRef]
   def createChild(props: Props, name: String): ActorRef
   def getOrCreateChild(props: Props, name: String): ActorRef =
@@ -13,7 +13,7 @@ trait CreationSupport {
     )
 }
 
-trait ActorContextCreationSupport extends CreationSupport {
+trait ActorContextCreationSupport extends CreationSupport[Any] {
   this: ActorLogging =>
   def context: ActorContext
 

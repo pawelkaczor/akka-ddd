@@ -4,6 +4,7 @@ import akka.actor._
 import akka.testkit.TestKit
 import org.scalacheck.Gen
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, WordSpecLike}
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
 import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId}
@@ -27,9 +28,9 @@ object OfficeSpec {
 abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: LocalOfficeId](_system: Option[ActorSystem] = None, val shareAggregateRoot: Boolean = false)(implicit arClassTag: ClassTag[A])
   extends GivenWhenThenTestFixture(_system.getOrElse(sys(arClassTag.runtimeClass))) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
 
-  val logger = getLogger(getClass)
+  val logger: Logger = getLogger(getClass)
 
-  val domain = arClassTag.runtimeClass.getSimpleName
+  val domain: EntityId = arClassTag.runtimeClass.getSimpleName
 
   override def officeUnderTest: Office = {
     implicit val _ = new OfficeListener[A]
@@ -41,7 +42,7 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: Loca
 
   implicit var _aggregateIdGen: Gen[EntityId] = _
 
-  val testSuiteId = uuid10
+  val testSuiteId: String = uuid10
 
   before {
     _aggregateIdGen = Gen.const[EntityId](domain + (if (shareAggregateRoot) testSuiteId else uuid10))
@@ -74,8 +75,8 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: Loca
 
   private def arbitrarySample[T](implicit g: Gen[T]): T = arbitraryToSample(g)
 
-  implicit def topLevelParent(implicit system: ActorSystem): CreationSupport = {
-    new CreationSupport {
+  implicit def topLevelParent[T : LocalOfficeId](implicit system: ActorSystem): CreationSupport[T] = {
+    new CreationSupport[T] {
       override def getChild(name: String): Option[ActorRef] = None
       override def createChild(props: Props, name: String): ActorRef = {
         system.actorOf(props, name)
@@ -83,7 +84,7 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: Loca
     }
   }
 
-  def ensureTerminated(actor: ActorRef) = {
+  def ensureTerminated(actor: ActorRef): Any = {
     watch(actor) ! PoisonPill
     fishForMessage(1.seconds) {
       case Terminated(_) =>

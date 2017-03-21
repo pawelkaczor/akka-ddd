@@ -12,7 +12,6 @@ import pl.newicom.dddd.office.OfficeFactory.coordinationOffice
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.SagaIntegrationSpec._
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
-import pl.newicom.dddd.process.ReceptorSupport.{ReceptorFactory, receptor => createReceptor}
 import pl.newicom.dddd.saga.CoordinationOffice
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied, Poison}
@@ -46,21 +45,23 @@ class SagaIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integratio
 
   implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
-  implicit val receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {
-    new Receptor(config) with EventstoreSubscriber {
-      override def redeliverInterval: FiniteDuration = 1.seconds
-      override def receiveCommand: Receive = myReceive.orElse(super.receiveCommand)
+  implicit val receptorActorFactory: ReceptorActorFactory[DummySaga] = new ReceptorActorFactory[DummySaga] {
+    override def receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {
+      new Receptor(config) with EventstoreSubscriber {
+        override def redeliverInterval: FiniteDuration = 1.seconds
+        override def receiveCommand: Receive = myReceive.orElse(super.receiveCommand)
 
-      def myReceive: Receive = {
-        case GetNumberOfUnconfirmed => sender() ! numberOfUnconfirmed
+        def myReceive: Receive = {
+          case GetNumberOfUnconfirmed => sender() ! numberOfUnconfirmed
+        }
+
       }
-
     }
   }
 
   var receptor: ActorRef = _
 
-  implicit val _ = new CoordinationOfficeListener[DummySaga] {
+  implicit val officeListener = new CoordinationOfficeListener[DummySaga] {
     override def officeStarted(office: CoordinationOffice[DummySaga], receptorRef: ActorRef): Unit = {
       receptor = receptorRef
     }
@@ -107,7 +108,7 @@ class SagaIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integratio
       }
 
       // when
-      receptor = createReceptor(coordOffice.receptorConfig)
+      receptor = receptorActorFactory(coordOffice.receptorConfig)
 
       // then
       expectNoUnconfirmedMessages(receptor)
@@ -124,7 +125,7 @@ class SagaIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integratio
       }
 
       // when
-      receptor = createReceptor(coordOffice.receptorConfig)
+      receptor = receptorActorFactory(coordOffice.receptorConfig)
 
       // then
       expectNumberOfUnconfirmedMessages(receptor, 1)
@@ -136,7 +137,7 @@ class SagaIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integratio
       ensureTerminated(receptor)
 
       // when
-      receptor = createReceptor(coordOffice.receptorConfig)
+      receptor = receptorActorFactory(coordOffice.receptorConfig)
 
       // then
       expectNumberOfUnconfirmedMessages(receptor, 1)
