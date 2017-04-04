@@ -13,6 +13,7 @@ object MetaData {
   // contains ID of a message that the recipient of this message should process before it can process this message
   val MustFollow          = "_mustFollow"
   val SessionId           = "sessionId"
+  val EventNumber         = "_eventNumber"
 
   def empty: MetaData = MetaData(Map.empty)
 }
@@ -80,6 +81,8 @@ trait Message extends Serializable {
   }
 
   def withDeliveryId(deliveryId: Long) = withMetaAttribute(DeliveryId, deliveryId)
+
+  def withEventNumber(eventNumber: Int) = withMetaAttribute(EventNumber, eventNumber)
 
   def withCorrelationId(correlationId: EntityId) = withMetaAttribute(CorrelationId, correlationId)
 

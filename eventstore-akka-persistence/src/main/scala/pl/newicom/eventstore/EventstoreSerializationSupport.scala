@@ -75,11 +75,11 @@ trait EventstoreSerializationSupport {
       Failure(sys.error(s"Cannot deserialize event as $manifest, event: $event"))
   }
 
-  def toOfficeEventMessage(eventData: EventData, source: BusinessEntity): Try[OfficeEventMessage] =
+  def toOfficeEventMessage(eventData: EventData, eventNumber: Int, source: BusinessEntity): Try[OfficeEventMessage] =
     fromEvent(eventData, classOf[PersistentRepr]).map { pr =>
       val em = pr.payload.asInstanceOf[EventMessage]
       val caseRef = CaseRef(pr.persistenceId, source, Some(pr.sequenceNr))
-      OfficeEventMessage(em, caseRef)
+      OfficeEventMessage(em, caseRef).withEventNumber(eventNumber)
     }
 
   private def toPayloadAndMetadata(em: EventMessage): (DomainEvent, Option[MetaData]) =
