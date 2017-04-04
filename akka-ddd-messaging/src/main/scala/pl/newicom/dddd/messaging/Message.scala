@@ -102,4 +102,6 @@ trait Message extends Serializable {
   def causationId: Option[EntityId] = tryGetMetaAttribute[EntityId](CausationId)
 
   def mustFollow: Option[String] = tryGetMetaAttribute[String](MustFollow)
+
+  def eventNumber: Option[Int] = tryGetMetaAttribute[Int](EventNumber)
 }
