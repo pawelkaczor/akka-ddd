@@ -1,7 +1,7 @@
 package pl.newicom.dddd.aggregate
 
 import akka.actor.{ActorRef, Stash}
-import pl.newicom.dddd.aggregate.AggregateRootSupport.{Eventually, Immediately}
+import pl.newicom.dddd.aggregate.AggregateRootSupport.{Accept, Reaction, Reject}
 import pl.newicom.dddd.aggregate.error.DomainException
 
 import scala.concurrent.duration._
@@ -25,13 +25,13 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash {
   this: AggregateRoot[Event, _, _] =>
   import CollaborationSupport._
 
-  implicit def toEventually(e: Event): Immediately[Event] = Immediately(Seq(e))
+  implicit def toReaction(e: Event): Accept[Event] = Accept(Seq(e))
 
   implicit class CollaborationBuilder(val target: ActorRef) {
     def !<(msg: Any): Collaboration = Collaboration(target, msg, PartialFunction.empty, null)
   }
 
-  case class Collaboration(target: ActorRef, msg: Any, receive: HandleCommand, timeout: FiniteDuration) extends Eventually[Event] {
+  case class Collaboration(target: ActorRef, msg: Any, receive: HandleCommand, timeout: FiniteDuration) extends Reaction[Event] {
     def apply(receive: HandleCommand)(implicit timeout: FiniteDuration): Collaboration = {
       copy(receive = receive, timeout = timeout)
     }
@@ -50,8 +50,9 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash {
 
     context.become(
       receive.andThen { // expected response received
-        case Immediately(events) => callback(events)
+        case Accept(events) => callback(events)
         case c: Collaboration => c.execute(callback)
+        case Reject(ex) => throw ex
       }.andThen { _ =>
         scheduledTimeout.cancel()
         unstashAll()

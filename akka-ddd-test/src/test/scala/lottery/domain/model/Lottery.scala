@@ -35,7 +35,7 @@ object LotteryAggregateRoot extends AggregateRootSupport {
       handleCommands {
         // can't run if there is no participants
         case Run(_)  =>
-          error("Lottery has no participants")
+          reject("Lottery has no participants")
       }
 
 
@@ -68,7 +68,7 @@ object LotteryAggregateRoot extends AggregateRootSupport {
       handleCommands {
         // can't add participant twice
         case cmd: AddParticipant if hasParticipant(cmd.name) =>
-          error(s"Participant ${cmd.name} already added!")
+          reject(s"Participant ${cmd.name} already added!")
       }
     }
 

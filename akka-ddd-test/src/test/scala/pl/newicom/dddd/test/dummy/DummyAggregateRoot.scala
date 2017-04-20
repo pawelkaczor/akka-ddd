@@ -2,6 +2,7 @@ package pl.newicom.dddd.test.dummy
 
 import akka.actor.ActorRef
 import pl.newicom.dddd.actor.PassivationConfig
+import pl.newicom.dddd.aggregate.AggregateRootSupport.Reject
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.test.dummy.DummyProtocol._
@@ -9,14 +10,13 @@ import pl.newicom.dddd.test.dummy.ValueGeneratorActor.GenerateRandom
 import pl.newicom.dddd.utils.UUIDSupport.uuidObj
 
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
 
 object DummyAggregateRoot extends AggregateRootSupport {
 
   sealed trait DummyBehaviour extends AggregateActions[DummyEvent, DummyBehaviour] {
     def isActive = false
-    def validate(value: Int): Unit =
-      if (value < 0) error("negative value not allowed")
+
+    def rejectNegative(value: Int) = rejectIf(value < 0, "negative value not allowed")
   }
 
   sealed trait Dummy extends DummyBehaviour
@@ -27,8 +27,8 @@ object DummyAggregateRoot extends AggregateRootSupport {
 
       handleCommands {
         case CreateDummy(id, name, description, value) =>
-          validate(value)
-          DummyCreated(id, name, description, value)
+          rejectNegative(value) orElse
+            DummyCreated(id, name, description, value)
       }
 
       .handleEvents {
@@ -51,8 +51,8 @@ object DummyAggregateRoot extends AggregateRootSupport {
           DescriptionChanged(id, description)
 
         case ChangeValue(id, newValue) =>
-          validate(newValue)
-          ValueChanged(id, newValue, version + 1)
+          rejectNegative(newValue) orElse
+            ValueChanged(id, newValue, version + 1)
 
         case Reset(id, name) =>
           NameChanged(id, name) & ValueChanged(id, 0, version + 1)
@@ -77,11 +77,8 @@ object DummyAggregateRoot extends AggregateRootSupport {
 
       handleCommands {
         case ConfirmGeneratedValue(id, confirmationToken) =>
-          if (candidateValue.confirmationToken == confirmationToken) {
+          rejectIf(candidateValue.confirmationToken != confirmationToken, "Invalid confirmation token") orElse
             ValueChanged(id, candidateValue.value, version + 1)
-          } else {
-            error("Invalid confirmation token")
-          }
       }
 
       .handleEvents {
@@ -108,12 +105,10 @@ class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyBehaviour, Dummy
     implicit val timeout = 1.seconds
     (valueGeneratorActor !< GenerateRandom) {
       case ValueGeneratorActor.ValueGenerated(value) =>
-        try {
-          state.validate(value)
-          ValueGenerated(id, value, confirmationToken = uuidObj)
-        } catch {
-            case NonFatal(_) => // try again
-              valueGeneration
+        state.rejectNegative(value) orElse
+          ValueGenerated(id, value, confirmationToken = uuidObj) match {
+            case Reject(_) => valueGeneration
+            case r => r
         }
     }
   }

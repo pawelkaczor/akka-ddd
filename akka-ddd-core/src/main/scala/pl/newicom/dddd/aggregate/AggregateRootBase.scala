@@ -5,7 +5,7 @@ import akka.contrib.pattern.ReceivePipeline
 import akka.contrib.pattern.ReceivePipeline.Inner
 import akka.persistence.PersistentActor
 import pl.newicom.dddd.actor.GracefulPassivation
-import pl.newicom.dddd.aggregate.error.DomainException
+import pl.newicom.dddd.delivery.protocol.alod.Delivered.CommandAccepted
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
@@ -13,7 +13,7 @@ import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.office.{CaseRef, OfficeId}
 import pl.newicom.dddd.persistence.PersistentActorLogging
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 
 trait AggregateRootBase extends BusinessEntity with GracefulPassivation with PersistentActor
@@ -26,7 +26,7 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
   override def persistenceId: String = officeId.caseRef(id).id
 
   override def preRestart(reason: Throwable, msgOpt: Option[Any]) {
-    acknowledgeCommandProcessed(currentCommandMessage, Failure(reason))
+    acknowledgeCommandRejected(reason)
     super.preRestart(reason, msgOpt)
   }
 
@@ -58,11 +58,17 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
     * Event handler, not invoked during recovery.
     */
   override def handle(senderRef: ActorRef, events: Seq[OfficeEventMessage]) {
-    acknowledgeCommandProcessed(currentCommandMessage)
+    acknowledgeCommandAccepted()
   }
 
-  def acknowledgeCommandProcessed(msg: CommandMessage, result: Try[Any] = Success("Command processed. Thank you!")) {
-    val deliveryReceipt = msg.deliveryReceipt(result)
+  def acknowledgeCommandAccepted(): Unit =
+    acknowledgeCommandProcessed(currentCommandMessage)
+
+  def acknowledgeCommandRejected(ex: Throwable): Unit =
+    acknowledgeCommandProcessed(currentCommandMessage, Failure(ex))
+
+  def acknowledgeCommandProcessed(cmd: CommandMessage, result: Try[Any] = CommandAccepted) {
+    val deliveryReceipt = cmd.deliveryReceipt(result)
     currentCommandSender ! deliveryReceipt
   }
 

@@ -1,7 +1,7 @@
 package pl.newicom.dddd.aggregate
 
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
-import pl.newicom.dddd.aggregate.AggregateRootSupport.{Eventually, Immediately}
+import pl.newicom.dddd.aggregate.AggregateRootSupport.{Accept, Reaction, Reject, RejectConditionally}
 import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitializedException, DomainException}
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
@@ -9,7 +9,7 @@ import pl.newicom.dddd.office.LocalOfficeId
 
 import scala.PartialFunction.empty
 import scala.concurrent.duration._
-import scala.util.Failure
+import scala.util.Try
 
 abstract class AggregateRootActorFactory[A <: AggregateRoot[_, _, A]: LocalOfficeId] extends BusinessEntityActorFactory[A] {
   def inactivityTimeout: Duration = 1.minute
@@ -25,16 +25,22 @@ trait AggregateState[S <: AggregateState[S]] {
 trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends AggregateState[S] {
 
   type Command = Any
-  type HandleCommand = PartialFunction[Command, Eventually[E]]
+  type HandleCommand = PartialFunction[Command, Reaction[E]]
 
   def handleCommand: HandleCommand
 
-  implicit def toEventually(e: E): Immediately[E] =
-    Immediately(Seq(e))
-  implicit def toEventually(events: Seq[E]): Immediately[E] =
-    Immediately(events)
+  implicit def toReaction(e: E): Accept[E] =
+    Accept(Seq(e))
+  implicit def toReaction(events: Seq[E]): Accept[E] =
+    Accept(events)
 
-  def error(msg: String) = throw new DomainException(msg)
+  def error(msg: String): Reject = reject(msg)
+  def reject(msg: String): Reject = Reject(new DomainException(msg))
+
+  def reject(reason: DomainException): Reject = Reject(reason)
+
+  def rejectIf(condition: Boolean, reason: String): RejectConditionally = RejectConditionally(condition, reject(reason))
+  def rejectIf(condition: Boolean, reject: Reject): RejectConditionally = RejectConditionally(condition, reject)
 }
 
 trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends AggregateBehaviour[E, S] {
@@ -83,7 +89,7 @@ trait Uninitialized[S <: AggregateState[S]] {
 
 abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Uninitialized, A <: AggregateRoot[Event, S, A] : LocalOfficeId] extends AggregateRootBase with CollaborationSupport[Event] {
 
-  type HandleCommand = PartialFunction[Any, Eventually[Event]]
+  type HandleCommand = PartialFunction[Any, Reaction[Event]]
 
   override def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
   override def department: String = officeId.department
@@ -96,22 +102,28 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
 
   override def receiveCommand: Receive = {
     case cm: CommandMessage =>
-      safely {
-        handleCommand.andThen {
-          case c: Collaboration => c.execute(raise)
-          case Immediately(events) => raise(events)
-        }.applyOrElse(cm.command, unhandledCommand)
+      Try {
+        handleCommand.orElse(handleUnknown).andThen(execute)(cm.command)
+      }.recover {
+        case ex: DomainException => execute(Reject(ex))
       }
   }
 
-  def unhandledCommand(command: Any): Unit = {
-    val commandName = command.getClass.getSimpleName
-    if (initialized) {
-      throw new DomainException(s"$commandName can not be processed: missing command handler!")
-    } else {
-      val caseName = officeId.caseName
-      throw new AggregateRootNotInitializedException(s"$caseName with ID $id does not exist. $commandName can not be processed: missing command handler!")
-    }
+  private def execute(r: Reaction[Event]): Unit = r match {
+    case c: Collaboration => c.execute(raise)
+    case Accept(events) => raise(events)
+    case Reject(ex) => acknowledgeCommandRejected(ex)
+  }
+
+  def handleUnknown: HandleCommand = {
+    case cmd =>
+      val commandName = cmd.getClass.getSimpleName
+      if (initialized) {
+        Reject(new DomainException(s"$commandName can not be processed: missing command handler!"))
+      } else {
+        val caseName = officeId.caseName
+        Reject(new AggregateRootNotInitializedException(s"$caseName with ID $id does not exist. $commandName can not be processed: missing command handler!"))
+      }
   }
 
   override def receiveRecover: Receive = {
@@ -139,7 +151,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
   // do not escalate DomainException
   private def safely(f: => Any): Unit = try f catch {
     case ex: DomainException =>
-      acknowledgeCommandProcessed(currentCommandMessage, Failure(ex))
+      acknowledgeCommandRejected(ex)
   }
 
 
