@@ -6,4 +6,4 @@ object CommandHandlerNotDefined {
   def msg(commandName: String) = s"$commandName can not be processed: missing command handler!"
 }
 
-class CommandHandlerNotDefined(commandName: String) extends CommandRejected(msg(commandName))
+case class CommandHandlerNotDefined(commandName: String) extends CommandRejected(msg(commandName))

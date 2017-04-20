@@ -12,4 +12,4 @@ object AggregateRootNotInitialized {
     }
 }
 
-class AggregateRootNotInitialized(caseName: String, id: EntityId, commandName: String, eventName: Option[String] = None) extends CommandRejected(msg(caseName, id, commandName, eventName))
+case class AggregateRootNotInitialized(caseName: String, id: EntityId, commandName: String, eventName: Option[String] = None) extends CommandRejected(msg(caseName, id, commandName, eventName))

@@ -7,5 +7,4 @@ object StateTransitionNotDefined {
     s"$commandName can not be processed. State transition not defined for event: $eventName!"
 }
 
-
-class StateTransitionNotDefined(commandName: String, eventName: String) extends CommandRejected(msg(commandName, eventName))
+case class StateTransitionNotDefined(commandName: String, eventName: String) extends CommandRejected(msg(commandName, eventName))
