@@ -8,11 +8,11 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
 import org.json4s.Formats
 import pl.newicom.dddd.aggregate.Command
+import pl.newicom.dddd.aggregate.error.CommandRejected
 import pl.newicom.dddd.http.JsonMarshalling
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.streams.ImplicitMaterializer
 import pl.newicom.dddd.utils.UUIDSupport.uuid
-import pl.newicom.dddd.writefront.CommandDispatcher.UnknownCommandClassException
 
 import scala.util.{Failure, Success, Try}
 
@@ -41,11 +41,12 @@ trait HttpCommandHandler extends CommandDispatcher with CommandDirectives with D
     case Success(result) =>
       StatusCodes.OK -> result.toString
 
-    case Failure(UnknownCommandClassException(command))=>
-      StatusCodes.UnprocessableEntity -> s"No office registered for command: ${command.getClass.getName}"
+    case Failure(ex: CommandRejected) =>
+      StatusCodes.UnprocessableEntity -> ex.toString
 
-    case Failure(ex) =>
-      StatusCodes.InternalServerError -> ex.getMessage
+    case Failure(ex: Throwable) =>
+      StatusCodes.InternalServerError -> ex.toString
+
   }
 
 }
