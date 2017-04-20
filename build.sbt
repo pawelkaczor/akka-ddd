@@ -5,36 +5,39 @@ import java.net.URL
 
 name := "akka-ddd"
 
-version      in ThisBuild := "1.5.2-SNAPSHOT"
+version      in ThisBuild := "1.6.0-SNAPSHOT"
 organization in ThisBuild := "pl.newicom.dddd"
 scalaVersion in ThisBuild := "2.12.1"
 crossScalaVersions in ThisBuild := Seq("2.12.1", "2.11.8")
 
-scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-deprecation", "-feature", "-language:postfixOps", "-unchecked")
+scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions", "-unchecked")
+
 publishMavenStyle in ThisBuild := true
 homepage          in ThisBuild := Some(new URL("http://github.com/pawelkaczor/akka-ddd"))
 licenses          in ThisBuild := ("Apache2", new URL("http://raw.githubusercontent.com/pawelkaczor/akka-ddd/master/LICENSE.md")) :: Nil
 
 lazy val root = (project in file("."))
-  .aggregate(`akka-ddd-messaging`, `akka-ddd-monitoring`, `akka-ddd-core`, `akka-ddd-write-front`, `view-update`, `view-update-sql`, `akka-ddd-test`, `eventstore-akka-persistence`, `http-support`, `akka-ddd-scheduling`)
+  .aggregate(`akka-ddd-protocol`, `akka-ddd-messaging`, `akka-ddd-monitoring`, `akka-ddd-core`, `akka-ddd-write-front`, `view-update`, `view-update-sql`, `akka-ddd-test`, `eventstore-akka-persistence`, `http-support`, `akka-ddd-scheduling`)
   .settings(
     commonSettings,
     publishArtifact := false
   )
 
 
-lazy val `akka-ddd-messaging` = project
+lazy val `akka-ddd-protocol` = project
   .settings(
     commonSettings,
-    scalacOptions ++= Seq("-language:implicitConversions"),
-    libraryDependencies ++= Json.`4s` ++ Seq(Akka.stream, nscalaTime)
+    libraryDependencies ++= Seq(Akka.actor) ++ Json.`4s`
   )
+
+lazy val `akka-ddd-messaging` = project
+  .settings(
+    libraryDependencies ++= Seq(Akka.stream, nscalaTime)
+  ).dependsOn(`akka-ddd-protocol`)
 
 
 lazy val `akka-ddd-core` = project
   .settings(
-    commonSettings,
-    scalacOptions ++= Seq("-language:implicitConversions"),
     publishArtifact in Test := true,
     libraryDependencies ++= Seq(
       Akka.clusterTools, Akka.clusterSharding, Akka.persistence, Akka.contributions, Akka.slf4j
@@ -53,16 +56,13 @@ lazy val `akka-ddd-write-front` = project
 
 
 lazy val `view-update` = project
-  .settings(
-    commonSettings
-  ).dependsOn(`akka-ddd-messaging`)
+  .dependsOn(`akka-ddd-messaging`)
 
 
 lazy val `view-update-sql` = project
   .configs(IntegrationTest)
   .settings(
-    commonSettings,
-    scalacOptions ++= Seq("-language:existentials", "-language:implicitConversions"),
+    scalacOptions ++= Seq("-language:existentials"),
     inConfig(IntegrationTest)(Defaults.testTasks),
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
@@ -78,8 +78,6 @@ lazy val `view-update-sql` = project
 lazy val `akka-ddd-test` = project
   .configs(IntegrationTest)
   .settings(
-    commonSettings,
-    scalacOptions ++= Seq("-language:implicitConversions"),
     inConfig(IntegrationTest)(Defaults.testTasks),
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
@@ -92,8 +90,7 @@ lazy val `akka-ddd-test` = project
 
 lazy val `eventstore-akka-persistence` = project
   .settings(
-    commonSettings,
-    libraryDependencies ++= Json.`4s` ++ Seq(
+    libraryDependencies ++= Seq(
       Eventstore.client, Eventstore.akkaJournal,
       Akka.slf4j, Akka.persistence
     ))
@@ -103,9 +100,8 @@ lazy val `eventstore-akka-persistence` = project
 lazy val `http-support` = project
   .settings(
     commonSettings,
-    scalacOptions ++= Seq("-language:implicitConversions"),
     libraryDependencies ++= AkkaHttp.all
-  ).dependsOn(`akka-ddd-messaging`)
+  ).dependsOn(`akka-ddd-protocol`)
 
 
 lazy val `akka-ddd-scheduling` = project
