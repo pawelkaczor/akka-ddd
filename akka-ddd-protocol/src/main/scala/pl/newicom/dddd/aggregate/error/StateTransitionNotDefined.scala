@@ -1,5 +1,6 @@
 package pl.newicom.dddd.aggregate.error
-import StateTransitionNotDefined._
+
+import pl.newicom.dddd.aggregate.error.StateTransitionNotDefined._
 
 object StateTransitionNotDefined {
   def msg(commandName: String, eventName: String) =

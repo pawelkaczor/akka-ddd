@@ -12,7 +12,7 @@ object AggregateRootSupport {
   }
 
   object Reject {
-    def apply(reason: CommandRejected): Reject = Reject(reason)
+    def apply(reason: CommandRejected): Reject = new Reject(reason)
     def unapply(arg: Reject): Option[Throwable] = Some(arg.reason)
   }
 
