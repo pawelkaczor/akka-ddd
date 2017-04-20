@@ -7,15 +7,15 @@ import scala.collection.immutable.SortedMap
 case class UnconfirmedMessageEntry(internalDeliveryId: Long, destinationId: String, msgId: String)
 
 /**
- * State of delivery (At-Least-Once-Delivery)
- *
- */
+  * State of delivery (At-Least-Once-Delivery)
+  *
+  */
 sealed trait DeliveryState {
 
   /**
-   * @param deliveryId delivery id
-   * @return <b>unconfirmed</b> internal deliveryId
-   */
+    * @param deliveryId delivery id
+    * @return <b>unconfirmed</b> internal deliveryId
+    */
   def internalDeliveryId(deliveryId: Long): Option[Long]
 
   def withDelivered(deliveryId: Long): DeliveryState
@@ -23,8 +23,8 @@ sealed trait DeliveryState {
   def withSent(msgId: String, internalDeliveryId: Long, deliveryId: Long, destinationId: EntityId): DeliveryState
 
   /**
-   * @return last sent deliveryId
-   */
+    * @return last sent deliveryId
+    */
   def lastSentOpt: Option[Long]
 
   def unconfirmedNumber: Int
@@ -36,13 +36,14 @@ sealed trait DeliveryState {
 case object InitialState extends DeliveryState {
 
   def withSent(msgId: String, internalDeliveryId: Long, deliveryId: Long, destinationId: EntityId) =
-    new DeliveryInProgressState(
+    DeliveryInProgressState(
       lastSent = deliveryId,
       size = 1,
-      unconfirmed = SortedMap(deliveryId -> UnconfirmedMessageEntry(internalDeliveryId, destinationId, msgId)),
-      lastSentMsgIdPerDestination = Map(destinationId -> msgId))
+      unconfirmed = SortedMap(deliveryId              -> UnconfirmedMessageEntry(internalDeliveryId, destinationId, msgId)),
+      lastSentMsgIdPerDestination = Map(destinationId -> msgId)
+    )
 
-  def withDelivered(deliveryId: Long) = this
+  def withDelivered(deliveryId: Long): InitialState.type = this
 
   def internalDeliveryId(deliveryId: Long) = None
 
@@ -54,7 +55,11 @@ case object InitialState extends DeliveryState {
 
 }
 
-case class DeliveryInProgressState(lastSent: Long, size: Int, unconfirmed: SortedMap[Long, UnconfirmedMessageEntry], lastSentMsgIdPerDestination: Map[EntityId, String]) extends DeliveryState {
+case class DeliveryInProgressState(lastSent: Long,
+                                   size: Int,
+                                   unconfirmed: SortedMap[Long, UnconfirmedMessageEntry],
+                                   lastSentMsgIdPerDestination: Map[EntityId, String])
+    extends DeliveryState {
 
   def unconfirmedEntry(deliveryId: Long): Option[UnconfirmedMessageEntry] = unconfirmed.get(deliveryId)
 
@@ -62,7 +67,7 @@ case class DeliveryInProgressState(lastSent: Long, size: Int, unconfirmed: Sorte
     unconfirmedEntry(deliveryId).map(_.internalDeliveryId)
 
   def withSent(msgId: String, internalDeliveryId: Long, deliveryId: Long, destinationId: EntityId) =
-    new DeliveryInProgressState(
+    DeliveryInProgressState(
       lastSent = deliveryId,
       size = size + 1,
       unconfirmed = unconfirmed.updated(deliveryId, UnconfirmedMessageEntry(internalDeliveryId, destinationId, msgId)),
@@ -70,16 +75,18 @@ case class DeliveryInProgressState(lastSent: Long, size: Int, unconfirmed: Sorte
     )
 
   def withDelivered(deliveryId: Long): DeliveryState =
-    unconfirmedEntry(deliveryId).map { entry =>
-      copy(
-        size                        = size - 1,
-        unconfirmed                 = unconfirmed - deliveryId,
-        lastSentMsgIdPerDestination = lastSentMsgIdPerDestination.dropWhile({
-                    case (destinationId, msgId) =>
-                      entry.destinationId == destinationId && entry.msgId == msgId
-                    })
-      )
-    }.getOrElse(this)
+    unconfirmedEntry(deliveryId)
+      .map { entry =>
+        copy(
+          size = size - 1,
+          unconfirmed = unconfirmed - deliveryId,
+          lastSentMsgIdPerDestination = lastSentMsgIdPerDestination.dropWhile({
+            case (destinationId, msgId) =>
+              entry.destinationId == destinationId && entry.msgId == msgId
+          })
+        )
+      }
+      .getOrElse(this)
 
   def lastSentOpt: Some[Long] =
     Some(lastSent)

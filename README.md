@@ -9,16 +9,17 @@ Used by: [DDD Leaven Akka Ver 2](https://github.com/pawelkaczor/ddd-leaven-akka-
 
 #### Modules overview
 
-#### akka-ddd-messaging
-[![Dependencies](https://app.updateimpact.com/badge/766637912447127552/pl.newicom.dddd%3Aakka-ddd-messaging_2.11%3A1.2.2.svg?config=compile)](https://app.updateimpact.com/latest/766637912447127552/pl.newicom.dddd%3Aakka-ddd-messaging_2.11%3A1.2.2)
+#### akka-ddd-protocol
 
-Contains base types for commands and events and their envelopes ( command/event messages ).
-This module should be used on both write and read side of the system. 
+Defines protocol to be used by the write-front application.
+ 
+#### akka-ddd-messaging
+
+Contains classes usable on both write and read side of the system. 
 
 #### akka-ddd-core
-[![Dependencies](https://app.updateimpact.com/badge/766637912447127552/pl.newicom.dddd%3Aakka-ddd-core_2.11%3A1.2.2.svg?config=compile)](https://app.updateimpact.com/latest/766637912447127552/pl.newicom.dddd%3Aakka-ddd-core_2.11%3A1.2.2)
 
-Contains core artifacts used on write side of the system:
+Contains core artifacts to be used on the write side of the system:
 
 - [AggregateRoot](akka-ddd-core/src/main/scala/pl/newicom/dddd/aggregate/AggregateRoot.scala) trait - 
 abstract persistent, event sourced actor responsible for processing commands received from the office. 
@@ -38,31 +39,25 @@ allows one office to react on events occurred in another office. Receptor is cap
 - [Saga / Process Manager](akka-ddd-core/src/main/scala/pl/newicom/dddd/process/Saga.scala) - implementation of [Saga / Process Manager](https://msdn.microsoft.com/en-us/library/jj591569.aspx) pattern. See: [Saga - big picture](https://github.com/pawelkaczor/akka-ddd/wiki/Saga). See example Process Manager: [OrderProcessManager](https://github.com/pawelkaczor/ddd-leaven-akka-v2/blob/master/headquarters/write-back/src/main/scala/ecommerce/headquarters/processes/OrderProcessManager.scala)
 
 #### eventstore-akka-persistence
-[![Dependencies](https://app.updateimpact.com/badge/766637912447127552/pl.newicom.dddd%3Aeventstore-akka-persistence_2.11%3A1.2.2.svg?config=compile)](https://app.updateimpact.com/latest/766637912447127552/pl.newicom.dddd%3Aeventstore-akka-persistence_2.11%3A1.2.2)
 
 Incorporates [Akka Persistence journal and snapshot-store](https://github.com/EventStore/EventStore.Akka.Persistence) backed by [Event Store](http://geteventstore.com). Registers [JSON Serializer](eventstore-akka-persistence/src/main/scala/pl/newicom/eventstore/plugin/EventStoreSerializer.scala) as [Akka custom serializer](http://doc.akka.io/docs/akka/snapshot/scala/persistence.html#Custom_serialization) for ```akka.persistence.PersistentRepr``` (wrapper class that is used by Akka Persistence to store event in the journal). Json format is natural choice for Event Store as it enables creating user projections using javascript directly in Event Store. Provides also [EventstoreSubscriber](eventstore-akka-persistence/src/main/scala/pl/newicom/eventstore/EventstoreSubscriber.scala) that should be mixed into the [Receptor](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/process/Receptor.scala) (available in akka-ddd-core).     
 
 #### akka-ddd-scheduling
-[![Dependencies](https://app.updateimpact.com/badge/766637912447127552/pl.newicom.dddd%3Aakka-ddd-scheduling_2.11%3A1.2.2.svg?config=compile)](https://app.updateimpact.com/latest/766637912447127552/pl.newicom.dddd%3Aakka-ddd-scheduling_2.11%3A1.2.2)
 
 Provides durable scheduler (backed by Event Store!) that is typically used by Saga to schedule timeout/deadline messages. See: [Durable Scheduler - big picture](https://github.com/pawelkaczor/akka-ddd/wiki/Durable-Scheduler).
 
 #### view-update
-[![Dependencies](https://app.updateimpact.com/badge/766637912447127552/pl.newicom.dddd%3Aview-update_2.11%3A1.2.2.svg?config=compile)](https://app.updateimpact.com/latest/766637912447127552/pl.newicom.dddd%3Aview-update_2.11%3A1.2.2)
 
 Generic artifacts for building view update services that consume events from [Event Store](http://geteventstore.com/) and update a configured view store (i.e. Sql database). See: [View Update Service - big picture](https://github.com/pawelkaczor/akka-ddd/wiki/View-Update-Service)
 
 #### view-update-sql
-[![Dependencies](https://app.updateimpact.com/badge/766637912447127552/pl.newicom.dddd%3Aview-update-sql_2.11%3A1.2.2.svg?config=compile)](https://app.updateimpact.com/latest/766637912447127552/pl.newicom.dddd%3Aview-update-sql_2.11%3A1.2.2)
 
 Sql (defult is Postgresql) specific implementation of view-update artifacts.
 
 #### akka-ddd-test
-[![Dependencies](https://app.updateimpact.com/badge/766637912447127552/pl.newicom.dddd%3Aakka-ddd-test_2.11%3A1.2.2.svg?config=compile)](https://app.updateimpact.com/latest/766637912447127552/pl.newicom.dddd%3Aakka-ddd-test_2.11%3A1.2.2)
 
 Allows easy creation of test of Aggregate Root implementations. Supports both "simple" and "global" offices. See [DummyOfficeSpec](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyOfficeSpec.scala) and [DummyOfficeWithGenSpec](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyOfficeWithGenSpec.scala).
 
 #### akka-ddd-write-front
-[![Dependencies](https://app.updateimpact.com/badge/766637912447127552/pl.newicom.dddd%3Aakka-ddd-write-front_2.11%3A1.2.2.svg?config=compile)](https://app.updateimpact.com/latest/766637912447127552/pl.newicom.dddd%3Aakka-ddd-write-front_2.11%3A1.2.2)
 
 Artifacts for building http server with use of [Akka Http](http://doc.akka.io/docs/akka-http/current/scala.html) and [Akka Cluster Client](http://doc.akka.io/docs/akka/current/scala/cluster-client.html) responsible for handling commands sent as json messages. Provides infrastructure for demarshalling commands and forwarding them to write-backend application.
