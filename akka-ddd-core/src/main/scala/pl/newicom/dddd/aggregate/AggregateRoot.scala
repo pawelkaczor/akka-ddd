@@ -2,14 +2,13 @@ package pl.newicom.dddd.aggregate
 
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.AggregateRootSupport.{Accept, Reaction, Reject, RejectConditionally}
-import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitializedException, DomainException}
+import pl.newicom.dddd.aggregate.error._
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOfficeId
 
 import scala.PartialFunction.empty
 import scala.concurrent.duration._
-import scala.util.Try
 
 abstract class AggregateRootActorFactory[A <: AggregateRoot[_, _, A]: LocalOfficeId] extends BusinessEntityActorFactory[A] {
   def inactivityTimeout: Duration = 1.minute
@@ -102,10 +101,8 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
 
   override def receiveCommand: Receive = {
     case cm: CommandMessage =>
-      Try {
+      safely {
         handleCommand.orElse(handleUnknown).andThen(execute)(cm.command)
-      }.recover {
-        case ex: DomainException => execute(Reject(ex))
       }
   }
 
@@ -118,12 +115,12 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
   def handleUnknown: HandleCommand = {
     case cmd =>
       val commandName = cmd.getClass.getSimpleName
-      if (initialized) {
-        Reject(new DomainException(s"$commandName can not be processed: missing command handler!"))
-      } else {
-        val caseName = officeId.caseName
-        Reject(new AggregateRootNotInitializedException(s"$caseName with ID $id does not exist. $commandName can not be processed: missing command handler!"))
-      }
+      Reject(
+        if (initialized)
+          new CommandHandlerNotDefined(commandName)
+        else
+          new AggregateRootNotInitialized(officeId.caseName, id, commandName)
+      )
   }
 
   override def receiveRecover: Receive = {
@@ -148,12 +145,9 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
     persistAll(eventMessages.toList)(e => safely(handler(e)))
   }
 
-  // do not escalate DomainException
-  private def safely(f: => Any): Unit = try f catch {
-    case ex: DomainException =>
-      acknowledgeCommandRejected(ex)
+  private def safely(f: => Unit): Unit = try f catch {
+      case ex: Throwable => execute(new Reject(ex))
   }
-
 
   private class StateManager(onStateChanged: (EventMessage) => Unit) {
     private var s: S = implicitly[Uninitialized[S]].asInstanceOf[S]
@@ -182,9 +176,9 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
         case state if state.eventHandlerDefined(event) =>
           state.apply(event)
         case state if state.initialized =>
-          throw new DomainException(s"$commandName can not be processed. State transition not defined for event: $eventName!")
+          throw new StateTransitionNotDefined(commandName, eventName)
         case _ =>
-          throw new AggregateRootNotInitializedException(s"$caseName with ID $id does not exist. $commandName can not be processed: missing state initialization for event: $eventName!")
+          throw new AggregateRootNotInitialized(caseName, id, commandName, Some(eventName))
       }
     }
 

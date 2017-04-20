@@ -1,6 +1,6 @@
 package pl.newicom.dddd.aggregate
 
-import pl.newicom.dddd.aggregate.error.DomainException
+import pl.newicom.dddd.aggregate.error.CommandRejected
 import pl.newicom.dddd.office.{LocalOfficeId, OfficeListener}
 
 object AggregateRootSupport {
@@ -11,7 +11,12 @@ object AggregateRootSupport {
     def &(next: E): Accept[E] = Accept(events :+ next)
   }
 
-  case class Reject(reason: DomainException) extends Reaction[Nothing]
+  object Reject {
+    def apply(reason: CommandRejected): Reject = Reject(reason)
+    def unapply(arg: Reject): Option[Throwable] = Some(arg.reason)
+  }
+
+  class Reject private[aggregate] (val reason: Throwable) extends Reaction[Nothing]
 
   case class RejectConditionally(condition: Boolean, reject: Reject) {
     def orElse[E <: DomainEvent](accept: Accept[E]): Reaction[E] =

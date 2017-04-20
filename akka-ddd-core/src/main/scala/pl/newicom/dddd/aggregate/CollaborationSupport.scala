@@ -2,24 +2,13 @@ package pl.newicom.dddd.aggregate
 
 import akka.actor.{ActorRef, Stash}
 import pl.newicom.dddd.aggregate.AggregateRootSupport.{Accept, Reaction, Reject}
-import pl.newicom.dddd.aggregate.error.DomainException
+import pl.newicom.dddd.aggregate.error.{NoResponseReceived, UnexpectedResponseReceived}
 
 import scala.concurrent.duration._
 
 object CollaborationSupport {
   case object ReceiveTimeout
-
-  @SerialVersionUID(1L)
-  class CollaborationFailed(msg: String) extends DomainException(msg)
-
-  case class NoResponseReceived(timeout: FiniteDuration)
-    extends CollaborationFailed(s"No response received within $timeout.")
-
-  case class UnexpectedResponseReceived(response: Any)
-    extends CollaborationFailed(s"Unexpected response received: $response.")
-
 }
-
 
 trait CollaborationSupport[Event <: DomainEvent] extends Stash {
   this: AggregateRoot[Event, _, _] =>

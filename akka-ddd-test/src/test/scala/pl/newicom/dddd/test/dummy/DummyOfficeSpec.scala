@@ -8,8 +8,7 @@ import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 import DummyOfficeSpec._
-import pl.newicom.dddd.aggregate.CollaborationSupport.NoResponseReceived
-import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitializedException, DomainException}
+import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitialized, CommandHandlerNotDefined, DomainException, NoResponseReceived}
 import pl.newicom.dddd.office.Office
 
 import scala.concurrent.duration.{Duration, _}
@@ -47,7 +46,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
       when {
         ChangeName(dummyId, "some other dummy name")
       }
-      .expectException[AggregateRootNotInitializedException]()
+      .expectException[AggregateRootNotInitialized]()
     }
 
     "reject CreateDummy if Dummy already exists" in {
@@ -58,7 +57,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
       when {
         CreateDummy(dId, "dummy name", "dummy description", 100)
       }
-      .expectException[DomainException]()
+      .expectException[CommandHandlerNotDefined]()
     }
 
     "update Dummy's name" in {

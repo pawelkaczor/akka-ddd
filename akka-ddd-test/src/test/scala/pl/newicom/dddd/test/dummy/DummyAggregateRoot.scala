@@ -80,7 +80,6 @@ object DummyAggregateRoot extends AggregateRootSupport {
           rejectIf(candidateValue.confirmationToken != confirmationToken, "Invalid confirmation token") orElse
             ValueChanged(id, candidateValue.value, version + 1)
       }
-
       .handleEvents {
         case ValueChanged(_, newValue, newVersion) =>
           Active(value = newValue, version = newVersion)

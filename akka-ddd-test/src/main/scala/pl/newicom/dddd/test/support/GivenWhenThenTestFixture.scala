@@ -5,7 +5,7 @@ import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import org.scalacheck.Gen
 import pl.newicom.dddd.aggregate.Command
-import pl.newicom.dddd.aggregate.error.DomainException
+import pl.newicom.dddd.aggregate.error.CommandRejected
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.command.CommandMessage
@@ -120,7 +120,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
       expectEvent(f(wc.command, wc.params.head))
     }
 
-    def expectException[E <: DomainException](message: String = null)(implicit t: ClassTag[E]): Unit = {
+    def expectException[E <: CommandRejected](message: String = null)(implicit t: ClassTag[E]): Unit = {
       whenFun()
       expectMsgPF[Boolean](timeoutThen.duration, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
         case Processed(scala.util.Failure(ex)) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
