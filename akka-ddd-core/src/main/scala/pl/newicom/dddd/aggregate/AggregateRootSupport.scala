@@ -21,6 +21,9 @@ object AggregateRootSupport {
   class RejectConditionally(condition: Boolean, reject: => Reject) {
     def orElse[E <: DomainEvent](accept: => Accept[E]): Reaction[E] =
       if (condition) reject else accept
+
+    def orElse(alternative: => RejectConditionally): RejectConditionally =
+      if (condition) this else alternative
   }
 
 }
