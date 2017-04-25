@@ -38,8 +38,8 @@ trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends Aggre
 
   def reject(reason: DomainException): Reject = Reject(reason)
 
-  def rejectIf(condition: Boolean, reason: String): RejectConditionally = RejectConditionally(condition, reject(reason))
-  def rejectIf(condition: Boolean, reject: Reject): RejectConditionally = RejectConditionally(condition, reject)
+  def rejectIf(condition: Boolean, reason: String): RejectConditionally = new RejectConditionally(condition, reject(reason))
+  def rejectIf(condition: Boolean, reject: => Reject): RejectConditionally = new RejectConditionally(condition, reject)
 }
 
 trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends AggregateBehaviour[E, S] {

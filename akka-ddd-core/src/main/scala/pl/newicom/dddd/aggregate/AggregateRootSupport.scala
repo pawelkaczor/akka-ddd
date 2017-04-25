@@ -18,8 +18,8 @@ object AggregateRootSupport {
 
   class Reject private[aggregate] (val reason: Throwable) extends Reaction[Nothing]
 
-  case class RejectConditionally(condition: Boolean, reject: Reject) {
-    def orElse[E <: DomainEvent](accept: Accept[E]): Reaction[E] =
+  class RejectConditionally(condition: Boolean, reject: => Reject) {
+    def orElse[E <: DomainEvent](accept: => Accept[E]): Reaction[E] =
       if (condition) reject else accept
   }
 
