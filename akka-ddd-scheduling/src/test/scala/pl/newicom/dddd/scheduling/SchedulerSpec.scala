@@ -4,21 +4,22 @@ import akka.actor.Props
 import org.joda.time.DateTime
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
-import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 import SchedulerSpec._
+import pl.newicom.dddd.office.LocalOfficeId
+
 import scala.concurrent.duration._
 
 object SchedulerSpec {
   val businessUnit = "test"
 
-  implicit val schedulingOfficeID = schedulingLocalOfficeId("Scheduling")
+  implicit val schedulingOfficeID: LocalOfficeId[Scheduler] = schedulingLocalOfficeId("Scheduling")
 
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[Scheduler] =
     new AggregateRootActorFactory[Scheduler] {
-      override def props(pc: PassivationConfig): Props = Props(new Scheduler(pc) with LocalPublisher {
-        override def id = businessUnit
+      override def props(pc: PassivationConfig): Props = Props(new Scheduler(pc) {
+        override def id: String = businessUnit
       })
       override def inactivityTimeout: Duration = it
     }

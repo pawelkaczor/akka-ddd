@@ -3,7 +3,6 @@ package pl.newicom.dddd.scheduling
 import akka.persistence.Recovery
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.scheduling.Scheduler.State
 
@@ -26,8 +25,7 @@ object Scheduler extends AggregateRootSupport {
 
 }
 
-class Scheduler(val pc: PassivationConfig)(implicit val officeID: LocalOfficeId[Scheduler]) extends AggregateRoot[SchedulerEvent, State, Scheduler] {
-  this: EventPublisher =>
+class Scheduler(override val pc: PassivationConfig)(implicit val officeID: LocalOfficeId[Scheduler]) extends AggregateRoot[SchedulerEvent, State, Scheduler] with SparseReply {
 
   // Skip recovery
   override def recovery = Recovery(toSequenceNr = 0L)

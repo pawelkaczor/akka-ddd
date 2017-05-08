@@ -1,24 +1,23 @@
 package lottery.domain.model
 
 import akka.actor.Props
-import lottery.domain.model.LotteryAggregateRoot.LotteryId
+import lottery.domain.model.LotteryBehaviour.LotteryId
 import lottery.domain.model.LotteryProtocol.{AddParticipant, CreateLottery, RemoveAllParticipants, Run}
+import lottery.domain.model.LotterySpecSupport._
 import org.scalacheck.Gen
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
-import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
-import LotterySpecSupport._
+
 import scala.concurrent.duration._
 
 object LotterySpecSupport {
 
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[LotteryAggregateRoot] =
     new AggregateRootActorFactory[LotteryAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new LotteryAggregateRoot with LocalPublisher)
+      override def props(pc: PassivationConfig): Props = Props(new LotteryAggregateRoot)
       override def inactivityTimeout: Duration = it
-
     }
 }
 

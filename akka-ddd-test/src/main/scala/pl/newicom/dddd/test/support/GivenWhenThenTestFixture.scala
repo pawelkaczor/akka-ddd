@@ -4,22 +4,24 @@ import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
 import org.scalacheck.Gen
-import pl.newicom.dddd.aggregate.Command
+import pl.newicom.dddd.aggregate.{Command, DomainEvent}
 import pl.newicom.dddd.aggregate.error.CommandRejected
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.command.CommandMessage
+import pl.newicom.dddd.messaging.event.OfficeEventMessage
 import pl.newicom.dddd.office.Office
+import pl.newicom.dddd.office.SimpleOffice.Batch
 import pl.newicom.dddd.utils.UUIDSupport._
 
 import scala.annotation.tailrec
-import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success}
 
 abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_system) with ImplicitSender {
 
-  val timeoutGiven = Timeout(5.seconds)
+  val timeoutCommand = Timeout(5.seconds)
   val timeoutThen  = Timeout(5.seconds)
 
   def officeUnderTest: Office
@@ -29,7 +31,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   private def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(Seq(new Command {
     override def aggregateId: String = uuid
   }), pastEvents)
-  
+
   implicit def whenContextToCommand[C <: Command](wc: WhenContext[C]): C = wc.command
 
   implicit def whenContextToPastEvents[C <: Command](wc: WhenContext[C]): PastEvents = wc.pastEvents
@@ -53,8 +55,8 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   implicit def acksToPastEvents(acks: Seq[Processed]): PastEvents = PastEvents(acks.toList)
 
   case class PastEvents(list: List[Processed] = List.empty) {
-    private val map: Map[Class[_], List[Any]] =
-      list.groupBy(_.result.get.getClass).mapValues(ackSeq => ackSeq.map(_.result.get))
+    private val map: Map[Class[_], List[DomainEvent]] =
+      list.flatMap(_.result.get.asInstanceOf[Seq[OfficeEventMessage]]).map(_.payload).groupBy(_.getClass)
 
     def first[E](implicit ct: ClassTag[E]): E = map.get(ct.runtimeClass).map(_.head).orNull.asInstanceOf[E]
     def last[E](implicit ct: ClassTag[E]): E = map.get(ct.runtimeClass).map(_.last).orNull.asInstanceOf[E]
@@ -75,16 +77,10 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
       when(f(fakeWhenContext(pastEvents)))
 
     def when[C <: Command](wc: WhenContext[C]): When[C] = when(wc, () => {
-      wc.commands.foreach { command =>
-        val cm = CommandMessage(command).withMetaData(commandMetaDataProvider(command))
-        if (wc.commands.size > 1) {
-          import akka.pattern.ask
-          implicit val timeout = timeoutGiven
-          Await.ready(officeUnderTest.actor ? cm, timeoutGiven.duration)
-        } else {
-          officeUnderTest.actor ! cm
-        }
-      }
+      expectCommandsProcessed(wc.commands).map(_.result).flatMap {
+        case Success(eventMsgs) => eventMsgs.asInstanceOf[Seq[OfficeEventMessage]].map(_.payload)
+        case Failure(ex) => Seq(ex)
+      }.foreach(_system.eventStream.publish)
     })
 
     private def when[C <: Command](wc: WhenContext[C], whenFun: () => Unit): When[C] = {
@@ -121,9 +117,11 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     }
 
     def expectException[E <: CommandRejected](message: String = null)(implicit t: ClassTag[E]): Unit = {
+      val probe = TestProbe()
+      _system.eventStream.subscribe(probe.ref, t.runtimeClass)
       whenFun()
-      expectMsgPF[Boolean](timeoutThen.duration, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
-        case Processed(scala.util.Failure(ex)) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
+      probe.expectMsgPF[Boolean](timeoutThen.duration, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
+        case ex: CommandRejected if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
       }
     }
 
@@ -137,21 +135,18 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
       whenFun()
       probe.expectMsgPF[E](timeoutThen.duration, hint)(matcher)
     }
+  }
 
+  def expectCommandsProcessed(cs: Seq[Command]): Seq[Processed] = {
+    officeUnderTest.actor ! Batch(cs.map(commandMessage))
+    expectMsgAllClassOf(timeoutCommand.duration, cs.map(_ => classOf[Processed]) :_*)
   }
 
   def given(cs: List[Command]): Given = given(cs :_*)
 
   def given(cs: Command*): Given = {
-    import akka.pattern.ask
-    implicit val timeout = timeoutGiven
     Given(
-      givenFun = () => {
-        cs.map { c =>
-          val cm = CommandMessage(c).withMetaData(commandMetaDataProvider(c))
-          Await.result((officeUnderTest.actor ? cm).mapTo[Processed], timeout.duration)
-        }
-      }
+      givenFun = () => expectCommandsProcessed(cs)
     )
   }
 
@@ -161,11 +156,17 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
     When(fakeWhenContext(), () => whenFun)
   }
 
+  def last[E](implicit wc: WhenContext[_], ct: ClassTag[E]): E = past
+
   def past[E](implicit wc: WhenContext[_], ct: ClassTag[E]): E =
     wc.pastEvents.last[E]
 
   def first[E](implicit wc: WhenContext[_], ct: ClassTag[E]): E =
     wc.pastEvents.first[E]
+
+  private def commandMessage(c: Command) = {
+    CommandMessage(c).withMetaData(commandMetaDataProvider(c))
+  }
 
   def commandMetaDataProvider(c: Command): Option[MetaData] = None
 }

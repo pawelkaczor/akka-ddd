@@ -6,6 +6,7 @@ import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId}
 import pl.newicom.dddd.messaging.AddressableMessage
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
+import pl.newicom.dddd.office.SimpleOffice.Batch
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 object SimpleOffice {
@@ -17,6 +18,9 @@ object SimpleOffice {
       }
     }
   }
+
+  case class Batch[A <: AddressableMessage](msgs: Seq[A])
+
 }
 
 class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
@@ -39,10 +43,16 @@ class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
     case Passivate(stopMessage) =>
       dismiss(sender(), stopMessage)
     case msg: AddressableMessage =>
-      val caseId: String = resolveCaseId(msg)
-      val clerk = assignClerk(clerkProps, caseId)
-      log.debug(s"Forwarding message to ${clerk.path}")
-      clerk forward msg
+      forwardToClerk(msg)
+    case Batch(msgs) =>
+      msgs foreach forwardToClerk
+  }
+
+  def forwardToClerk(msg: AddressableMessage): Unit = {
+    val caseId: String = resolveCaseId(msg)
+    val clerk = assignClerk(clerkProps, caseId)
+    log.debug(s"Forwarding message to ${clerk.path}")
+    clerk forward msg
   }
 
   def resolveCaseId(msg: Any): EntityId = caseIdResolution.entityIdResolver(msg)

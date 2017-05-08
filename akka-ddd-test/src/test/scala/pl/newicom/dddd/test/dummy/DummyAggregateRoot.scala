@@ -4,7 +4,6 @@ import akka.actor.ActorRef
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootSupport.Reject
 import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.eventhandling.EventPublisher
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.ValueGeneratorActor.GenerateRandom
 import pl.newicom.dddd.utils.UUIDSupport.uuidObj
@@ -90,8 +89,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
 
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
-class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyBehaviour, DummyAggregateRoot] {
-  this: EventPublisher =>
+class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyBehaviour, DummyAggregateRoot] with ReplyWithEvents {
 
   val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(valueGenerator))
 

@@ -7,9 +7,6 @@ import scala.util.{Success, Try}
 /**
   * At-Least-Once Delivery protocol
   */
-object Delivered {
-  val CommandAccepted = Success("Command processed successfully. Thank you!")
-}
 
 trait Delivered extends Receipt {
   def deliveryId: Long

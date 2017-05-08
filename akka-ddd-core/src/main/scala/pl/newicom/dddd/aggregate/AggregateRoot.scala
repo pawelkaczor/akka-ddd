@@ -3,12 +3,14 @@ package pl.newicom.dddd.aggregate
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.AggregateRootSupport.{Accept, Reaction, Reject, RejectConditionally}
 import pl.newicom.dddd.aggregate.error._
+import pl.newicom.dddd.messaging.Message
 import pl.newicom.dddd.messaging.command.CommandMessage
-import pl.newicom.dddd.messaging.event.EventMessage
+import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
 import pl.newicom.dddd.office.LocalOfficeId
 
 import scala.PartialFunction.empty
 import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 abstract class AggregateRootActorFactory[A <: AggregateRoot[_, _, A]: LocalOfficeId] extends BusinessEntityActorFactory[A] {
   def inactivityTimeout: Duration = 1.minute
@@ -99,6 +101,11 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
 
   def state: S = sm.state
 
+  override def preRestart(reason: Throwable, msgOpt: Option[Any]) {
+    reply(Failure(reason))
+    super.preRestart(reason, msgOpt)
+  }
+
   override def receiveCommand: Receive = {
     case cm: CommandMessage =>
       safely {
@@ -109,7 +116,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
   private def execute(r: Reaction[Event]): Unit = r match {
     case c: Collaboration => c.execute(raise)
     case Accept(events) => raise(events)
-    case Reject(ex) => acknowledgeCommandRejected(ex)
+    case Reject(ex) => reply(Failure(ex))
   }
 
   def handleUnknown: HandleCommand = {
@@ -138,12 +145,20 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
       sm.eventMessageHandler.andThen { _ =>
         eventsCount += 1
         if (eventsCount == events.size) {
-           handle(currentCommandSender, eventMessages.map(toOfficeEventMessage))
+          val oems = eventMessages.map(toOfficeEventMessage)
+          reply(Success(oems))
         }
       }
 
     persistAll(eventMessages.toList)(e => safely(handler(e)))
   }
+
+  private def reply(result: Try[Seq[OfficeEventMessage]], cm: CommandMessage = currentCommandMessage) {
+    currentCommandSender ! cm.deliveryReceipt(result.map(successMapper))
+  }
+
+  def handleDuplicated(msg: Message): Unit =
+    reply(Success(Seq.empty), msg.asInstanceOf[CommandMessage])
 
   private def safely(f: => Unit): Unit = try f catch {
       case ex: Throwable => execute(new Reject(ex))

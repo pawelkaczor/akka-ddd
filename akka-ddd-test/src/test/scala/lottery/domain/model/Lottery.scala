@@ -2,16 +2,14 @@ package lottery.domain.model
 
 import java.time.OffsetDateTime
 
-import lottery.domain.model.LotteryAggregateRoot.{Lottery, LotteryId}
+import lottery.domain.model.LotteryBehaviour.LotteryId
 import lottery.domain.model.LotteryProtocol._
-import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.aggregate.error.DomainException
-import pl.newicom.dddd.eventhandling.EventPublisher
 
 import scala.util.Random
 
-object LotteryAggregateRoot extends AggregateRootSupport {
+object LotteryBehaviour {
 
   sealed trait Lottery extends AggregateActions[LotteryEvent, Lottery]
 
@@ -182,10 +180,3 @@ object LotteryProtocol {
 }
 
 class LotteryHasAlreadyAWinner(msg: String) extends DomainException(msg)
-
-class LotteryAggregateRoot extends AggregateRoot[LotteryEvent, Lottery, LotteryAggregateRoot] {
-  this: EventPublisher =>
-
-  override val pc = PassivationConfig()
-
-}

@@ -6,7 +6,6 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.coordination.ReceptorConfig
 import pl.newicom.dddd.delivery.protocol.Processed
-import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.office.OfficeListener
@@ -29,7 +28,7 @@ object ReceptorStressIntegrationSpec {
 
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot with LocalPublisher)
+      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot)
       override def inactivityTimeout: Duration = it
     }
 

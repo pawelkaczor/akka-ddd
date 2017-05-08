@@ -6,7 +6,6 @@ import akka.testkit.TestProbe
 import com.typesafe.config.Config
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
-import pl.newicom.dddd.eventhandling.LocalPublisher
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
 import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyEvent, CreateDummy, DummyCreated}
 import pl.newicom.dddd.test.dummy._
@@ -28,7 +27,7 @@ object SqlViewUpdateServiceIntegrationSpec {
 
   implicit def dummyFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot with LocalPublisher)
+      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot)
       override def inactivityTimeout: Duration = it
     }
 
