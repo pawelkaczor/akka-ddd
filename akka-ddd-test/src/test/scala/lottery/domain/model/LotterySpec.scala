@@ -17,7 +17,7 @@ class LotterySpec extends LotterySpecSupport {
       .when {
         a [Run]
       }
-      .expectEventMatching[WinnerSelected] {
+      .expectEventMatching {
         case e: WinnerSelected => e
       }
     }

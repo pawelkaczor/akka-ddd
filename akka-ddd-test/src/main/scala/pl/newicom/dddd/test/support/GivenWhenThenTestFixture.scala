@@ -78,8 +78,8 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
     def when[C <: Command](wc: WhenContext[C]): When[C] = when(wc, () => {
       expectCommandsProcessed(wc.commands).map(_.result).flatMap {
-        case Success(eventMsgs) => eventMsgs.asInstanceOf[Seq[OfficeEventMessage]].map(_.payload)
-        case Failure(ex) => Seq(ex)
+        case Success(eventMsgs) => eventMsgs.asInstanceOf[Seq[OfficeEventMessage]].map(em => Success(em.payload))
+        case f => Seq(f)
       }.foreach(_system.eventStream.publish)
     })
 
@@ -90,50 +90,44 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   case class When[C <: Command](wc: WhenContext[C], whenFun: () => Unit) {
 
-    def expectEvents[E](events: E*)(implicit t: ClassTag[E]): Unit = {
-      val probe = TestProbe()
-      _system.eventStream.subscribe(probe.ref, t.runtimeClass)
-      whenFun()
+    def expectEvents(events: DomainEvent*): Unit = {
+      val probe = testProbe(whenFun)
       events.foreach { _ =>
-        probe.expectMsgAnyOf[E](timeoutThen.duration, events: _*)
+        probe.expectMsgAnyOf[DomainEvent](timeoutThen.duration, events.map(Success(_)): _*)
       }
     }
 
-    def expectEvent[E](e: E)(implicit t: ClassTag[E]): Unit = {
-      expectEventMatching[E](
+    def expectEvent(e: DomainEvent): Unit = {
+      expectEventMatching(
         matcher = {
           case actual if actual == e => e
         },
-        hint = e.toString
+        s"Success($e)"
       )
     }
 
-    def expect[E](f: (WhenContext[C]) => E)(implicit t: ClassTag[E]): Unit = {
+    def expect(f: (WhenContext[C]) => DomainEvent): Unit = {
       expectEvent(f(wc))
     }
 
-    def expect2[E](f: (C, Any) => E)(implicit t: ClassTag[E]): Unit = {
+    def expect2(f: (C, Any) => DomainEvent): Unit = {
       expectEvent(f(wc.command, wc.params.head))
     }
 
     def expectException[E <: CommandRejected](message: String = null)(implicit t: ClassTag[E]): Unit = {
-      val probe = TestProbe()
-      _system.eventStream.subscribe(probe.ref, t.runtimeClass)
-      whenFun()
-      probe.expectMsgPF[Boolean](timeoutThen.duration, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
-        case ex: CommandRejected if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
+      testProbe(whenFun).expectMsgPF[Boolean](timeoutThen.duration, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
+        case Failure(ex) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
       }
     }
 
-    def expectEventMatching2[E](f: (C) => PartialFunction[Any, E], hint: String = "")(implicit t: ClassTag[E]): E = {
+    def expectEventMatching2(f: (C) => PartialFunction[Any, Any], hint: String = ""): Any = {
       expectEventMatching(f(wc.command))
     }
 
-    def expectEventMatching[E](matcher: PartialFunction[Any, E], hint: String = "")(implicit t: ClassTag[E]): E = {
-      val probe = TestProbe()
-      _system.eventStream.subscribe(probe.ref, t.runtimeClass)
-      whenFun()
-      probe.expectMsgPF[E](timeoutThen.duration, hint)(matcher)
+    def expectEventMatching(matcher: PartialFunction[Any, Any], hint: String = ""): Any = {
+      testProbe(whenFun).expectMsgPF[Any](timeoutThen.duration, hint) {
+        case Success(result) if matcher.isDefinedAt(result) => result
+      }
     }
   }
 
@@ -169,4 +163,25 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   }
 
   def commandMetaDataProvider(c: Command): Option[MetaData] = None
+
+
+  private def testProbe(f: () => Unit) = {
+    new TestProbe(_system) {
+      var initialized = false
+
+      def initialize(): Unit = {
+        _system.eventStream.subscribe(this.ref, classOf[Success[_]])
+        _system.eventStream.subscribe(this.ref, classOf[Failure[_]])
+        f()
+      }
+
+      override def receiveOne(max: Duration): AnyRef = {
+        if (!initialized) {
+          initialize(); initialized = true
+        }
+        super.receiveOne(max)
+      }
+    }
+  }
+
 }
