@@ -3,16 +3,16 @@ import sbt._
 object Deps {
 
   object Version {
-    val Akka                  = "2.4.16"
-    val AkkaHttp              = "10.0.4"
+    val Akka                  = "2.5.1"
+    val AkkaHttp              = "10.0.6"
 
-    val EventStoreClient      = "4.0.0"
-    val EventStoreAkkaJournal = "4.0.0"
+    val EventStoreClient      = "4.1.0"
+    val EventStoreAkkaJournal = "4.1.0"
     
     val json4s                = "3.5.0"
 
     val Slick                 = "3.2.0"
-    val PostgresqlSlickExt    = "0.15.0-M4" // Slick 3.2.0
+    val PostgresqlSlickExt    = "0.15.0-RC" // Slick 3.2.0
     val H2Driver              = "1.4.189"
 
     // monitoring
