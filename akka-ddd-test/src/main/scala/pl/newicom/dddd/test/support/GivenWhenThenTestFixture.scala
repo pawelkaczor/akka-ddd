@@ -76,6 +76,12 @@ case class When[C <: Command](wc: WhenContext[C], whenFun: () => Unit)(implicit 
     expectEvent(f(wc.command, wc.params.head))
   }
 
+  def expectCommandRejected: Unit = {
+    testProbe(whenFun).expectMsgPF[Boolean](timeout) {
+      case Failure(_: CommandRejected)  => true
+    }
+  }
+
   def expectException[E <: CommandRejected](message: String = null)(implicit t: ClassTag[E]): Unit = {
     testProbe(whenFun).expectMsgPF[Boolean](timeout, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
       case Failure(ex) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
