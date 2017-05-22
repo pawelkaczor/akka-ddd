@@ -27,8 +27,9 @@ trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends Aggre
 
   type Command = Any
   type HandleCommand = PartialFunction[Command, Reaction[E]]
+  type HandleCommandMessage = PartialFunction[CommandMessage, Reaction[E]]
 
-  def handleCommand: HandleCommand
+  def handleCommandMessage: HandleCommandMessage
 
   implicit def toReaction(e: E): Accept[E] =
     Accept(Seq(e))
@@ -46,39 +47,42 @@ trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends Aggre
 
 trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends AggregateBehaviour[E, S] {
 
-  case class Actions(commandHandlers: HandleCommand, eventHandlers: StateMachine = empty) {
-    def handleEvents(eh: StateMachine): Actions =
-      copy(eventHandlers = eh)
+  case class Actions(cmHandler: HandleCommandMessage, eventHandler: StateMachine = empty) {
+    def handleEvent(eh: StateMachine): Actions =
+      copy(eventHandler = eh)
 
     def map[SS <: S](f: SS => S): Actions =
-      copy(eventHandlers = eventHandlers.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
+      copy(eventHandler = eventHandler.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
 
     def ++(other: Actions): Actions =
       Actions(
-        commandHandlers.orElse(other.commandHandlers),
-        eventHandlers.orElse(other.eventHandlers)
+        cmHandler.orElse(other.cmHandler),
+        eventHandler.orElse(other.eventHandler)
       )
 
     def orElse[SS <: S](other: AggregateActions[E, S], f: SS => S = (a: SS) => a): Actions =
       Actions(
-        commandHandlers.orElse(other.handleCommand),
-        eventHandlers.orElse(other.apply.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
+        cmHandler.orElse(other.handleCommandMessage),
+        eventHandler.orElse(other.apply.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
       )
 
     def orElse(other: Actions): Actions =
-      Actions(commandHandlers.orElse(other.commandHandlers), eventHandlers.orElse(other.eventHandlers))
+      Actions(cmHandler.orElse(other.cmHandler), eventHandler.orElse(other.eventHandler))
   }
 
-  def handleCommand: HandleCommand =
-    actions.commandHandlers
+  def handleCommandMessage: HandleCommandMessage =
+    actions.cmHandler
 
   def apply: StateMachine =
-    actions.eventHandlers
+    actions.eventHandler
 
   protected def actions: Actions
 
-  protected def handleCommands(hc: HandleCommand): Actions =
-    Actions(hc)
+  protected def handleCommand(hc: HandleCommand): Actions =
+    Actions { case cm: CommandMessage if hc.isDefinedAt(cm.command) => hc(cm.command)}
+
+  protected def handleCommandMessage(hcm: HandleCommandMessage): Actions =
+    Actions(hcm)
 
   protected def noActions: Actions = Actions(empty)
 }
@@ -91,6 +95,7 @@ trait Uninitialized[S <: AggregateState[S]] {
 abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Uninitialized, A <: AggregateRoot[Event, S, A] : LocalOfficeId] extends AggregateRootBase with CollaborationSupport[Event] {
 
   type HandleCommand = PartialFunction[Any, Reaction[Event]]
+  type HandleCommandMessage = PartialFunction[CommandMessage, Reaction[Event]]
 
   override def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
   override def department: String = officeId.department
@@ -109,7 +114,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
   override def receiveCommand: Receive = {
     case cm: CommandMessage =>
       safely {
-        handleCommand.orElse(handleUnknown).andThen(execute)(cm.command)
+        handleCommandMessage.orElse(handleUnknown).andThen(execute)(cm)
       }
   }
 
@@ -119,9 +124,9 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
     case Reject(ex) => reply(Failure(ex))
   }
 
-  def handleUnknown: HandleCommand = {
-    case cmd =>
-      val commandName = cmd.getClass.getSimpleName
+  def handleUnknown: HandleCommandMessage = {
+    case cm: CommandMessage =>
+      val commandName = cm.command.getClass.getSimpleName
       Reject(
         if (initialized)
           new CommandHandlerNotDefined(commandName)
@@ -134,8 +139,8 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
     case em: EventMessage => sm.apply(em)
   }
 
-  def handleCommand: HandleCommand =
-    state.asInstanceOf[AggregateBehaviour[Event, S]].handleCommand
+  def handleCommandMessage: HandleCommandMessage =
+    state.asInstanceOf[AggregateBehaviour[Event, S]].handleCommandMessage
 
   private def raise(events: Seq[Event]): Unit = {
     var eventsCount = 0

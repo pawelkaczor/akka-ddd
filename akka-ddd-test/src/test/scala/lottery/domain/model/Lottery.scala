@@ -15,10 +15,10 @@ object LotteryBehaviour {
 
   implicit case object UninitializedLottery extends Lottery with Uninitialized[Lottery] {
     def actions =
-      handleCommands {
+      handleCommand {
         case CreateLottery(id) => LotteryCreated(id)
       }
-      .handleEvents {
+      .handleEvent {
         case LotteryCreated(_) => EmptyLottery
       }
   }
@@ -30,7 +30,7 @@ object LotteryBehaviour {
       * Only applicable when list of participants is empty
       */
     def canNotRunWithoutParticipants =
-      handleCommands {
+      handleCommand {
         // can't run if there is no participants
         case Run(_)  =>
           reject("Lottery has no participants")
@@ -42,10 +42,10 @@ object LotteryBehaviour {
       * Applicable as long as we don't have a winner
       */
     def acceptParticipants =
-      handleCommands {
+      handleCommand {
         case AddParticipant(id, name) => ParticipantAdded(name, id)
       }
-      .handleEvents {
+      .handleEvent {
         case ParticipantAdded(name, _) =>
           NonEmptyLottery(List(name))
       }
@@ -63,7 +63,7 @@ object LotteryBehaviour {
 
       def hasParticipant(name: String) = participants.contains(name)
 
-      handleCommands {
+      handleCommand {
         // can't add participant twice
         case cmd: AddParticipant if hasParticipant(cmd.name) =>
           reject(s"Participant ${cmd.name} already added!")
@@ -75,10 +75,10 @@ object LotteryBehaviour {
       * Applicable as long as we don't have a winner
       */
     def acceptParticipants =
-      handleCommands {
+      handleCommand {
         case AddParticipant(id, name) => ParticipantAdded(name, id)
       }
-      .handleEvents {
+      .handleEvent {
         case ParticipantAdded(name, _) => copy(participants = name :: participants)
       }
 
@@ -88,13 +88,13 @@ object LotteryBehaviour {
       */
     def removeParticipants =
       // removing participants (single or all) produce ParticipantRemoved events
-      handleCommands {
+      handleCommand {
         case RemoveParticipant(id, name) => ParticipantRemoved(name, id)
         case RemoveAllParticipants(id) =>
           this.participants
             .map { name => ParticipantRemoved(name, id) }
       }
-      .handleEvents {
+      .handleEvent {
         case ParticipantRemoved(name, id) =>
           val newParticipants = participants.filter(_ != name)
           // NOTE: if last participant is removed, transition back to EmptyLottery
@@ -109,13 +109,13 @@ object LotteryBehaviour {
       * Only applicable if it has at least one participant
       */
     def runTheLottery =
-      handleCommands {
+      handleCommand {
         case Run(id) =>
           val index = Random.nextInt(participants.size)
           val winner = participants(index)
           WinnerSelected(winner, OffsetDateTime.now, id)
       }
-      .handleEvents {
+      .handleEvent {
         // transition to end state on winner selection
         case WinnerSelected(winner, _, id) => FinishedLottery(winner, id)
       }
@@ -130,7 +130,7 @@ object LotteryBehaviour {
       * Applicable when a winner is selected. No new commands should be accepts.
       */
     def rejectAllCommands =
-      handleCommands {
+      handleCommand {
         // no command can be accepted after having selected a winner
         case anyCommand  =>
           throw new LotteryHasAlreadyAWinner(s"Lottery has already a winner and the winner is $winner")

@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootSupport.Reject
 import pl.newicom.dddd.aggregate._
+import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.ValueGeneratorActor.GenerateRandom
 import pl.newicom.dddd.utils.UUIDSupport.uuidObj
@@ -24,13 +25,13 @@ object DummyAggregateRoot extends AggregateRootSupport {
 
     def actions: Actions =
 
-      handleCommands {
+      handleCommand {
         case CreateDummy(id, name, description, value) =>
           rejectNegative(value) orElse
             DummyCreated(id, name, description, value)
       }
 
-      .handleEvents {
+      .handleEvent {
         case DummyCreated(_, _, _, value) =>
           Active(value, 0)
       }
@@ -42,7 +43,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
 
     def actions: Actions =
 
-      handleCommands {
+      handleCommand {
         case ChangeName(id, name) =>
           NameChanged(id, name)
 
@@ -57,7 +58,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
           NameChanged(id, name) & ValueChanged(id, 0, version + 1)
       }
 
-      .handleEvents {
+      .handleEvent {
         case ValueChanged(_, newValue, newVersion) =>
           copy(value = newValue, version = newVersion)
 
@@ -74,12 +75,12 @@ object DummyAggregateRoot extends AggregateRootSupport {
 
     def actions: Actions =
 
-      handleCommands {
+      handleCommand {
         case ConfirmGeneratedValue(id, confirmationToken) =>
           rejectIf(candidateValue.confirmationToken != confirmationToken, "Invalid confirmation token") orElse
             ValueChanged(id, candidateValue.value, version + 1)
       }
-      .handleEvents {
+      .handleEvent {
         case ValueChanged(_, newValue, newVersion) =>
           Active(value = newValue, version = newVersion)
       }
@@ -93,8 +94,8 @@ class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyBehaviour, Dummy
 
   val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(valueGenerator))
 
-  override def handleCommand: HandleCommand = super.handleCommand.orElse {
-      case GenerateValue(_) if state.isActive =>
+  override def handleCommandMessage: HandleCommandMessage = super.handleCommandMessage.orElse {
+    case CommandMessage(GenerateValue(_), _, _, _) if state.isActive =>
         valueGeneration
   }
 

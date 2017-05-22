@@ -3,6 +3,7 @@ package pl.newicom.dddd.scheduling
 import akka.persistence.Recovery
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
+import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.scheduling.Scheduler.State
 
@@ -33,8 +34,8 @@ class Scheduler(override val pc: PassivationConfig)(implicit val officeID: Local
   // Disable automated recovery on restart
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = ()
 
-  override def handleCommand: HandleCommand = {
-    case ScheduleEvent(_, target, deadline, event) =>
+  override def handleCommandMessage: HandleCommandMessage = {
+    case CommandMessage(ScheduleEvent(_, target, deadline, event), _, _, _) =>
       val metadata = ScheduledEventMetadata(
         businessUnit = id,
         target,
