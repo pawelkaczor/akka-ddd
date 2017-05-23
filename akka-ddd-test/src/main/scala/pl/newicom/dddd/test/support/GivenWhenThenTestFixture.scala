@@ -190,6 +190,8 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
   def first[E](implicit wc: WhenContext[_], ct: ClassTag[E]): E =
     wc.pastEvents.first[E]
 
+  protected def commandMetaDataProvider(c: Command): Option[MetaData] = None
+
   // Private methods
 
   private implicit def commandsHandler: CommandsHandler = {
@@ -204,7 +206,5 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
         expectMsgAllClassOf(timeout, cs.map(_ => classOf[Processed]): _*)
       }
   }.andThen(r => { if (r.nonEmpty) { ensureOfficeTerminated() }; r})
-
-  private def commandMetaDataProvider(c: Command): Option[MetaData] = None
 
 }

@@ -29,7 +29,7 @@ trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends Aggre
   type HandleCommand = PartialFunction[Command, Reaction[E]]
   type HandleCommandMessage = PartialFunction[CommandMessage, Reaction[E]]
 
-  def handleCommandMessage: HandleCommandMessage
+  def cmHandler: HandleCommandMessage
 
   implicit def toReaction(e: E): Accept[E] =
     Accept(Seq(e))
@@ -62,7 +62,7 @@ trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends Aggrega
 
     def orElse[SS <: S](other: AggregateActions[E, S], f: SS => S = (a: SS) => a): Actions =
       Actions(
-        cmHandler.orElse(other.handleCommandMessage),
+        cmHandler.orElse(other.cmHandler),
         eventHandler.orElse(other.apply.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
       )
 
@@ -70,7 +70,7 @@ trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends Aggrega
       Actions(cmHandler.orElse(other.cmHandler), eventHandler.orElse(other.eventHandler))
   }
 
-  def handleCommandMessage: HandleCommandMessage =
+  def cmHandler: HandleCommandMessage =
     actions.cmHandler
 
   def apply: StateMachine =
@@ -140,7 +140,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Unin
   }
 
   def handleCommandMessage: HandleCommandMessage =
-    state.asInstanceOf[AggregateBehaviour[Event, S]].handleCommandMessage
+    state.asInstanceOf[AggregateBehaviour[Event, S]].cmHandler
 
   private def raise(events: Seq[Event]): Unit = {
     var eventsCount = 0
