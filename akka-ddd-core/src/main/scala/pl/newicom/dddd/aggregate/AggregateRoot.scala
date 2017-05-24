@@ -25,11 +25,13 @@ trait AggregateState[S <: AggregateState[S]] {
 
 trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends AggregateState[S] {
 
-  type Command = Any
   type HandleCommand = PartialFunction[Command, Reaction[E]]
   type HandleCommandMessage = PartialFunction[CommandMessage, Reaction[E]]
 
   def cmHandler: HandleCommandMessage
+  def commandHandler: HandleCommand = {
+    case c: Command if cmHandler.isDefinedAt(CommandMessage(c, "")) => cmHandler(CommandMessage(c, ""))
+  }
 
   implicit def toReaction(e: E): Accept[E] =
     Accept(Seq(e))
@@ -78,7 +80,7 @@ trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends Aggrega
 
   protected def actions: Actions
 
-  protected def handleCommand(hc: HandleCommand): Actions =
+  def handleCommand(hc: HandleCommand): Actions =
     Actions { case cm: CommandMessage if hc.isDefinedAt(cm.command) => hc(cm.command)}
 
   protected def handleCommandMessage(hcm: HandleCommandMessage): Actions =
@@ -94,7 +96,7 @@ trait Uninitialized[S <: AggregateState[S]] {
 
 abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S] : Uninitialized, A <: AggregateRoot[Event, S, A] : LocalOfficeId] extends AggregateRootBase with CollaborationSupport[Event] {
 
-  type HandleCommand = PartialFunction[Any, Reaction[Event]]
+  type HandleCommand = PartialFunction[Command, Reaction[Event]]
   type HandleCommandMessage = PartialFunction[CommandMessage, Reaction[Event]]
 
   override def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]

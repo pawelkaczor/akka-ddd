@@ -13,6 +13,7 @@ object CollaborationSupport {
 trait CollaborationSupport[Event <: DomainEvent] extends Stash {
   this: AggregateRoot[Event, _, _] =>
   import CollaborationSupport._
+  type HandleResponse = PartialFunction[Any, Reaction[Event]]
 
   implicit def toReaction(e: Event): Accept[Event] = Accept(Seq(e))
 
@@ -20,12 +21,12 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash {
     def !<(msg: Any): Collaboration = Collaboration(target, msg, PartialFunction.empty, null)
   }
 
-  case class Collaboration(target: ActorRef, msg: Any, receive: HandleCommand, timeout: FiniteDuration) extends Reaction[Event] {
-    def apply(receive: HandleCommand)(implicit timeout: FiniteDuration): Collaboration = {
+  case class Collaboration(target: ActorRef, msg: Any, receive: HandleResponse, timeout: FiniteDuration) extends Reaction[Event] {
+    def apply(receive: HandleResponse)(implicit timeout: FiniteDuration): Collaboration = {
       copy(receive = receive, timeout = timeout)
     }
 
-    def expectOnce(receive: HandleCommand)(implicit timeout: FiniteDuration): Unit = apply(receive)
+    def expectOnce(receive: HandleResponse)(implicit timeout: FiniteDuration): Unit = apply(receive)
 
     def execute(callback: Seq[Event] => Unit): Unit = {
       target ! msg
@@ -33,7 +34,7 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash {
     }
   }
 
-  private def internalExpectOnce(target: ActorRef, receive: HandleCommand, callback: Seq[Event] => Unit)(implicit timeout: FiniteDuration): Unit = {
+  private def internalExpectOnce(target: ActorRef, receive: HandleResponse, callback: Seq[Event] => Unit)(implicit timeout: FiniteDuration): Unit = {
     import context.dispatcher
     val scheduledTimeout = context.system.scheduler.scheduleOnce(timeout, self, ReceiveTimeout)
 
