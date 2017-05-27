@@ -1,9 +1,11 @@
 package pl.newicom.dddd.office
 
 import akka.actor.{ActorPath, ActorRef}
-import pl.newicom.dddd.aggregate.EntityId
+import akka.util.Timeout
+import pl.newicom.dddd.aggregate.{EntityId, Query}
 import pl.newicom.dddd.delivery.protocol.DeliveryHandler
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 object LocalOfficeId {
@@ -30,4 +32,9 @@ class Office(val officeId: OfficeId, val actor: ActorRef) {
   }
 
   def !!(msg: Any)(implicit dh: DeliveryHandler): Unit = deliver(msg)
+
+  def ?(query: Query)(implicit ex: ExecutionContext, t: Timeout, ct: ClassTag[query.R]): Future[query.R] = {
+    import akka.pattern.ask
+    (actor ? query).mapTo[query.R]
+  }
 }

@@ -1,18 +1,19 @@
 package pl.newicom.dddd.aggregate
 
-import pl.newicom.dddd.aggregate.error.CommandRejected
 import pl.newicom.dddd.office.{LocalOfficeId, OfficeListener}
 
 object AggregateRootSupport {
 
-  trait Reaction[+E <: DomainEvent]
+  trait Reaction[+E]
 
-  case class Accept[E <: DomainEvent](events: Seq[E]) extends Reaction[E] {
-    def &(next: E): Accept[E] = Accept(events :+ next)
+  case class AcceptC[E <: DomainEvent](events: Seq[E]) extends Reaction[E] {
+    def &(next: E): AcceptC[E] = AcceptC(events :+ next)
   }
 
+  case class AcceptQ[R](response: R) extends Reaction[R]
+
   object Reject {
-    def apply(reason: CommandRejected): Reject = new Reject(reason)
+    private[aggregate] def apply(reason: Throwable): Reject = new Reject(reason)
     def unapply(arg: Reject): Option[Throwable] = Some(arg.reason)
   }
 

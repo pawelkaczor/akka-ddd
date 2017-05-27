@@ -2,10 +2,11 @@ package pl.newicom.dddd.office
 
 import akka.actor._
 import pl.newicom.dddd.actor.{ActorContextCreationSupport, BusinessEntityActorFactory, Passivate, PassivationConfig}
-import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId}
+import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId, Query}
 import pl.newicom.dddd.messaging.AddressableMessage
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution
+import pl.newicom.dddd.messaging.query.QueryMessage
 import pl.newicom.dddd.office.SimpleOffice.Batch
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
@@ -33,6 +34,7 @@ class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
   override def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
     receive.applyOrElse(msg match {
       case c: Command => CommandMessage(c)
+      case q: Query => QueryMessage(q)
       case other => other
     }, unhandled)
   }

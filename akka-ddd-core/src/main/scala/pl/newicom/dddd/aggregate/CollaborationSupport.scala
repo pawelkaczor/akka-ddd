@@ -1,7 +1,7 @@
 package pl.newicom.dddd.aggregate
 
 import akka.actor.{ActorRef, Stash}
-import pl.newicom.dddd.aggregate.AggregateRootSupport.{Accept, Reaction, Reject}
+import pl.newicom.dddd.aggregate.AggregateRootSupport.{AcceptC, Reaction, Reject}
 import pl.newicom.dddd.aggregate.error.{NoResponseReceived, UnexpectedResponseReceived}
 
 import scala.concurrent.duration._
@@ -15,7 +15,7 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash {
   import CollaborationSupport._
   type HandleResponse = PartialFunction[Any, Reaction[Event]]
 
-  implicit def toReaction(e: Event): Accept[Event] = Accept(Seq(e))
+  implicit def toReaction(e: Event): AcceptC[Event] = AcceptC(Seq(e))
 
   implicit class CollaborationBuilder(val target: ActorRef) {
     def !<(msg: Any): Collaboration = Collaboration(target, msg, PartialFunction.empty, null)
@@ -40,7 +40,7 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash {
 
     context.become(
       receive.andThen { // expected response received
-        case Accept(events) => callback(events)
+        case AcceptC(events) => callback(events)
         case c: Collaboration => c.execute(callback)
         case Reject(ex) => throw ex
       }.andThen { _ =>
