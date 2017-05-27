@@ -110,7 +110,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     with CollaborationSupport[Event] {
 
   type HandleCommand        = PartialFunction[Command, Reaction[Event]]
-  type HandleAddressable    = PartialFunction[AddressableMessage, Reaction[_]]
+  type HandleMessage        = PartialFunction[AddressableMessage, Reaction[_]]
   type HandleCommandMessage = PartialFunction[CommandMessage, Reaction[Event]]
   type HandleQueryMessage   = PartialFunction[QueryMessage, Reaction[_]]
   type HandleQuery          = PartialFunction[Query, Reaction[_]]
@@ -129,31 +129,36 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     super.preRestart(reason, msgOpt)
   }
 
+  override def receiveRecover: Receive = {
+    case em: EventMessage => sm.apply(em)
+  }
+
   override def receiveCommand: Receive = {
-    case cm: CommandMessage =>
+    case msg: AddressableMessage =>
       safely {
-        handleCommandMessage.andThen(executeC).orElse(handleUnknown)(cm)
-      }
-    case qm: QueryMessage =>
-      safely {
-        handleQueryMessage.andThen(execute).orElse(handleUnknown)(qm)
+        handleMessage.orElse(handleUnknown).andThen(execute)(msg)
       }
   }
 
-  private def executeC(r: Reaction[Event]): Unit = r match {
-    case c: Collaboration => c.execute(raise)
-    case AcceptC(events)  => raise(events)
-    case Reject(ex)       => reply(Failure(ex))
+  private def handleMessage: HandleMessage = {
+    (if (isCommandMsgReceived) {
+      handleCommandMessage
+    } else {
+      handleQueryMessage
+    }).asInstanceOf[HandleMessage]
   }
 
-  private def execute(r: Reaction[_]): Unit = r match {
-    case AcceptQ(response) => msgSender ! response
-    case Reject(ex)        => msgSender ! Failure(ex)
+  def handleCommandMessage: HandleCommandMessage =
+    state.asInstanceOf[AggregateBehaviour[Event, S]].cmHandler
+
+  def handleQueryMessage: HandleQueryMessage = {
+    case QueryMessage(query) if handleQuery.isDefinedAt(query) =>
+      handleQuery(query)
   }
 
-  def handleUnknown: HandleAddressable = {
-    case am: AddressableMessage =>
-      val payloadName = am.payloadName
+  private def handleUnknown: HandleMessage = {
+    case msg: AddressableMessage =>
+      val payloadName = msg.payloadName
       Reject(
         if (initialized) {
           if (isCommandMsgReceived)
@@ -165,20 +170,26 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
       )
   }
 
-  override def receiveRecover: Receive = {
-    case em: EventMessage => sm.apply(em)
-  }
-
-  def handleCommandMessage: HandleCommandMessage =
-    state.asInstanceOf[AggregateBehaviour[Event, S]].cmHandler
-
-  def handleQueryMessage: HandleQueryMessage = {
-    case QueryMessage(query) if handleQuery.isDefinedAt(query) =>
-      handleQuery(query)
-  }
-
-  def handleQuery: HandleQuery =
+  private def handleQuery: HandleQuery =
     state.asInstanceOf[AggregateBehaviour[Event, S]].qHandler
+
+  private def execute(r: Reaction[_]): Unit =
+    if (isCommandMsgReceived) {
+      executeC(r.asInstanceOf[Reaction[Event]])
+    } else {
+      executeQ(r)
+    }
+
+  private def executeC(r: Reaction[Event]): Unit = r match {
+    case c: Collaboration => c.execute(raise)
+    case AcceptC(events)  => raise(events)
+    case Reject(ex)       => reply(Failure(ex))
+  }
+
+  private def executeQ(r: Reaction[_]): Unit = r match {
+    case AcceptQ(response) => msgSender ! response
+    case Reject(ex)        => msgSender ! Failure(ex)
+  }
 
   private def raise(events: Seq[Event]): Unit = {
     var eventsCount   = 0
@@ -204,8 +215,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     reply(Success(Seq.empty), msg.asInstanceOf[CommandMessage])
 
   private def safely(f: => Unit): Unit =
-    try f
-    catch {
+    try f catch {
       case ex: Throwable => execute(new Reject(ex))
     }
 
