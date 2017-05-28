@@ -5,7 +5,7 @@ import java.net.URL
 
 name := "akka-ddd"
 
-version      in ThisBuild := "1.6.0"
+version      in ThisBuild := "1.6.1-SNAPSHOT"
 organization in ThisBuild := "pl.newicom.dddd"
 scalaVersion in ThisBuild := "2.12.2"
 crossScalaVersions in ThisBuild := Seq("2.12.2", "2.11.11")
@@ -32,12 +32,14 @@ lazy val `akka-ddd-protocol` = project
 
 lazy val `akka-ddd-messaging` = project
   .settings(
+    commonSettings,
     libraryDependencies ++= Seq(Akka.stream, nscalaTime)
   ).dependsOn(`akka-ddd-protocol`)
 
 
 lazy val `akka-ddd-core` = project
   .settings(
+    commonSettings,
     publishArtifact in Test := true,
     libraryDependencies ++= Seq(
       Akka.clusterTools, Akka.clusterSharding, Akka.persistence, Akka.contributions, Akka.slf4j
@@ -56,12 +58,16 @@ lazy val `akka-ddd-write-front` = project
 
 
 lazy val `view-update` = project
+  .settings(
+    commonSettings
+  )
   .dependsOn(`akka-ddd-messaging`)
 
 
 lazy val `view-update-sql` = project
   .configs(IntegrationTest)
   .settings(
+    commonSettings,
     scalacOptions ++= Seq("-language:existentials"),
     inConfig(IntegrationTest)(Defaults.testTasks),
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
@@ -78,6 +84,7 @@ lazy val `view-update-sql` = project
 lazy val `akka-ddd-test` = project
   .configs(IntegrationTest)
   .settings(
+    commonSettings,
     inConfig(IntegrationTest)(Defaults.testTasks),
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
@@ -90,6 +97,7 @@ lazy val `akka-ddd-test` = project
 
 lazy val `eventstore-akka-persistence` = project
   .settings(
+    commonSettings,
     libraryDependencies ++= Seq(
       Eventstore.client, Eventstore.akkaJournal,
       Akka.slf4j, Akka.persistence

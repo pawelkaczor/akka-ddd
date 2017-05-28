@@ -3,17 +3,17 @@ import Keys._
 import xerial.sbt.Sonatype.sonatypeSettings
 
 object Publish {
-  lazy val settings = sonatypeSettings :+ (pomExtra :=
-    <scm>
-      <url>git@github.com:pawelkaczor/akka-ddd.git</url>
-      <connection>scm:git:git@github.com:pawelkaczor/akka-ddd.git</connection>
-      <developerConnection>scm:git:git@github.com:pawelkaczor/akka-ddd.git</developerConnection>
-    </scm>
+  lazy val settings = sonatypeSettings ++ Seq(
+    scmInfo := Some(
+      ScmInfo(url("https://github.com/pawelkaczor/akka-ddd"), "scm:git:git@github.com:pawelkaczor/akka-ddd.git</")
+    ),
+    pomExtra :=
       <developers>
         <developer>
-          <id>newicom</id>
+          <id>pawelkaczor</id>
           <name>Pawel Kaczor</name>
-          <url>http://pkaczor.blogspot.com</url>
+          <url>https://github.com/pawelkaczor</url>
         </developer>
-      </developers>)
+      </developers>
+  )
 }
