@@ -2,7 +2,6 @@ package pl.newicom.dddd.test.dms
 
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
-import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.test.dms.DocumentAR.DMSActionsRoot
@@ -15,7 +14,7 @@ object DocumentAR extends AggregateRootSupport {
 
   implicit val initialVersions: Uninitialized[DMSActionsRoot] = Gateway(SortedMap())
 
-  sealed trait DMSActionsRoot extends AggregateActions[DMSEvent, DMSActionsRoot]
+  sealed trait DMSActionsRoot extends AggregateActions[DMSEvent, DMSActionsRoot, Config]
 
   abstract class Document extends DMSActionsRoot {
     def version: Version
@@ -32,11 +31,11 @@ object DocumentAR extends AggregateRootSupport {
       handleCommand {
         case c: TargetingVersion =>
           rejectIf(!docsByVersion.contains(c.version), s"Unknown version: ${c.version}").orElse {
-            docsByVersion(c.version).commandHandler(c)
+            docsByVersion(c.version).commandHandlerNoCtx(c)
           }
 
         case c: DMSCommand =>
-          val ch = latestOrNew.commandHandler
+          val ch = latestOrNew.commandHandlerNoCtx
           if (ch.isDefinedAt(c)) {
             ch(c)
           } else {
@@ -128,4 +127,4 @@ object DocumentAR extends AggregateRootSupport {
 
 }
 
-abstract class DocumentAR(override val pc: PassivationConfig) extends AggregateRoot[DMSEvent, DMSActionsRoot, DocumentAR]
+abstract class DocumentAR(val config: Config) extends AggregateRoot[DMSEvent, DMSActionsRoot, DocumentAR] with ConfigClass[Config]

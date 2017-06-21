@@ -12,6 +12,7 @@ import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.SagaIntegrationSpec._
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
 import pl.newicom.dddd.saga.CoordinationOffice
+import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied, Poison}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga, dummyOfficeId}
@@ -27,7 +28,7 @@ object SagaIntegrationSpec {
 
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot)
+      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(pc))
       override def inactivityTimeout: Duration = it
     }
 

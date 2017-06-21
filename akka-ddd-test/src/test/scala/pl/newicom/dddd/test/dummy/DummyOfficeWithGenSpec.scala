@@ -3,7 +3,7 @@ package pl.newicom.dddd.test.dummy
 import akka.actor.Props
 import org.scalacheck.Gen
 import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, ReplyConfig, EntityId, ReplyWithEvents}
+import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, EntityId}
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig._
@@ -17,7 +17,7 @@ object DummyOfficeWithGenSpec {
 
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot)
+      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(pc))
       override def inactivityTimeout: Duration = it
     }
 }

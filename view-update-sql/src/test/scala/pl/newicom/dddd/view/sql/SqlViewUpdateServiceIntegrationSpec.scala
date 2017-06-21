@@ -7,7 +7,7 @@ import com.typesafe.config.Config
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
-import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyEvent, CreateDummy, DummyCreated}
+import pl.newicom.dddd.test.dummy.DummyProtocol.{CreateDummy, DummyCreated, DummyEvent}
 import pl.newicom.dddd.test.dummy._
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
 import pl.newicom.dddd.test.support.OfficeSpec
@@ -27,7 +27,7 @@ object SqlViewUpdateServiceIntegrationSpec {
 
   implicit def dummyFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot)
+      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(pc))
       override def inactivityTimeout: Duration = it
     }
 
@@ -95,9 +95,9 @@ class SqlViewUpdateServiceIntegrationSpec
 
   lazy val viewMetadataDao = new ViewMetadataDao()
 
-  override def ensureSchemaDropped = viewMetadataDao.ensureSchemaDropped
+  override def ensureSchemaDropped: DBIO[Unit] = viewMetadataDao.ensureSchemaDropped
 
-  override def ensureSchemaCreated = viewMetadataDao.ensureSchemaCreated
+  override def ensureSchemaCreated: DBIO[Unit] = viewMetadataDao.ensureSchemaCreated
 
 
   def config: Config = system.settings.config

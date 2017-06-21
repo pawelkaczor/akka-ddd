@@ -28,7 +28,7 @@ object ReceptorStressIntegrationSpec {
 
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot)
+      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(pc))
       override def inactivityTimeout: Duration = it
     }
 

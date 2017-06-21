@@ -3,10 +3,9 @@ package pl.newicom.dddd.aggregate
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.AggregateRootSupport._
 import pl.newicom.dddd.aggregate.error._
-import pl.newicom.dddd.messaging.{AddressableMessage, Message}
+import pl.newicom.dddd.messaging.{AddressableMessage, Message, MetaData}
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
-import pl.newicom.dddd.messaging.query.QueryMessage
 import pl.newicom.dddd.office.LocalOfficeId
 
 import scala.PartialFunction.empty
@@ -25,17 +24,16 @@ trait AggregateState[S <: AggregateState[S]] {
   def initialized: Boolean                         = true
 }
 
-trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends AggregateState[S] {
+trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends AggregateState[S] {
 
-  type HandleQuery          = PartialFunction[Query, Reaction[_]]
-  type HandleCommand        = PartialFunction[Command, Reaction[E]]
-  type HandleCommandMessage = PartialFunction[CommandMessage, Reaction[E]]
+  type HandleQuery              = PartialFunction[Query, Reaction[_]]
+  type HandleCommand            = PartialFunction[Command, Reaction[E]]
+  type HandleCommandWithContext = CommandHandlerContext[C] => HandleCommand
 
-  def cmHandler: HandleCommandMessage
+  def commandHandler: HandleCommandWithContext
+  def commandHandlerNoCtx: HandleCommand = commandHandler(null)
+
   def qHandler: HandleQuery
-  def commandHandler: HandleCommand = {
-    case c: Command if cmHandler.isDefinedAt(CommandMessage(c, "")) => cmHandler(CommandMessage(c, ""))
-  }
 
   implicit def toReaction(e: E): AcceptC[E] =
     AcceptC(Seq(e))
@@ -53,9 +51,9 @@ trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S]] extends Aggre
   def reply[R](r: R): AcceptQ[R] = AcceptQ[R](r)
 }
 
-trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends AggregateBehaviour[E, S] {
+trait AggregateActions[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends AggregateBehaviour[E, S, C] {
 
-  case class Actions(cmHandler: HandleCommandMessage, qHandler: HandleQuery = empty, eventHandler: StateMachine = empty) {
+  case class Actions(cHandler: HandleCommandWithContext, qHandler: HandleQuery = empty, eventHandler: StateMachine = empty) {
     def handleEvent(eh: StateMachine): Actions =
       copy(eventHandler = eh)
 
@@ -68,21 +66,21 @@ trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends Aggrega
       copy(eventHandler = eventHandler.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
 
     def ++(other: Actions): Actions =
-      Actions(cmHandler.orElse(other.cmHandler), qHandler.orElse(other.qHandler), eventHandler.orElse(other.eventHandler))
+      Actions(ctx => cHandler(ctx).orElse(other.cHandler(ctx)), qHandler.orElse(other.qHandler), eventHandler.orElse(other.eventHandler))
 
-    def orElse[SS <: S](other: AggregateActions[E, S], f: SS => S = (a: SS) => a): Actions =
+    def orElse[SS <: S](other: AggregateActions[E, S, C], f: SS => S = (a: SS) => a): Actions =
       Actions(
-        cmHandler.orElse(other.cmHandler),
+        ctx => cHandler(ctx).orElse(other.commandHandlerNoCtx),
         qHandler.orElse(other.qHandler),
         eventHandler.orElse(other.apply.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
       )
 
     def orElse(other: Actions): Actions =
-      Actions(cmHandler.orElse(other.cmHandler), qHandler.orElse(other.qHandler), eventHandler.orElse(other.eventHandler))
+      Actions(ctx => cHandler(ctx).orElse(other.cHandler(ctx)), qHandler.orElse(other.qHandler), eventHandler.orElse(other.eventHandler))
   }
 
-  def cmHandler: HandleCommandMessage =
-    actions.cmHandler
+  def commandHandler: HandleCommandWithContext =
+    actions.cHandler
 
   def qHandler: HandleQuery =
     actions.qHandler
@@ -92,11 +90,12 @@ trait AggregateActions[E <: DomainEvent, S <: AggregateState[S]] extends Aggrega
 
   protected def actions: Actions
 
-  def handleCommand(hc: HandleCommand): Actions =
-    Actions { case cm: CommandMessage if hc.isDefinedAt(cm.command) => hc(cm.command) }
+  def withContext(ctxConsumer: (CommandHandlerContext[C]) => Actions): Actions = {
+    Actions(ctx => ctxConsumer(ctx).cHandler(null))
+  }
 
-  protected def handleCommandMessage(hcm: HandleCommandMessage): Actions =
-    Actions(hcm)
+  def handleCommand(hc: HandleCommand): Actions =
+    Actions(_ => hc)
 
   protected def noActions: Actions = Actions(empty)
 }
@@ -109,11 +108,11 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     extends AggregateRootBase
     with CollaborationSupport[Event] {
 
-  type HandleCommand        = PartialFunction[Command, Reaction[Event]]
-  type HandleMessage        = PartialFunction[AddressableMessage, Reaction[_]]
-  type HandleCommandMessage = PartialFunction[CommandMessage, Reaction[Event]]
-  type HandleQueryMessage   = PartialFunction[QueryMessage, Reaction[_]]
-  type HandleQuery          = PartialFunction[Query, Reaction[_]]
+  type HandlePayload = PartialFunction[Any, Reaction[_]]
+  type HandleCommand = CommandHandlerContext[C] => PartialFunction[Command, Reaction[Event]]
+  type HandleQuery   = PartialFunction[Query, Reaction[_]]
+
+  def commandHandlerContext(cm: CommandMessage) = CommandHandlerContext(officeId.caseRef(id), config, cm.metadata.getOrElse(MetaData.empty))
 
   override def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
   override def department: String         = officeId.department
@@ -136,29 +135,24 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
   override def receiveCommand: Receive = {
     case msg: AddressableMessage =>
       safely {
-        handleMessage.orElse(handleUnknown).andThen(execute)(msg)
+        handlePayload(msg).orElse(handleUnknown).andThen(execute)(msg.payload)
       }
   }
 
-  private def handleMessage: HandleMessage = {
+  private def handlePayload(msg: AddressableMessage): HandlePayload = {
     (if (isCommandMsgReceived) {
-      handleCommandMessage
-    } else {
-      handleQueryMessage
-    }).asInstanceOf[HandleMessage]
+       handleCommandMessage(commandHandlerContext(msg.asInstanceOf[CommandMessage]))
+     } else {
+       handleQuery
+     }).asInstanceOf[HandlePayload]
   }
 
-  def handleCommandMessage: HandleCommandMessage =
-    state.asInstanceOf[AggregateBehaviour[Event, S]].cmHandler
+  def handleCommandMessage: HandleCommand =
+    state.asInstanceOf[AggregateBehaviour[Event, S, C]].commandHandler
 
-  def handleQueryMessage: HandleQueryMessage = {
-    case QueryMessage(query) if handleQuery.isDefinedAt(query) =>
-      handleQuery(query)
-  }
-
-  private def handleUnknown: HandleMessage = {
-    case msg: AddressableMessage =>
-      val payloadName = msg.payloadName
+  private def handleUnknown: HandlePayload = {
+    case payload: Any =>
+      val payloadName = payload.getClass.getSimpleName
       Reject(
         if (initialized) {
           if (isCommandMsgReceived)
@@ -171,7 +165,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
   }
 
   private def handleQuery: HandleQuery =
-    state.asInstanceOf[AggregateBehaviour[Event, S]].qHandler
+    state.asInstanceOf[AggregateBehaviour[Event, S, C]].qHandler
 
   private def execute(r: Reaction[_]): Unit =
     if (isCommandMsgReceived) {

@@ -6,7 +6,7 @@ import lottery.domain.model.LotteryProtocol.{AddParticipant, CreateLottery, Remo
 import lottery.domain.model.LotterySpecSupport._
 import org.scalacheck.Gen
 import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.AggregateRootActorFactory
+import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig}
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 
@@ -16,7 +16,7 @@ object LotterySpecSupport {
 
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[LotteryAggregateRoot] =
     new AggregateRootActorFactory[LotteryAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new LotteryAggregateRoot)
+      override def props(pc: PassivationConfig): Props = Props(new LotteryAggregateRoot(DefaultConfig(pc)))
       override def inactivityTimeout: Duration = it
     }
 }

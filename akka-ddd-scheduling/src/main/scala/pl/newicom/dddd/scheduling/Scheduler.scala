@@ -1,32 +1,37 @@
 package pl.newicom.dddd.scheduling
 
 import akka.persistence.Recovery
-import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.office.LocalOfficeId
-import pl.newicom.dddd.scheduling.Scheduler.State
+import pl.newicom.dddd.scheduling.Scheduler.SchedulerBehavior
 
 object Scheduler extends AggregateRootSupport {
 
-  //
-  // State
-  //
-  sealed trait State extends AggregateState[State] {
-    override def apply: StateMachine = apply(this)
+  sealed trait SchedulerBehavior extends AggregateActions[SchedulerEvent, SchedulerBehavior, Config]
 
-    def apply(result: State): StateMachine = {
-      case EventScheduled(_, _) => result
-    }
-  }
+  implicit case object Uninitialized extends SchedulerBehavior with Uninitialized[SchedulerBehavior] {
+    def actions =
+      withContext { ctx => handleCommand {
+        case ScheduleEvent(_, target, deadline, event) =>
+          val metadata = ScheduledEventMetadata(
+            businessUnit = ctx.caseRef.id,
+            target,
+            deadline.withSecondOfMinute(0).withMillisOfSecond(0),
+            deadline.getMillis)
 
-  implicit case object Uninitialized extends State with Uninitialized[State] {
-    override def apply: StateMachine = apply(result = new State {})
+          EventScheduled(metadata, event)
+      }}
+      .handleEvent {
+        case EventScheduled(_, _) => this
+      }
   }
 
 }
 
-class Scheduler(override val pc: PassivationConfig)(implicit val officeID: LocalOfficeId[Scheduler]) extends AggregateRoot[SchedulerEvent, State, Scheduler] with SparseReply {
+class Scheduler(override val config: Config)(implicit val officeID: LocalOfficeId[Scheduler])
+  extends AggregateRoot[SchedulerEvent, SchedulerBehavior, Scheduler]
+    with SparseReply
+    with ConfigClass[Config] {
 
   // Skip recovery
   override def recovery = Recovery(toSequenceNr = 0L)
@@ -34,14 +39,4 @@ class Scheduler(override val pc: PassivationConfig)(implicit val officeID: Local
   // Disable automated recovery on restart
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = ()
 
-  override def handleCommandMessage: HandleCommandMessage = {
-    case CommandMessage(ScheduleEvent(_, target, deadline, event), _, _, _) =>
-      val metadata = ScheduledEventMetadata(
-        businessUnit = id,
-        target,
-        deadline.withSecondOfMinute(0).withMillisOfSecond(0),
-        deadline.getMillis)
-
-      EventScheduled(metadata, event)
-  }
 }

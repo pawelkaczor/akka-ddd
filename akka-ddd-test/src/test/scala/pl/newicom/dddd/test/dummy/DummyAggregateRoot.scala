@@ -2,9 +2,8 @@ package pl.newicom.dddd.test.dummy
 
 import akka.actor.ActorRef
 import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.AggregateRootSupport.Reject
+import pl.newicom.dddd.aggregate.AggregateRootSupport.{Reaction, Reject, RejectConditionally}
 import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.ValueGeneratorActor.GenerateRandom
 import pl.newicom.dddd.utils.UUIDSupport.uuidObj
@@ -13,10 +12,12 @@ import scala.concurrent.duration._
 
 object DummyAggregateRoot extends AggregateRootSupport {
 
-  sealed trait DummyBehaviour extends AggregateActions[DummyEvent, DummyBehaviour] {
+  case class DummyConfig(pc: PassivationConfig, valueGeneration: Reaction[DummyEvent]) extends Config
+
+  sealed trait DummyBehaviour extends AggregateActions[DummyEvent, DummyBehaviour, DummyConfig] {
     def isActive = false
 
-    def rejectNegative(value: Int) = rejectIf(value < 0, "negative value not allowed")
+    def rejectNegative(value: Int): RejectConditionally = rejectIf(value < 0, "negative value not allowed")
   }
 
   sealed trait Dummy extends DummyBehaviour
@@ -43,7 +44,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
 
     def actions: Actions =
 
-      handleCommand {
+      withContext { ctx => handleCommand {
         case ChangeName(id, name) =>
           NameChanged(id, name)
 
@@ -56,7 +57,11 @@ object DummyAggregateRoot extends AggregateRootSupport {
 
         case Reset(id, name) =>
           NameChanged(id, name) & ValueChanged(id, 0, version + 1)
-      }
+
+        case GenerateValue(_) =>
+          ctx.config.valueGeneration
+
+      }}
 
       .handleEvent {
         case ValueChanged(_, newValue, newVersion) =>
@@ -90,14 +95,12 @@ object DummyAggregateRoot extends AggregateRootSupport {
 
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
-class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyBehaviour, DummyAggregateRoot] with ReplyWithEvents {
+class DummyAggregateRoot(pc: PassivationConfig) extends AggregateRoot[DummyEvent, DummyBehaviour, DummyAggregateRoot]
+  with ReplyWithEvents with ConfigClass[DummyConfig] {
 
   val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(valueGenerator))
 
-  override def handleCommandMessage: HandleCommandMessage = super.handleCommandMessage.orElse {
-    case CommandMessage(GenerateValue(_), _, _, _) if state.isActive =>
-        valueGeneration
-  }
+  val config = DummyConfig(pc, valueGeneration)
 
   private def valueGeneration: Collaboration = {
     implicit val timeout = 1.seconds
@@ -113,5 +116,4 @@ class DummyAggregateRoot extends AggregateRoot[DummyEvent, DummyBehaviour, Dummy
 
   def valueGenerator: Int = (Math.random() * 100).toInt - 50 //  -50 < v < 50
 
-  override val pc = PassivationConfig()
 }

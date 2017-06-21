@@ -4,7 +4,7 @@ import akka.actor.ActorRef
 import akka.contrib.pattern.ReceivePipeline
 import akka.contrib.pattern.ReceivePipeline.Inner
 import akka.persistence.PersistentActor
-import pl.newicom.dddd.actor.GracefulPassivation
+import pl.newicom.dddd.actor.{GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
@@ -14,6 +14,11 @@ import pl.newicom.dddd.persistence.PersistentActorLogging
 
 trait AggregateRootBase extends BusinessEntity with GracefulPassivation with PersistentActor
     with EventHandler with ReplyConfig with EventMessageFactory with ReceivePipeline with Deduplication with PersistentActorLogging {
+
+  type C <: Config
+
+  def config: C
+  override lazy val pc: PassivationConfig = config.pc
 
   override def id: EntityId = self.path.name
 
