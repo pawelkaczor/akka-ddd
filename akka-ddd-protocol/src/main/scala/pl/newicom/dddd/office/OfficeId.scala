@@ -15,6 +15,7 @@ trait OfficeId extends BusinessEntity {
 
 case class CaseRef(id: EntityId, responsible: BusinessEntity, version: Option[Long]) extends BusinessEntity {
   def department: String = responsible.department
+  def localId: EntityId = if (id.contains('-')) id.split('-').last else id
 }
 
 case class RemoteOfficeId[M: ClassTag](id: EntityId, department: String, messageClass: Class[M]) extends OfficeId {

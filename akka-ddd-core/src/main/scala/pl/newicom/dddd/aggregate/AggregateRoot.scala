@@ -112,7 +112,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
   type HandleCommand = CommandHandlerContext[C] => PartialFunction[Command, Reaction[Event]]
   type HandleQuery   = PartialFunction[Query, Reaction[_]]
 
-  def commandHandlerContext(cm: CommandMessage) = CommandHandlerContext(officeId.caseRef(id), config, cm.metadata.getOrElse(MetaData.empty))
+  def commandHandlerContext(cm: CommandMessage) = CommandHandlerContext(caseRef, config, cm.metadata.getOrElse(MetaData.empty))
 
   override def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
   override def department: String         = officeId.department

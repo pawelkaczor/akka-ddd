@@ -26,6 +26,8 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
 
   override def persistenceId: String = officeId.caseRef(id).id
 
+  def caseRef: CaseRef = CaseRef(persistenceId, officeId, Some(lastSequenceNr))
+
   /**
     * Sender of the currently processed command. Not available during recovery
     */
@@ -57,6 +59,6 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
   // Extension point
   override def handle(senderRef: ActorRef, events: Seq[OfficeEventMessage]): Unit = {}
 
-  def toOfficeEventMessage(em: EventMessage) = OfficeEventMessage(em, CaseRef(persistenceId, officeId, Some(lastSequenceNr)))
+  def toOfficeEventMessage(em: EventMessage) = OfficeEventMessage(em, caseRef)
 
 }
