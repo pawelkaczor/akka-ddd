@@ -7,11 +7,11 @@ object ValueGeneratorActor {
   case object GenerateRandom
   case class ValueGenerated(value: Int)
 
-  def props(generator: => Int) = Props(new ValueGeneratorActor(generator))
+  def props(generator: () => Int) = Props(new ValueGeneratorActor(generator))
 }
 
-class ValueGeneratorActor(generator: => Int) extends Actor {
+class ValueGeneratorActor(generator: () => Int) extends Actor {
   override def receive: Receive = {
-    case GenerateRandom => sender() ! ValueGenerated(generator)
+    case GenerateRandom => sender() ! ValueGenerated(generator())
   }
 }

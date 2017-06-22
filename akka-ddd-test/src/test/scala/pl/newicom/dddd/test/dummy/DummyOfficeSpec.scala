@@ -5,6 +5,7 @@ import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitialized, CommandHandlerNotDefined, DomainException, NoResponseReceived}
 import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, EntityId}
 import pl.newicom.dddd.office.Office
+import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 import pl.newicom.dddd.test.dummy.DummyOfficeSpec._
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.support.OfficeSpec
@@ -16,9 +17,9 @@ object DummyOfficeSpec {
 
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(pc) {
-        override def valueGenerator: Int = -1 // not allowed
-      })
+      override def props(pc: PassivationConfig): Props = Props(
+        new DummyAggregateRoot(DummyConfig(pc, valueGenerator = () => -1))
+      )
       override def inactivityTimeout: Duration = it
 
     }

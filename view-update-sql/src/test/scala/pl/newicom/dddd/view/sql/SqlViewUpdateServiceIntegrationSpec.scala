@@ -7,6 +7,7 @@ import com.typesafe.config.Config
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
+import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 import pl.newicom.dddd.test.dummy.DummyProtocol.{CreateDummy, DummyCreated, DummyEvent}
 import pl.newicom.dddd.test.dummy._
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
@@ -27,7 +28,7 @@ object SqlViewUpdateServiceIntegrationSpec {
 
   implicit def dummyFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(pc))
+      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(DummyConfig(pc)))
       override def inactivityTimeout: Duration = it
     }
 

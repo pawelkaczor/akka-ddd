@@ -12,11 +12,13 @@ import scala.concurrent.duration._
 
 object DummyAggregateRoot extends AggregateRootSupport {
 
-  case class DummyConfig(pc: PassivationConfig, valueGeneration: Reaction[DummyEvent]) extends Config
+  case class DummyConfig(pc: PassivationConfig,
+                         valueGenerator: () => Int = () => (Math.random() * 100).toInt - 50, //  -50 < v < 50,
+                         valueGeneration: Reaction[DummyEvent] = reject("value generation not defined"))
+      extends Config
 
   sealed trait DummyBehaviour extends AggregateActions[DummyEvent, DummyBehaviour, DummyConfig] {
     def isActive = false
-
     def rejectNegative(value: Int): RejectConditionally = rejectIf(value < 0, "negative value not allowed")
   }
 
@@ -25,17 +27,14 @@ object DummyAggregateRoot extends AggregateRootSupport {
   implicit case object Uninitialized extends DummyBehaviour with Uninitialized[DummyBehaviour] {
 
     def actions: Actions =
-
       handleCommand {
         case CreateDummy(id, name, description, value) =>
           rejectNegative(value) orElse
             DummyCreated(id, name, description, value)
-      }
-
-      .handleEvent {
-        case DummyCreated(_, _, _, value) =>
-          Active(value, 0)
-      }
+      }.handleEvent {
+          case DummyCreated(_, _, _, value) =>
+            Active(value, 0)
+        }
   }
 
   case class Active(value: Int, version: Long) extends Dummy {
@@ -43,64 +42,63 @@ object DummyAggregateRoot extends AggregateRootSupport {
     override def isActive: Boolean = true
 
     def actions: Actions =
+      withContext { ctx =>
+        handleCommand {
+          case ChangeName(id, name) =>
+            NameChanged(id, name)
 
-      withContext { ctx => handleCommand {
-        case ChangeName(id, name) =>
-          NameChanged(id, name)
+          case ChangeDescription(id, description) =>
+            DescriptionChanged(id, description)
 
-        case ChangeDescription(id, description) =>
-          DescriptionChanged(id, description)
+          case ChangeValue(id, newValue) =>
+            rejectNegative(newValue) orElse
+              ValueChanged(id, newValue, version + 1)
 
-        case ChangeValue(id, newValue) =>
-          rejectNegative(newValue) orElse
-            ValueChanged(id, newValue, version + 1)
+          case Reset(id, name) =>
+            NameChanged(id, name) & ValueChanged(id, 0, version + 1)
 
-        case Reset(id, name) =>
-          NameChanged(id, name) & ValueChanged(id, 0, version + 1)
+          case GenerateValue(_) =>
+            ctx.config.valueGeneration
 
-        case GenerateValue(_) =>
-          ctx.config.valueGeneration
+        }
+      }.handleEvent {
+          case ValueChanged(_, newValue, newVersion) =>
+            copy(value = newValue, version = newVersion)
 
-      }}
+          case ValueGenerated(_, newValue, confirmationToken) =>
+            WaitingForConfirmation(value, CandidateValue(newValue, confirmationToken), version)
 
-      .handleEvent {
-        case ValueChanged(_, newValue, newVersion) =>
-          copy(value = newValue, version = newVersion)
+          case _: NameChanged => this
 
-        case ValueGenerated(_, newValue, confirmationToken) =>
-          WaitingForConfirmation(value, CandidateValue(newValue, confirmationToken), version)
-
-        case _: NameChanged => this
-
-        case _: DescriptionChanged => this
-      }
+          case _: DescriptionChanged => this
+        }
   }
 
   case class WaitingForConfirmation(value: Int, candidateValue: CandidateValue, version: Long) extends Dummy {
 
     def actions: Actions =
-
       handleCommand {
         case ConfirmGeneratedValue(id, confirmationToken) =>
           rejectIf(candidateValue.confirmationToken != confirmationToken, "Invalid confirmation token") orElse
             ValueChanged(id, candidateValue.value, version + 1)
-      }
-      .handleEvent {
-        case ValueChanged(_, newValue, newVersion) =>
-          Active(value = newValue, version = newVersion)
-      }
+      }.handleEvent {
+          case ValueChanged(_, newValue, newVersion) =>
+            Active(value = newValue, version = newVersion)
+        }
 
   }
 }
 
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
-class DummyAggregateRoot(pc: PassivationConfig) extends AggregateRoot[DummyEvent, DummyBehaviour, DummyAggregateRoot]
-  with ReplyWithEvents with ConfigClass[DummyConfig] {
+class DummyAggregateRoot(cfg: DummyConfig)
+    extends AggregateRoot[DummyEvent, DummyBehaviour, DummyAggregateRoot]
+    with ReplyWithEvents
+    with ConfigClass[DummyConfig] {
 
-  val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(valueGenerator))
+  val config: DummyConfig = cfg.copy(valueGeneration = valueGeneration)
 
-  val config = DummyConfig(pc, valueGeneration)
+  lazy val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(cfg.valueGenerator))
 
   private def valueGeneration: Collaboration = {
     implicit val timeout = 1.seconds
@@ -108,12 +106,10 @@ class DummyAggregateRoot(pc: PassivationConfig) extends AggregateRoot[DummyEvent
       case ValueGeneratorActor.ValueGenerated(value) =>
         state.rejectNegative(value) orElse
           ValueGenerated(id, value, confirmationToken = uuidObj) match {
-            case Reject(_) => valueGeneration
-            case r => r
+          case Reject(_) => valueGeneration
+          case r         => r
         }
     }
   }
-
-  def valueGenerator: Int = (Math.random() * 100).toInt - 50 //  -50 < v < 50
 
 }

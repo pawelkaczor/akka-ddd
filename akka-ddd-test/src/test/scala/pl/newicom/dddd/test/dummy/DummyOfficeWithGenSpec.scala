@@ -10,6 +10,7 @@ import pl.newicom.dddd.test.support.TestConfig._
 import DummyOfficeWithGenSpec._
 import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.office.Office
+import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 
 import scala.concurrent.duration.{Duration, _}
 
@@ -17,7 +18,7 @@ object DummyOfficeWithGenSpec {
 
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(pc))
+      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(DummyConfig(pc)))
       override def inactivityTimeout: Duration = it
     }
 }

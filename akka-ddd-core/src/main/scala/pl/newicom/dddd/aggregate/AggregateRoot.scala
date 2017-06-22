@@ -24,7 +24,17 @@ trait AggregateState[S <: AggregateState[S]] {
   def initialized: Boolean                         = true
 }
 
-trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends AggregateState[S] {
+trait AggregateBehaviourSupport {
+  def error(msg: String): Reject  = reject(msg)
+  def reject(msg: String): Reject = Reject(new DomainException(msg))
+
+  def reject(reason: DomainException): Reject = Reject(reason)
+
+  def rejectIf(condition: Boolean, reason: String): RejectConditionally    = new RejectConditionally(condition, reject(reason))
+  def rejectIf(condition: Boolean, reject: => Reject): RejectConditionally = new RejectConditionally(condition, reject)
+}
+
+trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends AggregateState[S] with AggregateBehaviourSupport {
 
   type HandleQuery              = PartialFunction[Query, Reaction[_]]
   type HandleCommand            = PartialFunction[Command, Reaction[E]]
@@ -39,14 +49,6 @@ trait AggregateBehaviour[E <: DomainEvent, S <: AggregateState[S], C <: Config] 
     AcceptC(Seq(e))
   implicit def toReaction(events: Seq[E]): AcceptC[E] =
     AcceptC(events)
-
-  def error(msg: String): Reject  = reject(msg)
-  def reject(msg: String): Reject = Reject(new DomainException(msg))
-
-  def reject(reason: DomainException): Reject = Reject(reason)
-
-  def rejectIf(condition: Boolean, reason: String): RejectConditionally    = new RejectConditionally(condition, reject(reason))
-  def rejectIf(condition: Boolean, reject: => Reject): RejectConditionally = new RejectConditionally(condition, reject)
 
   def reply[R](r: R): AcceptQ[R] = AcceptQ[R](r)
 }
