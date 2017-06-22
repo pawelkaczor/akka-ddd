@@ -36,7 +36,7 @@ class SchedulerSpec extends OfficeSpec[Scheduler](Some(testSystem)) {
       .expect { c =>
         EventScheduled(
           ScheduledEventMetadata(
-            schedulingOfficeID.caseRef(businessUnit).id,
+            c.businessUnit,
             c.target,
             c.deadline.withSecondOfMinute(0).withMillisOfSecond(0),
             c.deadline.getMillis),

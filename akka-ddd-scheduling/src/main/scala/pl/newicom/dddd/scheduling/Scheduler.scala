@@ -14,7 +14,7 @@ object Scheduler extends AggregateRootSupport {
       withContext { ctx => handleCommand {
         case ScheduleEvent(_, target, deadline, event) =>
           val metadata = ScheduledEventMetadata(
-            businessUnit = ctx.caseRef.id,
+            businessUnit = ctx.caseRef.localId,
             target,
             deadline.withSecondOfMinute(0).withMillisOfSecond(0),
             deadline.getMillis)
