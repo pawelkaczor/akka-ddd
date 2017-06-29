@@ -29,7 +29,4 @@
   - sudo apt-get install -y -qq httpie
 
  before_script:
-  - docker run --name ecommerce-event-store -d -p 2113:2113 -p 1113:1113 eventstore/eventstore
-  - until nc -z 127.0.0.1 2113; do sleep 1; done
-  - sleep 5
-  - until http -a admin:changeit --timeout 1 --headers POST ':2113/projection/$by_category/command/enable' | head -n 1 | grep 200; do sleep 1; done
+  - docker run --name ecommerce-event-store -d -p 2113:2113 -p 1113:1113 -e EVENTSTORE_START_STANDARD_PROJECTIONS=true eventstore/eventstore
