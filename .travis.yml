@@ -12,7 +12,6 @@
     - $HOME/.sbt/boot
 
  script:
-  - http -a admin:changeit :2113/projections/continuous name==tags_proj type==JS emit==1 < $TRAVIS_BUILD_DIR/akka-ddd/eventstore-akka-persistence/src/main/resources/tags.js
   - sbt test
   - sbt "it:test"
   # See http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
@@ -31,3 +30,6 @@
 
  before_script:
   - docker run --name ecommerce-event-store -d -p 2113:2113 -p 1113:1113 -e EVENTSTORE_START_STANDARD_PROJECTIONS=true eventstore/eventstore
+  - until nc -z 127.0.0.1 2113; do sleep 1; done
+  - sleep 5
+  - until http -a admin:changeit --timeout 1 --headers POST :2113/projections/continuous name==tags_proj type==JS emit==1 < $TRAVIS_BUILD_DIR/eventstore-akka-persistence/src/main/resources/tags.js | head -n 1 | grep 201; do sleep 1; done
