@@ -7,4 +7,5 @@ trait AddressableMessage {
   def payload: Any
 
   def payloadName: String = payload.getClass.getSimpleName
+  def payloadFullName: String = payload.getClass.getName
 }

@@ -3,6 +3,7 @@ package pl.newicom.eventstore
 import akka.actor.ActorSystem
 import akka.persistence.PersistentRepr
 import akka.persistence.eventstore.snapshot.EventStoreSnapshotStore.SnapshotEvent
+import akka.persistence.journal.Tagged
 import akka.util.ByteString
 import eventstore.Content._
 import eventstore.{Content, ContentType, EventData}
@@ -40,6 +41,8 @@ trait EventstoreSerializationSupport {
     x match {
       case x: PersistentRepr =>
         x.payload match {
+          case Tagged(em, _) =>
+            toEventData(x.withPayload(em), contentType)
           case em: EventMessage =>
             val (event, mdOpt) = toPayloadAndMetadata(em)
             val eventType = classFor(event).getName
@@ -55,7 +58,7 @@ trait EventstoreSerializationSupport {
       case x: SnapshotEvent =>
         EventData(eventType = classFor(x).getName, data = toContent(x))
 
-      case _ => sys.error(s"Cannot serialize $x")
+     case _ => sys.error(s"Cannot serialize $x")
     }
   }
 

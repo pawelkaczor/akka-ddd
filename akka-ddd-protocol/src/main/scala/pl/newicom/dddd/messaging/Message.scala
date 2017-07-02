@@ -7,13 +7,14 @@ import pl.newicom.dddd.messaging.MetaData._
 import scala.util.{Success, Try}
 
 object MetaData {
-  val DeliveryId          = "_deliveryId"
-  val CausationId         = "causationId"
-  val CorrelationId       = "correlationId"
+  val DeliveryId    = "_deliveryId"
+  val CausationId   = "causationId"
+  val CorrelationId = "correlationId"
   // contains ID of a message that the recipient of this message should process before it can process this message
-  val MustFollow          = "_mustFollow"
-  val SessionId           = "sessionId"
-  val EventNumber         = "_eventNumber"
+  val MustFollow  = "_mustFollow"
+  val SessionId   = "sessionId"
+  val EventNumber = "_eventNumber"
+  val Tags        = "tags"
 
   def empty: MetaData = MetaData(Map.empty)
 }
@@ -21,11 +22,15 @@ object MetaData {
 case class MetaData(content: Map[String, Any]) extends Serializable {
 
   def mergeWithMetadata(metadata: Option[MetaData]): MetaData = {
-    metadata.map(_.content).map(addContent).getOrElse(this)
+    metadata.map(_.content).map(add).getOrElse(this)
   }
 
-  def addContent(content: Map[String, Any]): MetaData = {
+  def add(content: Map[String, Any]): MetaData = {
     copy(content = this.content ++ content)
+  }
+
+  def remove(key: String): MetaData = {
+    copy(content = this.content - key)
   }
 
   def contains(attrName: String) = content.contains(attrName)
@@ -50,7 +55,8 @@ trait Message extends Serializable {
 
   def causedBy(msg: Message): MessageImpl =
     withMetaData(msg.metadataExceptDeliveryAttributes)
-      .withCausationId(msg.id).asInstanceOf[MessageImpl]
+      .withCausationId(msg.id)
+      .asInstanceOf[MessageImpl]
 
   def metadataExceptDeliveryAttributes: Option[MetaData] = {
     metadata.flatMap(_.exceptDeliveryAttributes)
@@ -67,6 +73,10 @@ trait Message extends Serializable {
   def copyWithMetaData(m: Option[MetaData]): MessageImpl
 
   def metadata: Option[MetaData]
+
+  def withoutMetaAttribute(attrName: String): MessageImpl =
+    copyWithMetaData(metadata.map(_.remove(attrName)))
+
 
   def withMetaAttribute(attrName: String, value: Any): MessageImpl = withMetaData(Map(attrName -> value))
 
@@ -88,13 +98,20 @@ trait Message extends Serializable {
 
   def withCausationId(causationId: EntityId) = withMetaAttribute(CausationId, causationId)
 
-  def withMustFollow(mustFollow: Option[String]) = mustFollow.map(msgId => withMetaAttribute(MustFollow, msgId)).getOrElse(this.asInstanceOf[MessageImpl])
+  def withMustFollow(mustFollow: Option[String]) =
+    mustFollow.map(msgId => withMetaAttribute(MustFollow, msgId)).getOrElse(this.asInstanceOf[MessageImpl])
 
   def withSessionId(sessionId: EntityId) = withMetaAttribute(SessionId, sessionId)
 
+  def withTag(tag: String) = withMetaAttribute(MetaData.Tags, tags + tag)
+
+  def withTags(tags: String*) = withMetaAttribute(MetaData.Tags, this.tags ++ tags)
+
+  def tags: Set[String] = tryGetMetaAttribute[Set[String]](Tags).toSet.flatten
+
   def deliveryId: Option[Long] = tryGetMetaAttribute[Any](DeliveryId).map {
     case bigInt: scala.math.BigInt => bigInt.toLong
-    case l: Long => l
+    case l: Long                   => l
   }
 
   def correlationId: Option[EntityId] = tryGetMetaAttribute[EntityId](CorrelationId)

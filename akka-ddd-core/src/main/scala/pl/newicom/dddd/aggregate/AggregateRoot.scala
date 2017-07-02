@@ -1,5 +1,7 @@
 package pl.newicom.dddd.aggregate
 
+import akka.persistence.RecoveryCompleted
+import akka.persistence.journal.Tagged
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.AggregateRootSupport._
 import pl.newicom.dddd.aggregate.error._
@@ -131,7 +133,12 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
   }
 
   override def receiveRecover: Receive = {
-    case em: EventMessage => sm.apply(em)
+    case em: EventMessage =>
+      sm.apply(em)
+    case Tagged(em @ EventMessage(_, _), _) =>
+      sm.apply(em)
+    case RecoveryCompleted => // ignore
+
   }
 
   override def receiveCommand: Receive = {
@@ -189,7 +196,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
 
   private def raise(events: Seq[Event]): Unit = {
     var eventsCount   = 0
-    val eventMessages = events.map(toEventMessage).map(_.causedBy(commandMsgReceived))
+    val eventMessages = events.map(e => toEventMessage(e, officeId)).map(_.causedBy(commandMsgReceived))
 
     val handler =
       sm.eventMessageHandler.andThen { _ =>

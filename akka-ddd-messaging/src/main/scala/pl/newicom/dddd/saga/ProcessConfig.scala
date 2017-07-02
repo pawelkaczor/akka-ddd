@@ -7,7 +7,6 @@ import scala.reflect.ClassTag
 import ProcessConfig._
 
 object ProcessConfig {
-  val OfficeIdSuffix = "Saga"
   type CorrelationIdResolver = PartialFunction[DomainEvent, EntityId]
 }
 
@@ -15,7 +14,7 @@ object ProcessConfig {
   * @param bpsName name of Business Process Stream (bps)
   */
 abstract class ProcessConfig[E : ClassTag](val bpsName: String, departmentId: EntityId = null)
-  extends LocalOfficeId[E](s"$bpsName$OfficeIdSuffix", Option(departmentId).getOrElse(bpsName)) {
+  extends LocalOfficeId[E](bpsName, Option(departmentId).getOrElse(bpsName)) {
 
   /**
     * Correlation ID identifies process instance.

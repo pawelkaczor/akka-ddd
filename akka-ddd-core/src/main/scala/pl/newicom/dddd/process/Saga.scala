@@ -3,6 +3,7 @@ package pl.newicom.dddd.process
 import akka.persistence.RecoveryCompleted
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.alod._
+import pl.newicom.dddd.messaging.MetaData.Tags
 import pl.newicom.dddd.messaging.event.EventMessage
 
 case object EventDroppedMarkerEvent extends DomainEvent
@@ -55,6 +56,7 @@ abstract class Saga extends SagaBase {
 
         val emToPersist = EventMessage(eventToPersist)
           .withMetaData(em.metadata)
+          .withoutMetaAttribute(Tags)
           .withCausationId(em.id)
 
         persist(emToPersist) { persisted =>

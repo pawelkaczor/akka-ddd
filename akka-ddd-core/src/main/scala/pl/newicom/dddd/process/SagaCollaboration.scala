@@ -29,7 +29,11 @@ trait SagaCollaboration {
 
   protected def schedule(event: DomainEvent, deadline: DateTime, correlationId: EntityId = sagaId): Unit = {
     val command = ScheduleEvent("global", officePath, deadline, event)
-    handlerOf(command) deliver CommandMessage(command).withCorrelationId(correlationId)
+    handlerOf(command) deliver {
+      CommandMessage(command)
+        .withCorrelationId(correlationId)
+        .withTag(officeId.id)
+    }
   }
 
 
