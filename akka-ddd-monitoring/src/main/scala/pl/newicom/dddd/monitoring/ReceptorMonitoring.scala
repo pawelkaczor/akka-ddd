@@ -1,10 +1,12 @@
 package pl.newicom.dddd.monitoring
 
+import akka.actor.Actor
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.messaging.event.EventSourceProvider
 import pl.newicom.dddd.monitoring.Stage._
 
 trait ReceptorMonitoring extends EventSourceProvider with TraceContextSupport {
+  this: Actor =>
 
   override abstract def eventSource(es: EventStore, observable: BusinessEntity, fromPosExcl: Option[Long]): EventSource =
     super.eventSource(es, observable, fromPosExcl) map {

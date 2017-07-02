@@ -12,6 +12,15 @@ object IntegrationTestConfig {
       |akka.actor.debug.autoreceive = "on"
       |akka.persistence.journal.plugin = "eventstore.persistence.journal"
       |akka.persistence.snapshot-store.plugin = "eventstore.persistence.snapshot-store"
+      |eventstore.persistence.journal {
+      |  event-adapters {
+      |    tagger = "pl.newicom.dddd.persistence.TaggingEventAdapter"
+      |  }
+      |
+      |  event-adapter-bindings {
+      |    "pl.newicom.dddd.messaging.event.EventMessage" = tagger
+      |  }
+      |}
       |app.view-store.config {
       |  driver = "slick.driver.H2Driver$"
       |  db {

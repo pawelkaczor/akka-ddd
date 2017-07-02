@@ -10,8 +10,7 @@ import eventstore.{Content, ContentType, EventData}
 import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.MetaData
-import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
-import pl.newicom.dddd.office.CaseRef
+import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.serialization.JsonSerHints
 import pl.newicom.dddd.serialization.JsonSerHints._
 import pl.newicom.eventstore.json.JsonSerializerExtension
@@ -78,13 +77,6 @@ trait EventstoreSerializationSupport {
       Failure(sys.error(s"Cannot deserialize event as $manifest, event: $event"))
   }
 
-  def toOfficeEventMessage(eventData: EventData, eventNumber: Int, source: BusinessEntity): Try[OfficeEventMessage] =
-    fromEvent(eventData, classOf[PersistentRepr]).map { pr =>
-      val em = pr.payload.asInstanceOf[EventMessage]
-      val caseRef = CaseRef(pr.persistenceId, source, Some(pr.sequenceNr))
-      OfficeEventMessage(em, caseRef).withEventNumber(eventNumber)
-    }
-
   private def toPayloadAndMetadata(em: EventMessage): (DomainEvent, Option[MetaData]) =
     (em.event, em.withMetaData(Map("id" -> em.id, "timestamp" -> em.timestamp)).metadata)
 
@@ -107,7 +99,7 @@ trait EventstoreSerializationSupport {
     jsonSerializer.toBinary(o, serializationHints ++ eventType.toList)
 
   private def classFor(x: AnyRef) = x match {
-    case x: PersistentRepr => classOf[PersistentRepr]
+    case _: PersistentRepr => classOf[PersistentRepr]
     case _                 => x.getClass
   }
 

@@ -33,6 +33,6 @@ class EventStoreSerializer(override val system: ExtendedActorSystem)
 
 
 object EventStoreSerializer {
-  val UTF8 = Charset.forName("UTF-8")
+  val UTF8: Charset = Charset.forName("UTF-8")
   val Identifier: Int = ByteBuffer.wrap("eventstore".getBytes(UTF8)).getInt
 }

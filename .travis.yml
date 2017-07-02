@@ -12,6 +12,7 @@
     - $HOME/.sbt/boot
 
  script:
+  - http -a admin:changeit :2113/projections/continuous name==tags_proj type==JS emit==1 < $TRAVIS_BUILD_DIR/akka-ddd/eventstore-akka-persistence/src/main/resources/tags.js
   - sbt test
   - sbt "it:test"
   # See http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html

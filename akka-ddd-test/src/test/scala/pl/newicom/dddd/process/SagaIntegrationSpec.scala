@@ -50,7 +50,6 @@ class SagaIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integratio
       new Receptor(config) with EventstoreSubscriber {
         override def redeliverInterval: FiniteDuration = 1.seconds
         override def receiveCommand: Receive = myReceive.orElse(super.receiveCommand)
-
         def myReceive: Receive = {
           case GetNumberOfUnconfirmed => sender() ! numberOfUnconfirmed
         }

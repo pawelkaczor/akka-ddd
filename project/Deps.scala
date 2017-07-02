@@ -33,6 +33,7 @@ object Deps {
     val contributions     = apply("contrib")
     val multiNodeTestkit  = apply("multi-node-testkit")
     val persistence       = apply("persistence")
+    val persistenceQuery  = apply("persistence-query")
     val slf4j             = apply("slf4j")
     val stream            = apply("stream")
     val testkit           = apply("testkit")

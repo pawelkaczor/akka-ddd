@@ -33,7 +33,7 @@ lazy val `akka-ddd-protocol` = project
 lazy val `akka-ddd-messaging` = project
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(Akka.stream, nscalaTime)
+    libraryDependencies ++= Seq(Akka.persistenceQuery, nscalaTime)
   ).dependsOn(`akka-ddd-protocol`)
 
 
