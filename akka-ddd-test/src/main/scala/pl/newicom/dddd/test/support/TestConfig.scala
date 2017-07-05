@@ -8,8 +8,10 @@ object TestConfig {
     """akka.loglevel = DEBUG
       |akka.loggers = ["akka.event.slf4j.Slf4jLogger"]
       |akka.logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
+      |akka.log-dead-letters-during-shutdown = "off"
+      |akka.log-dead-letters = "off"
       |akka.log-config-on-start = "off"
-      |akka.actor.debug.autoreceive = "on"
+      |akka.actor.debug.autoreceive = "off"
       |akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       |akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       |app.view-store.config {

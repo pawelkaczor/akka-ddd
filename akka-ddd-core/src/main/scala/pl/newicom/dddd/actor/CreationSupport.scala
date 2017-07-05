@@ -22,7 +22,7 @@ trait ActorContextCreationSupport extends CreationSupport[Any] {
 
   def createChild(props: Props, name: String): ActorRef = {
     val actor: ActorRef = context.actorOf(props, name)
-    log.info(s"Actor created $actor")
+    log.debug(s"Actor created ${actor.path.name}")
     actor
   }
 }

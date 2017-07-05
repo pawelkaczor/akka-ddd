@@ -1,6 +1,6 @@
 package pl.newicom.dddd.persistence
 
-import akka.event.{NoLogging, LoggingAdapter}
+import akka.event.{LogSource, LoggingAdapter, NoLogging}
 import akka.persistence.PersistentActor
 
 trait LoggingMode
@@ -18,6 +18,9 @@ trait PersistentActorLogging { this: PersistentActor ⇒
   private var _log: LoggingAdapter = _
 
   import LoggingMode._
+
+  implicit val logSource: LogSource[PersistentActor] =
+    (a: PersistentActor) => a.persistenceId
 
   def log: LoggingAdapter = log(LiveOnly)
 

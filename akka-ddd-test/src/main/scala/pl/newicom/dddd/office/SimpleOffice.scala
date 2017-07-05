@@ -53,7 +53,6 @@ class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
   def forwardToClerk(msg: AddressableMessage): Unit = {
     val caseId: String = resolveCaseId(msg)
     val clerk = assignClerk(clerkProps, caseId)
-    log.debug(s"Forwarding message to ${clerk.path}")
     clerk forward msg
   }
 

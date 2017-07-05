@@ -30,8 +30,6 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: Loca
 
   val logger: Logger = getLogger(getClass)
 
-  val domain: EntityId = arClassTag.runtimeClass.getSimpleName
-
   override def officeUnderTest: Office = {
     implicit val _ = new OfficeListener[A]
     if (_officeUnderTest == null) _officeUnderTest = office[A]
@@ -45,7 +43,7 @@ abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: Loca
   val testSuiteId: String = uuid10
 
   before {
-    _aggregateIdGen = Gen.const[EntityId](domain + (if (shareAggregateRoot) testSuiteId else uuid10))
+    _aggregateIdGen = Gen.const[EntityId](if (shareAggregateRoot) testSuiteId else uuid10)
   }
 
   after {
