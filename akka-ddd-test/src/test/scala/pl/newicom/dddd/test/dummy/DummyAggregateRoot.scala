@@ -93,7 +93,7 @@ import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
 class DummyAggregateRoot(cfg: DummyConfig)
     extends AggregateRoot[DummyEvent, DummyBehaviour, DummyAggregateRoot]
-    with ReplyWithEvents
+    with ReplyWithEvents with AggregateRootLogger[DummyEvent]
     with ConfigClass[DummyConfig] {
 
   val config: DummyConfig = cfg.copy(valueGeneration = valueGeneration)
@@ -101,7 +101,7 @@ class DummyAggregateRoot(cfg: DummyConfig)
   lazy val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(cfg.valueGenerator))
 
   private def valueGeneration: Collaboration = {
-    implicit val timeout = 1.seconds
+    implicit val timeout = 10.millis
     (valueGeneratorActor !< GenerateRandom) {
       case ValueGeneratorActor.ValueGenerated(value) =>
         state.rejectNegative(value) orElse

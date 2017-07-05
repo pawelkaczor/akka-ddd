@@ -17,6 +17,7 @@ trait AggregateRootBase extends BusinessEntity with GracefulPassivation with Per
 
   type C <: Config
 
+  def state: Any
   def config: C
   override lazy val pc: PassivationConfig = config.pc
 

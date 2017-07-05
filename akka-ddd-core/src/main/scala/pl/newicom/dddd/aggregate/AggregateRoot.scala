@@ -28,9 +28,12 @@ trait Uninitialized[S <: AggregateState[S]] { this: AggregateState[S] =>
   override def initialized = false
 }
 
+trait ReactionInterpreter {
+  def execute(reaction: Reaction[_]): Unit
+}
+
 abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Uninitialized, A <: AggregateRoot[Event, S, A]: LocalOfficeId]
-    extends AggregateRootBase
-    with CollaborationSupport[Event] {
+    extends AggregateRootBase with CollaborationSupport[Event] with ReactionInterpreter {
 
   type HandlePayload = PartialFunction[Any, Reaction[_]]
   type HandleCommand = CommandHandlerContext[C] => PartialFunction[Command, Reaction[Event]]
@@ -69,13 +72,13 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
 
   private def handlePayload(msg: AddressableMessage): HandlePayload = {
     (if (isCommandMsgReceived) {
-       handleCommandMessage(commandHandlerContext(msg.asInstanceOf[CommandMessage]))
+       handleCommand(commandHandlerContext(msg.asInstanceOf[CommandMessage]))
      } else {
        handleQuery
      }).asInstanceOf[HandlePayload]
   }
 
-  def handleCommandMessage: HandleCommand =
+  def handleCommand: HandleCommand =
     state.asInstanceOf[AggregateBehaviour[Event, S, C]].commandHandler
 
   private def handleQuery: HandleQuery =
@@ -95,7 +98,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
       )
   }
 
-  private def execute(r: Reaction[_]): Unit =
+  override def execute(r: Reaction[_]): Unit =
     if (isCommandMsgReceived) {
       executeC(r.asInstanceOf[Reaction[Event]])
     } else {
@@ -103,8 +106,8 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     }
 
   private def executeC(r: Reaction[Event]): Unit = r match {
-    case c: Collaboration => c.execute(raise)
     case AcceptC(events)  => raise(events)
+    case c: Collaboration => c.execute(execute)
     case Reject(ex)       => reply(Failure(ex))
   }
 
@@ -122,6 +125,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
         eventsCount += 1
         if (eventsCount == events.size) {
           val oems = eventMessages.map(toOfficeEventMessage)
+          handle(sender(), oems)
           reply(Success(oems))
         }
       }
