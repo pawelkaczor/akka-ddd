@@ -127,6 +127,15 @@ case class SnapshotJsonSerializer(sys: ActorSystem) extends Serializer[SnapshotE
               }
               val metaData = metadata.extract[SnapshotMetadata]
               Snapshot(data, metaData)
+    case (TypeInfo(Clazz, _), JObject(List(
+            JField("dataClass", JString(dataClass)),
+            JField("data", JString(x)),
+            JField("metadata", metadata)))) =>
+              import Base64._
+
+              val data = serialization.deserialize(x.toByteArray, Class.forName(dataClass)).get
+              val metaData = metadata.extract[SnapshotMetadata]
+              Snapshot(data, metaData)
   }
 
   def serialize(implicit format: Formats): PartialFunction[Any, JObject] = {
