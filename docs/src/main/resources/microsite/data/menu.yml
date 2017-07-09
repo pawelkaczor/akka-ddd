@@ -1,0 +1,12 @@
+options:
+  - title: Introduction
+    url: index.html
+
+  - title: Getting Started
+    url: docs/getting-started.html
+
+  - title: Aggregates
+    url: docs/aggregates.html    
+
+  - title: Projections (todo)
+    url: docs/projections.html
