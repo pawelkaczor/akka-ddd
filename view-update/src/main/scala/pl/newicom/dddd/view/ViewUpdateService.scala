@@ -21,18 +21,17 @@ object ViewUpdateService {
 
   case object InitiateViewUpdate
   case object ViewUpdateInitiated
-  case class  ViewUpdateFailed(reason: Throwable)
+  case class ViewUpdateFailed(reason: Throwable)
 
   case class ViewUpdateConfigured(viewUpdate: ViewUpdate)
 
   case class ViewUpdate(office: BusinessEntity, lastEventNr: Option[Long], runnable: RunnableGraph[Future[Done]]) {
-    override def toString =  s"ViewUpdate(officeId = ${office.id}, lastEventNr = $lastEventNr)"
+    override def toString = s"ViewUpdate(officeId = ${office.id}, lastEventNr = $lastEventNr)"
   }
 
 }
 
-abstract class ViewUpdateService extends Actor with ActorLogging {
-  this: EventSourceProvider =>
+abstract class ViewUpdateService extends Actor with ActorLogging { this: EventSourceProvider =>
 
   type VUConfig <: ViewUpdateConfig
 
@@ -47,8 +46,8 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
   def ensureViewStoreAvailable: Future[Unit]
 
   /**
-   * Overridable initialization logic
-   */
+    * Overridable initialization logic
+    */
   def onViewUpdateInit: Future[ViewUpdateInitiated.type] =
     Future.successful(ViewUpdateInitiated)
 
@@ -59,17 +58,19 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
   override def preStart(): Unit = {
     val initializerProps = Props(new ViewUpdateInitializer(self))
     val supervisor = BackoffSupervisor.props(
-      Backoff.onFailure(
-        initializerProps,
-        childName = "ViewUpdateInitializer",
-        minBackoff = 3 seconds,
-        maxBackoff = 30.seconds,
-        randomFactor = 0.1
-      ).withAutoReset(10.seconds)
+      Backoff
+        .onFailure(
+          initializerProps,
+          childName = "ViewUpdateInitializer",
+          minBackoff = 3 seconds,
+          maxBackoff = 30.seconds,
+          randomFactor = 0.1
+        )
+        .withAutoReset(10.seconds)
         .withSupervisorStrategy(OneForOneStrategy() {
-          case _: ViewUpdateInitException            => Restart
-          case _                                     => Escalate
-      }))
+          case _: ViewUpdateInitException => Restart
+          case _                          => Escalate
+        }))
     context.actorOf(supervisor)
   }
 
@@ -82,8 +83,8 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
       vuConfigs.map(viewUpdate(eventStore, _)).foreach(_.pipeTo(self))
 
     case vu @ ViewUpdate(_, _, runnable) =>
-        log.debug(s"Starting: $vu")
-        runnable.run() pipeTo self
+      log.debug(s"Starting: $vu")
+      runnable.run() pipeTo self
 
     case EnsureViewStoreAvailable =>
       ensureViewStoreAvailable pipeTo sender()
@@ -102,16 +103,18 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
 
   }
 
-
   def viewUpdate(eventStore: EventStore, vuConfig: VUConfig): Future[ViewUpdate] = {
     val handler = viewHandler(vuConfig)
-    val office = vuConfig.office
+    val office  = vuConfig.office
     handler.lastEventNumber.map { lastEvtNrOpt =>
-      ViewUpdate(office, lastEvtNrOpt,
+      ViewUpdate(
+        office,
+        lastEvtNrOpt,
         eventSource(eventStore, office, lastEvtNrOpt)
-          .mapAsync(1) {
-            msgRecord => handler.handle(msgRecord.msg, msgRecord.position)
-          }.toMat(Sink.ignore)(Keep.right)
+          .mapAsync(1) { msgRecord =>
+            handler.handle(msgRecord.msg, msgRecord.position)
+          }
+          .toMat(Sink.ignore)(Keep.right)
       )
     }
   }
