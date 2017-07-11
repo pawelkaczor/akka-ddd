@@ -3,21 +3,19 @@ package pl.newicom.dddd.messaging.event
 import akka.NotUsed
 import akka.actor.{Actor, ActorSystem}
 import akka.event.LoggingAdapter
-import akka.persistence.query.PersistenceQuery
-import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
+import akka.persistence.query.{Offset, PersistenceQuery}
+import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.scaladsl.Source
 import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.office.CaseRef
 
-// TODO use EventsByTagQuery (instead of EventsByPersistenceIdQuery) once it is supported by the https://github.com/EventStore/EventStore.Akka.Persistence
 trait EventSourceProvider extends EventStoreProvider {
   this: Actor =>
 
   def system: ActorSystem = context.system
 
   type EventSource = Source[EventMessageEntry, NotUsed]
-  //type ReadJournal <: EventsByTagQuery
-  type ReadJournal <: EventsByPersistenceIdQuery
+  type ReadJournal <: EventsByTagQuery
 
   def log: LoggingAdapter
   def readJournalId: String
@@ -28,11 +26,9 @@ trait EventSourceProvider extends EventStoreProvider {
 
     log.debug(s"Subscribing to ${observable.id} from position $fromPosExcl (exclusive)")
 
-    val offset = fromPosExcl.getOrElse(0L)
-    //val offset = fromPosExcl.map(Offset.sequence).getOrElse(Offset.noOffset)
+    val offset = fromPosExcl.map(Offset.sequence).getOrElse(Offset.noOffset)
 
-    readJournal.eventsByPersistenceId(observable.id, offset, Long.MaxValue).map { envelop =>
-    //readJournal.eventsByTag(observable.id, offset).map { envelop =>
+    readJournal.eventsByTag(observable.id, offset).map { envelop =>
 
       envelop.event match {
 
