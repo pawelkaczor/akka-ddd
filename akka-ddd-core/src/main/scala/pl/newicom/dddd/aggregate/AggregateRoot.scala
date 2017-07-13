@@ -134,7 +134,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
   }
 
   private def reply(result: Try[Seq[OfficeEventMessage]], cm: CommandMessage = commandMsgReceived) {
-    msgSender ! cm.deliveryReceipt(result.map(successMapper))
+    msgSender ! cm.deliveryReceipt(result.map(config.respondingPolicy.successMapper))
   }
 
   def handleDuplicated(msg: Message): Unit =

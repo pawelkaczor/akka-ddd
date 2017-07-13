@@ -30,7 +30,6 @@ object Scheduler extends AggregateRootSupport {
 
 class Scheduler(override val config: Config)(implicit val officeID: LocalOfficeId[Scheduler])
   extends AggregateRoot[SchedulerEvent, SchedulerBehavior, Scheduler]
-    with SparseReply
     with ConfigClass[Config] {
 
   // Skip recovery

@@ -15,7 +15,9 @@ object DummyAggregateRoot extends AggregateRootSupport {
   case class DummyConfig(pc: PassivationConfig,
                          valueGenerator: () => Int = () => (Math.random() * 100).toInt - 50, //  -50 < v < 50,
                          valueGeneration: Reaction[DummyEvent] = reject("value generation not defined"))
-      extends Config
+      extends Config {
+    def respondingPolicy: RespondingPolicy = ReplyWithEvents
+  }
 
   sealed trait DummyBehaviour extends AggregateActions[DummyEvent, DummyBehaviour, DummyConfig] {
     def isActive = false
@@ -93,7 +95,7 @@ import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
 class DummyAggregateRoot(cfg: DummyConfig)
     extends AggregateRoot[DummyEvent, DummyBehaviour, DummyAggregateRoot]
-    with ReplyWithEvents with AggregateRootLogger[DummyEvent]
+    with AggregateRootLogger[DummyEvent]
     with ConfigClass[DummyConfig] {
 
   val config: DummyConfig = cfg.copy(valueGeneration = valueGeneration)

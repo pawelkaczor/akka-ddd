@@ -13,7 +13,7 @@ import pl.newicom.dddd.office.{CaseRef, OfficeId}
 import pl.newicom.dddd.persistence.PersistentActorLogging
 
 trait AggregateRootBase extends BusinessEntity with GracefulPassivation with PersistentActor
-    with EventHandler with ReplyConfig with EventMessageFactory with ReceivePipeline with Deduplication with PersistentActorLogging {
+    with EventHandler with EventMessageFactory with ReceivePipeline with Deduplication with PersistentActorLogging {
 
   type C <: Config
 

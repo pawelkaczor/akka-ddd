@@ -127,6 +127,6 @@ object DocumentAR extends AggregateRootSupport {
 
 }
 
-abstract class DocumentAR(val config: Config) extends AggregateRoot[DMSEvent, DMSActionsRoot, DocumentAR]
+class DocumentAR(val config: Config) extends AggregateRoot[DMSEvent, DMSActionsRoot, DocumentAR]
   with ConfigClass[Config]
   with AggregateRootLogger[DMSEvent]

@@ -2,7 +2,7 @@ package pl.newicom.dddd.test.dms
 
 import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig, EntityId, ReplyWithEvents}
+import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig, EntityId}
 import pl.newicom.dddd.office.Office
 import pl.newicom.dddd.test.dms.DMSProtocol.VersionUpdate.{creation, noVU}
 import pl.newicom.dddd.test.dms.DMSProtocol.{ChangeContent, ContentChanged, Create, Created, GetPublishedRevisions, GetPublishedVersions, Publish, Published, PublishedRevisions, PublishedVersions, Revision, Version, VersionUpdate}
@@ -18,7 +18,7 @@ import scala.concurrent.Await
 object DMSSpec {
   implicit def actorFactory: AggregateRootActorFactory[DocumentAR] =
     new AggregateRootActorFactory[DocumentAR] {
-      override def props(pc: PassivationConfig): Props = Props(new DocumentAR(DefaultConfig(pc)) with ReplyWithEvents)
+      override def props(pc: PassivationConfig): Props = Props(new DocumentAR(DefaultConfig(pc)))
     }
 
   def v(major: Int, minor: Int) = Version(major, minor)
