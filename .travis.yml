@@ -6,6 +6,10 @@
  jdk:
    - oraclejdk8
 
+ branches:
+  except:
+  - docs
+
  cache:
   directories:
     - $HOME/.ivy2/cache

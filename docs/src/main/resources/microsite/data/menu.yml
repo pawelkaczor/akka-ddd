@@ -5,8 +5,25 @@ options:
   - title: Getting Started
     url: docs/getting-started.html
 
-  - title: Aggregates
-    url: docs/aggregates.html    
+  - title: Aggregate Root
+    url: docs/aggregate-root/
 
-  - title: Projections (todo)
+    nested_options:
+      - title: Logical Model
+        url: docs/aggregate-root/#Logical
+
+      - title: Implementation    
+        url: docs/aggregate-root/#Implementation
+
+      - title: Actor
+        url: docs/aggregate-root/#AggregateRootActor
+
+      - title: Office
+        url: docs/aggregate-root/#Office
+
+      - title: Configuration
+        url: docs/aggregate-root/#Configuration
+
+
+  - title: Projections
     url: docs/projections.html
