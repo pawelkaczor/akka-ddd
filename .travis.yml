@@ -11,6 +11,10 @@
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
 
+ branches:
+  except:
+  - docs
+
  script:
   - sbt test
   - sbt "it:test"
