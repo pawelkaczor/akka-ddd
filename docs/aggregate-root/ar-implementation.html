@@ -1,0 +1,113 @@
+<html><head><title>Akka-DDD</title><meta charset="utf-8" /><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="author" content="Paweł Kaczor" /><meta name="description" content="Scala CQRS/ES framework" /><meta name="og:image" content="/akka-ddd/img/poster.png" /><meta name="og:title" content="Akka-DDD" /><meta name="og:site_name" content="Akka-DDD" /><meta name="og:url" content="http://github.com/pawelkaczor/akka-ddd" /><meta name="og:type" content="website" /><meta name="og:description" content="Scala CQRS/ES framework" /><link rel="icon" type="image/png" href="/akka-ddd/img/favicon.png" /><meta name="twitter:title" content="Akka-DDD" /><meta name="twitter:image" content="http://github.com/pawelkaczor/akka-dddimg/poster.png" /><meta name="twitter:description" content="Scala CQRS/ES framework" /><meta name="twitter:card" content="summary_large_image" /><link rel="icon" type="image/png" sizes="16x16" href="/akka-ddd/img/favicon16x16.png" /><link rel="icon" type="image/png" sizes="24x24" href="/akka-ddd/img/favicon24x24.png" /><link rel="icon" type="image/png" sizes="32x32" href="/akka-ddd/img/favicon32x32.png" /><link rel="icon" type="image/png" sizes="48x48" href="/akka-ddd/img/favicon48x48.png" /><link rel="icon" type="image/png" sizes="57x57" href="/akka-ddd/img/favicon57x57.png" /><link rel="icon" type="image/png" sizes="60x60" href="/akka-ddd/img/favicon60x60.png" /><link rel="icon" type="image/png" sizes="64x64" href="/akka-ddd/img/favicon64x64.png" /><link rel="icon" type="image/png" sizes="70x70" href="/akka-ddd/img/favicon70x70.png" /><link rel="icon" type="image/png" sizes="72x72" href="/akka-ddd/img/favicon72x72.png" /><link rel="icon" type="image/png" sizes="76x76" href="/akka-ddd/img/favicon76x76.png" /><link rel="icon" type="image/png" sizes="96x96" href="/akka-ddd/img/favicon96x96.png" /><link rel="icon" type="image/png" sizes="114x114" href="/akka-ddd/img/favicon114x114.png" /><link rel="icon" type="image/png" sizes="120x120" href="/akka-ddd/img/favicon120x120.png" /><link rel="icon" type="image/png" sizes="128x128" href="/akka-ddd/img/favicon128x128.png" /><link rel="icon" type="image/png" sizes="144x144" href="/akka-ddd/img/favicon144x144.png" /><link rel="icon" type="image/png" sizes="150x150" href="/akka-ddd/img/favicon150x150.png" /><link rel="icon" type="image/png" sizes="152x152" href="/akka-ddd/img/favicon152x152.png" /><link rel="icon" type="image/png" sizes="196x196" href="/akka-ddd/img/favicon196x196.png" /><link rel="icon" type="image/png" sizes="310x310" href="/akka-ddd/img/favicon310x310.png" /><link rel="icon" type="image/png" sizes="310x150" href="/akka-ddd/img/favicon310x150.png" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" /><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" /><link rel="stylesheet" href="/akka-ddd/highlight/styles/color-brewer.css" /><link rel="stylesheet" href="/akka-ddd/css/style.css" /><link rel="stylesheet" href="/akka-ddd/css/palette.css" /><link rel="stylesheet" href="/akka-ddd/css/codemirror.css" /><link rel="stylesheet" href="/akka-ddd/css/kazari-style.css" /><link rel="stylesheet" href="/akka-ddd/css/monokai.css" /><link rel="stylesheet" href="/akka-ddd/css/override.css" /></head><body class="docs"><div id="wrapper"><div id="sidebar-wrapper"><ul id="sidebar" class="sidebar-nav"><li class="sidebar-brand"><a href="/akka-ddd/" class="brand"><div class="brand-wrapper"><span>Akka-DDD</span></div></a></li>    </ul></div><div id="page-content-wrapper"><div class="nav"><div class="container-fluid"><div class="row"><div class="col-lg-12"><div class="action-menu pull-left clearfix"><a href="#menu-toggle" id="menu-toggle"><i class="fa fa-bars" aria-hidden="true"></i></a></div><ul class="pull-right"><li id="gh-eyes-item" class="hidden-xs"><a href="https://github.com/pawelkaczor/akka-ddd"><i class="fa fa-eye"></i><span>WATCH<span id="eyes" class="label label-default">--</span></span></a></li><li id="gh-stars-item" class="hidden-xs"><a href="https://github.com/pawelkaczor/akka-ddd"><i class="fa fa-star-o"></i><span>STARS<span id="stars" class="label label-default">--</span></span></a></li><li><a href="#" onclick="shareSiteTwitter('Akka-DDD Scala CQRS/ES framework');"><i class="fa fa-twitter"></i></a></li><li><a href="#" onclick="shareSiteFacebook('Akka-DDD Scala CQRS/ES framework');"><i class="fa fa-facebook"></i></a></li><li><a href="#" onclick="shareSiteGoogle();"><i class="fa fa-google-plus"></i></a></li></ul></div></div></div></div><div id="content" data-github-owner="pawelkaczor" data-github-repo="akka-ddd"><div class="content-wrapper"><section><h4 id="physical-model-of-the-aggregate-root">Physical model of the Aggregate Root</h4>
+
+<hr />
+<p>The Aggregate Root instance is a <a href="">Persistent Actor</a> capable of handling <a href="">Command Messages</a> and writing <a href="">Event Messages</a> to the underlying journal.
+All Commands must contain an identifier of the business entity so that they can be routed to the appropriate Aggregate Root instance.<br />
+——–</p>
+
+<p>The Akka-DDD framework allows to model the behavior of the AR as a state machine using the <a href="">algebraic data type</a>. Each type must extend from the <a href="">AggregateActions</a> trait and define a command processing logic consisting of two parts: <strong>command handling (reaction)</strong> and <strong>event handling (state transition)</strong>. To do that, you need to construct an <a href="">Actions</a> object by calling <code class="highlighter-rouge">handleCommand</code> and then <code class="highlighter-rouge">handleEvent</code> methods as shown in the example below:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code>
+    <span class="k">def</span> <span class="n">actions</span> <span class="k">=</span>
+      <span class="n">handleCommand</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="nc">CreateLottery</span><span class="o">(</span><span class="n">id</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">LotteryCreated</span><span class="o">(</span><span class="n">id</span><span class="o">)</span>
+      <span class="o">}</span>
+      <span class="o">.</span><span class="n">handleEvent</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="nc">LotteryCreated</span><span class="o">(</span><span class="k">_</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">EmptyLottery</span>
+      <span class="o">}</span>
+
+</code></pre>
+</div>
+
+<h4 id="command-handling-reaction">Command handling (reaction)</h4>
+
+<p>The actual command handling logic (the <code class="highlighter-rouge">Command Handler</code>) is a partial function <code class="highlighter-rouge">Command</code> =&gt; <a href="">Reaction</a> that needs to be passed to the <code class="highlighter-rouge">handleCommand</code> method. The <code class="highlighter-rouge">Reaction</code> is either an <code class="highlighter-rouge">Event</code> (or a sequence of <code class="highlighter-rouge">Events</code>) or a <a href="">Rejection</a>. A couple of <code class="highlighter-rouge">Command Handler</code> examples below:</p>
+
+<p><strong>Command ⟶ Event</strong></p>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code>    <span class="k">case</span> <span class="nc">AddParticipant</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">name</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">ParticipantAdded</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">id</span><span class="o">)</span>
+</code></pre>
+</div>
+
+<p><strong>Command ⟶ sequence of Events</strong> (created manually)</p>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code>    <span class="k">case</span> <span class="nc">Reset</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">name</span><span class="o">)</span> <span class="k">=&gt;</span>
+      <span class="nc">NameChanged</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">name</span><span class="o">)</span> <span class="o">&amp;</span> <span class="nc">ValueChanged</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">version</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)</span>
+
+<span class="c1">// Notice that `version` is a property of the current state.
+</span></code></pre>
+</div>
+
+<p><strong>Command ⟶ sequence of Events</strong> (being a result of an arbitrary sequence transformation)</p>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code>    <span class="k">case</span> <span class="nc">RemoveAllParticipants</span><span class="o">(</span><span class="n">id</span><span class="o">)</span> <span class="k">=&gt;</span>
+      <span class="k">this</span><span class="o">.</span><span class="n">participants</span>  
+        <span class="o">.</span><span class="n">map</span> <span class="o">{</span> <span class="n">name</span> <span class="k">=&gt;</span> <span class="nc">ParticipantRemoved</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">id</span><span class="o">)</span> <span class="o">}</span>
+
+<span class="c1">// Notice that `participants` is a property of the current state.
+</span></code></pre>
+</div>
+
+<p><strong>Command ⟶ Rejection</strong> (with a rejection reason of the default type: DomainException)</p>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code>    <span class="k">case</span> <span class="nc">Run</span><span class="o">(</span><span class="k">_</span><span class="o">)</span>  <span class="k">=&gt;</span>
+      <span class="n">reject</span><span class="o">(</span><span class="s">"Lottery has no participants"</span><span class="o">)</span>
+
+</code></pre>
+</div>
+
+<p><strong>Command ⟶ Rejection</strong> (with a rejection reason of a custom type)</p>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code>    <span class="k">case</span> <span class="n">anyCommand</span>  <span class="k">=&gt;</span>
+      <span class="n">reject</span> <span class="o">(</span><span class="nc">LotteryHasAlreadyAWinner</span><span class="o">(</span><span class="n">s</span><span class="s">"Lottery has already a winner and the winner is $winner"</span><span class="o">))</span>
+
+</code></pre>
+</div>
+
+<p><strong>Command ⟶ Rejection or Event (conditional Rejection)</strong></p>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code>    <span class="k">case</span> <span class="nc">CreateDummy</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">name</span><span class="o">,</span> <span class="n">description</span><span class="o">,</span> <span class="n">value</span><span class="o">)</span> <span class="k">=&gt;</span>
+      <span class="n">rejectIf</span><span class="o">(</span><span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">,</span> <span class="s">"negative value not allowed"</span><span class="o">)</span> <span class="n">orElse</span>
+        <span class="nc">DummyCreated</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">name</span><span class="o">,</span> <span class="n">description</span><span class="o">,</span> <span class="n">value</span><span class="o">)</span>
+
+</code></pre>
+</div>
+
+<h5 id="collaboration-with-external-actors">Collaboration with external actors</h5>
+
+<p>Sometimes the command handling logic is more complex and requires the AR Actor to collaborate with other Actors. In such cases the <code class="highlighter-rouge">Reaction</code> needs to be implemented as a method of the AR Actor and exposed as a property of type <code class="highlighter-rouge">Reaction</code> of the <a href="">Aggregate Root configuration</a> object. The command handler will simply return the <code class="highlighter-rouge">Reaction</code> that is available in the AR configuration.</p>
+
+<p>The example of collaboration implementation can be found in the DummyAggregateRoot Actor:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>DummyAggregateRoot code
+</code></pre>
+</div>
+
+<p>Finally, the implementation of the command handler:</p>
+
+<p><strong>Command ⟶ Reaction</strong></p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code>    <span class="k">case</span> <span class="nc">GenerateValue</span><span class="o">(</span><span class="k">_</span><span class="o">)</span> <span class="k">=&gt;</span>
+      <span class="n">ctx</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">valueGeneration</span>
+</code></pre>
+</div>
+
+<h4 id="event-handling-state-transition">Event handling (state transition)</h4>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code>    <span class="k">case</span> <span class="nc">ParticipantRemoved</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">id</span><span class="o">)</span> <span class="k">=&gt;</span>
+      <span class="k">val</span> <span class="n">newParticipants</span> <span class="k">=</span> <span class="n">participants</span><span class="o">.</span><span class="n">filter</span><span class="o">(</span><span class="k">_</span> <span class="o">!=</span> <span class="n">name</span><span class="o">)</span>
+      <span class="c1">// NOTE: if last participant is removed, transition back to EmptyLottery
+</span>      <span class="k">if</span> <span class="o">(</span><span class="n">newParticipants</span><span class="o">.</span><span class="n">isEmpty</span><span class="o">)</span>
+        <span class="nc">EmptyLottery</span>
+      <span class="k">else</span>
+        <span class="n">copy</span><span class="o">(</span><span class="n">participants</span> <span class="k">=</span> <span class="n">newParticipants</span><span class="o">)</span>
+
+</code></pre>
+</div>
+
+<h4 id="ar-behavior-composition">AR behavior composition</h4>
+
+</section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/akka-ddd/highlight/highlight.pack.js"></script><script>hljs.configure({
+languages:['scala','java','bash']
+});
+hljs.initHighlighting();
+             </script><script>((window.gitter = {}).chat = {}).options = {
+room: 'pawelkaczor/akka-ddd'};</script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js"></script><script src="/akka-ddd/js/main.js"></script><script src="/akka-ddd/js/kazari.js"></script><script>
+$(document).ready(function() {
+	kazari.KazariPlugin().decorateCode('https://scala-evaluator-212.herokuapp.com/eval', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.S2F6YXJp.Jl2eqMfw8IakJF93PjxTbrf-8YUJgX5OoOfy5JHE8Yw', '', 'monokai')
+})
+    </script></body></html>
