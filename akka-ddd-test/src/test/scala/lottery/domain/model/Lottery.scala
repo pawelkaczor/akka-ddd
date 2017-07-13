@@ -134,7 +134,7 @@ object LotteryBehaviour {
       handleCommand {
         // no command can be accepted after having selected a winner
         case anyCommand  =>
-          throw new LotteryHasAlreadyAWinner(s"Lottery has already a winner and the winner is $winner")
+          reject (new LotteryHasAlreadyAWinner(s"Lottery has already a winner and the winner is $winner"))
       }
 
     def actions = rejectAllCommands
