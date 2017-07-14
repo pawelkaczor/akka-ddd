@@ -33,11 +33,12 @@
   </li>
 </ul>
 
-<p>It turns out that the AR logical model defined as a set of AR behavior scenarios is a perfectly valid, complete specification of the Unit Test that the AR implementation should be accompanied by. See: <a href="">Testing Aggregate Roots</a></p>
+<p>It turns out that the AR logical model defined as a set of AR behavior scenarios is a perfectly valid, complete specification of the Unit Test that the AR implementation should be accompanied by. 
+See: <a href="">Testing Aggregate Roots</a></p>
 
 <h2 id="implementation"><a name="Implementation"></a>Implementation</h2>
 
-<p>The Akka-DDD framework allows to model the behavior of the AR as a state machine using the <a href="">algebraic data type</a>. Each type must extend from the <a href="">AggregateActions</a> trait and implement the <code class="highlighter-rouge">actions</code> method as shown in the example below.</p>
+<p>The Akka-DDD framework allows to model the behavior of the AR as a state machine using the <a href="">Algebraic Data Type</a>. Each type must extend from the <a href="">AggregateActions</a> trait and implement the <code class="highlighter-rouge">actions</code> method as shown in the example below.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">def</span> <span class="n">actions</span> <span class="k">=</span>
   <span class="n">handleCommand</span> <span class="o">{</span>
@@ -53,15 +54,15 @@
   <span class="o">}</span>
 </code></pre>
 </div>
-<p>The command processing logic consists of two parts: <strong>command handling (reaction)</strong> and <strong>event handling (state transition)</strong>. The <code class="highlighter-rouge">actions</code> method is a factory of the <code class="highlighter-rouge">Command Handler</code> and <code class="highlighter-rouge">Event Handler</code> functions. It creates an instance of <a href="">Actions</a> containing given <code class="highlighter-rouge">Command Handler</code> and <code class="highlighter-rouge">Event Handler</code> functions.</p>
+<p>The command processing logic consists of two parts: <strong>command handling (reaction)</strong> and <strong>event handling (state transition)</strong>. The <code class="highlighter-rouge">actions</code> method is a factory of the Command Handler and Event Handler functions. It creates an instance of <a href="">Actions</a> containing given Command Handler and Event Handler functions.</p>
 
 <h3 id="command-handling-reaction">Command Handling (reaction)</h3>
 
-<p>The actual command handling logic (the <code class="highlighter-rouge">Command Handler</code>) is a partial function that accepts a <code class="highlighter-rouge">Command</code> and returns a <code class="highlighter-rouge">Reaction</code>. The <code class="highlighter-rouge">Reaction</code> that indicates the acceptance of a command can be constructed from an event or a sequence of events. The <code class="highlighter-rouge">Reaction</code> that indicates the <a href="">rejection</a> of a command can be created by providing a rejection reason.</p>
+<p>The actual command handling logic (the Command Handler) is a partial function that accepts a <code class="highlighter-rouge">Command</code> and returns a <code class="highlighter-rouge">Reaction</code>. The <code class="highlighter-rouge">Reaction</code>, that indicates the acceptance of a command, can be constructed from an event or a sequence of events. The <code class="highlighter-rouge">Reaction</code>, that indicates the <a href="">rejection</a> of a command, can be created by providing a rejection reason.</p>
 
 <h4 id="command-acceptance">Command Acceptance</h4>
 
-<p>The command handler indicates that the command is accepted by returning an Event.</p>
+<p>The Command Handler indicates that the command is accepted by returning an Event.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="nc">AddParticipant</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">name</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="nc">ParticipantAdded</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">id</span><span class="o">)</span>
 </code></pre>
@@ -156,7 +157,7 @@
 <p><a href="">Aggregate Root Actor</a> is responsible for running the Aggregate Root state machine (the AR behavior). It is a <a href="">Persistent Actor</a>.
 When a <a href="">Command Messages</a> comes in, the actor invokes the current <a href="">Command Handler</a> (the Command Handler associated with the current state) and if the command is accepted, appends the <a href="">Event Message</a>(s) to the actor’s journal. Once the event message(s) is persisted, the AR actor invokes the current <a href="">Event Handler</a> (the Event Handler associated with the current state) and the AR transitions to the next state.</p>
 
-<p>Aggregate Root Actors are not directly accessible by the clients. They are like clerks working in the office. The only way to perform an operation on a particular Aggregate Root (a business entity / case) is to submit a form (command) to the respective Office.</p>
+<p>Aggregate Root Actors are not directly accessible by the clients. They are like clerks working in an office. The only way to perform an operation on a particular Aggregate Root (a business entity / case) is to submit a form (command) to the respective Office.</p>
 
 <h2 id="office"><a name="Office"></a>Office</h2>
 
@@ -210,12 +211,12 @@ the AR configuration interface. If you do not intend to extend the default AR co
 <span class="o">}</span>
 </code></pre>
 </div>
-<p>The <code class="highlighter-rouge">DefaultConfig</code> defines a <code class="highlighter-rouge">replyWithEvents</code> flag, that you should set to false if the <code class="highlighter-rouge">SparseReply</code> responding policy should be used instead of the default one (<code class="highlighter-rouge">ReplyWithEvents</code>).</p>
+<p>The <code class="highlighter-rouge">DefaultConfig</code> defines the <code class="highlighter-rouge">replyWithEvents</code> flag, that you should set to false if the <code class="highlighter-rouge">SparseReply</code> responding policy should be used instead of the default one (<code class="highlighter-rouge">ReplyWithEvents</code>).</p>
 
 <p>The AR Actor Factory is responsible for creating and <strong>configuring</strong> the AR Actor:</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">object</span> <span class="nc">ReservationARFactory</span> <span class="k">extends</span> <span class="nc">AggregateRootActorFactory</span><span class="o">[</span><span class="kt">Reservation</span><span class="o">]</span> <span class="o">{</span>
-    <span class="k">override</span> <span class="k">def</span> <span class="n">props</span><span class="o">(</span><span class="n">pc</span><span class="k">:</span> <span class="kt">PassivationConfig</span><span class="o">)</span> <span class="k">=</span> <span class="nc">Props</span><span class="o">(</span><span class="k">new</span> <span class="nc">Reservation</span><span class="o">(</span><span class="nc">DefaultConfig</span><span class="o">(</span><span class="n">pc</span><span class="o">,</span> <span class="n">replyWithEvents</span> <span class="k">=</span> <span class="kc">false</span><span class="o">)))</span>
+    <span class="k">def</span> <span class="n">props</span><span class="o">(</span><span class="n">pc</span><span class="k">:</span> <span class="kt">PassivationConfig</span><span class="o">)</span> <span class="k">=</span> <span class="nc">Props</span><span class="o">(</span><span class="k">new</span> <span class="nc">Reservation</span><span class="o">(</span><span class="nc">DefaultConfig</span><span class="o">(</span><span class="n">pc</span><span class="o">,</span> <span class="n">replyWithEvents</span> <span class="k">=</span> <span class="kc">false</span><span class="o">)))</span>
   <span class="o">}</span>
 </code></pre>
 </div>
