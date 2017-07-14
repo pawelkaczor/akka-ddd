@@ -7,16 +7,7 @@ lazy val micrositeSettings = Seq(
   micrositeGithubOwner := "pawelkaczor",
   micrositeGithubRepo := "akka-ddd",
   micrositeAuthor := "Paweł Kaczor",
-  micrositeHighlightTheme := "color-brewer",
-  micrositePalette := Map(
-    "brand-primary" -> "#1C4C65", // "#185965",
-    "brand-secondary" -> "#1F5571", //#1B6471",
-    "brand-tertiary" -> "#1C4C65", // "#185965",
-    "gray-dark" -> "#49494B",
-    "gray" -> "#7B7B7E",
-    "gray-light" -> "#E5E5E6",
-    "gray-lighter" -> "#F4F3F4",
-    "white-color" -> "#FFFFFF"),
+  micrositeHighlightTheme := "github",
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.md"
 )
 // format:on

@@ -6,24 +6,23 @@ options:
     url: docs/getting-started.html
 
   - title: Aggregate Root
-    url: docs/aggregate-root/
+    url: docs/aggregate-root.html
 
     nested_options:
       - title: Logical Model
-        url: docs/aggregate-root/#Logical
+        url: docs/aggregate-root/logical-model
 
       - title: Implementation    
-        url: docs/aggregate-root/#Implementation
+        url: docs/aggregate-root/implementation
 
       - title: Actor
-        url: docs/aggregate-root/#AggregateRootActor
-
-      - title: Office
-        url: docs/aggregate-root/#Office
+        url: docs/aggregate-root/actor
 
       - title: Configuration
-        url: docs/aggregate-root/#Configuration
+        url: docs/aggregate-root/configuration
 
+      - title: Testing
+        url: docs/aggregate-root/testing
 
   - title: Projections
     url: docs/projections.html
