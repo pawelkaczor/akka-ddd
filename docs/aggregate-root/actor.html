@@ -5,6 +5,17 @@ When a <a href="">Command Messages</a> comes in, the actor invokes the current <
 
 <p>Aggregate Root Actors are not directly accessible by the clients. They are like clerks working in an office. The only way to perform an operation on a particular Aggregate Root (a business entity / case) is to submit a form (command) to the respective Office.</p>
 
+<h3 id="aggregate-root-actor-factory">Aggregate Root Actor Factory</h3>
+
+<p>Aggregate Root Actor Factory should provide a recipe (<a href="">Props</a>) for the Aggregate Root Actor of specified class. The supervising Office will use that recipe to create the actor. Please see example of the AR Actor Factory below:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code>  <span class="k">implicit</span> <span class="k">object</span> <span class="nc">ReservationARFactory</span> <span class="k">extends</span> <span class="nc">AggregateRootActorFactory</span><span class="o">[</span><span class="kt">Reservation</span><span class="o">]</span> <span class="o">{</span>
+    <span class="k">def</span> <span class="n">props</span><span class="o">(</span><span class="n">pc</span><span class="k">:</span> <span class="kt">PassivationConfig</span><span class="o">)</span> <span class="k">=</span> <span class="nc">Props</span><span class="o">(</span><span class="k">new</span> <span class="nc">Reservation</span><span class="o">(</span><span class="nc">DefaultConfig</span><span class="o">(</span><span class="n">pc</span><span class="o">)))</span>
+  <span class="o">}</span>
+</code></pre>
+</div>
+<p>See also: <a href="">Aggregate Root Configuration</a></p>
+
 <h2 id="office"><a name="Office"></a>Office</h2>
 
 <p>TODO</p>
@@ -28,11 +39,17 @@ The office identifier should allow obtaining the identifier of the office journa
 
 <h3 id="office-creation">Office creation</h3>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="nc">OfficeFactory</span><span class="o">.</span><span class="n">office</span><span class="o">[</span><span class="kt">Reservation</span><span class="o">]</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">val</span> <span class="n">reservationOffice</span> <span class="k">=</span> <span class="nc">OfficeFactory</span><span class="o">.</span><span class="n">office</span><span class="o">[</span><span class="kt">Reservation</span><span class="o">]</span>
 </code></pre>
 </div>
 
-<p>Assuming the <code class="highlighter-rouge">newicom.dddd.cluster</code> package object is available in the scope (the package object is imported), the actual office creation is delegated to the cluster-aware / sharding-capable OfficeFactory object that is injected automatically as an implicit argument of the office method. The office factory requires an <code class="highlighter-rouge">AR Actor Factory</code> and a shard allocation strategy to be implicitly provided for the given AR Actor class. For the <code class="highlighter-rouge">Reservation</code> these objects are defined in the <a href="">SalesBackendConfiguration</a> trait that the <a href="">SalesBackendApp</a> mixes-in. The <code class="highlighter-rouge">Office</code> object that is eventually created contains the office identifier and the address (in the form of an ActorPath) of the office representative Actor.</p>
+<p>Assuming the <code class="highlighter-rouge">newicom.dddd.cluster</code> package object is available in the scope (the package object is imported), the actual office creation is delegated to the cluster-aware / sharding-capable <a href="">OfficeFactory</a> object that is injected automatically as an implicit argument of the <code class="highlighter-rouge">office</code> method. The office factory requires an <code class="highlighter-rouge">AR Actor Factory</code> and a shard allocation strategy to be implicitly provided for the given AR Actor class. The <code class="highlighter-rouge">Office</code> object that is eventually created contains the office identifier and the address (in the form of an ActorPath) of the office representative Actor.</p>
+
+<h2 id="graceful-passivation">Graceful Passivation</h2>
+
+<p>To reduce memory consumption, idle Aggregate Root Actors should be passivated (removed from the memory) after a specified inactivity timeout. To do it <a href="">safely</a> AR Actor is configured to receive <a href="">ReceiveTimeout</a> after specified inactivity period. Being notified, AR Actor asks the Office to dismiss him gracefully. The pattern/protocol is called Graceful Passivation and is supported by the Akka-DDD (see <a href="">GracefulPassivation</a> trait).</p>
+
+<p>See also: <a href="">Passivation Configuration</a></p>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/akka-ddd/highlight/highlight.pack.js"></script><script>hljs.configure({
 languages:['scala','java','bash']
 });

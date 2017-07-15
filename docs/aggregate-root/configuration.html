@@ -16,23 +16,9 @@ the Aggregate Root configuration interface. If you do not intend to extend the d
 
 <p>The default configuration interface exposes two properties: <code class="highlighter-rouge">PassivationConfig</code> and <code class="highlighter-rouge">RespondingPolicy</code>.</p>
 
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">trait</span> <span class="nc">Config</span> <span class="o">{</span>
-  <span class="k">def</span> <span class="n">pc</span><span class="k">:</span> <span class="kt">PassivationConfig</span>
-  <span class="k">def</span> <span class="n">respondingPolicy</span><span class="k">:</span> <span class="kt">RespondingPolicy</span>
-<span class="o">}</span>
-</code></pre>
-</div>
-<p>The <code class="highlighter-rouge">DefaultConfig</code> defines the <code class="highlighter-rouge">replyWithEvents</code> flag, that you should set to false if the <code class="highlighter-rouge">SparseReply</code> responding policy should be used instead of the default one (<code class="highlighter-rouge">ReplyWithEvents</code>).</p>
+<h3 id="passivation-configuration">Passivation Configuration</h3>
 
-<p>The AR Actor Factory is responsible for creating and <strong>configuring</strong> the AR Actor:</p>
-
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">object</span> <span class="nc">ReservationARFactory</span> <span class="k">extends</span> <span class="nc">AggregateRootActorFactory</span><span class="o">[</span><span class="kt">Reservation</span><span class="o">]</span> <span class="o">{</span>
-    <span class="k">def</span> <span class="n">props</span><span class="o">(</span><span class="n">pc</span><span class="k">:</span> <span class="kt">PassivationConfig</span><span class="o">)</span> <span class="k">=</span> <span class="nc">Props</span><span class="o">(</span>
-      <span class="k">new</span> <span class="nc">Reservation</span><span class="o">(</span><span class="nc">DefaultConfig</span><span class="o">(</span><span class="n">pc</span><span class="o">,</span> <span class="n">replyWithEvents</span> <span class="k">=</span> <span class="kc">false</span><span class="o">))</span>
-    <span class="o">)</span>
-  <span class="o">}</span>
-</code></pre>
-</div>
+<p>The inactivity timeout defined by the <a href="">Graceful Passivation</a> protocol, can be configured independently for each Aggregate Root Actor class. It is the responsibility of the Office to create <a href="">PassivationConfig</a> object with default value for inactivity timeout. The value can be adjusted by the <a href="">Aggregate Root Actor Factory</a>.</p>
 
 <h3 id="responding-policy">Responding Policy</h3>
 
@@ -52,7 +38,11 @@ the Aggregate Root configuration interface. If you do not intend to extend the d
   <li><a href="">ReplyWithEvents</a> - the sequence of <a href="">OfficeEventMessage</a> is returned</li>
 </ul>
 
-<h3 id="passivation">Passivation</h3>
+<p>The default configuration class (<code class="highlighter-rouge">DefaultConfig</code>) defines the <code class="highlighter-rouge">replyWithEvents</code> flag, that you should set to false if the <code class="highlighter-rouge">SparseReply</code> responding policy should be used instead of the default one (<code class="highlighter-rouge">ReplyWithEvents</code>).</p>
+
+<p>See also: <a href="">Aggregate Root Actor Factory</a></p>
+
+<h3 id="logging">Logging</h3>
 
 <p>TODO</p>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/akka-ddd/highlight/highlight.pack.js"></script><script>hljs.configure({
