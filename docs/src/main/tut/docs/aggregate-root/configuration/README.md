@@ -7,38 +7,25 @@ permalink: /docs/aggregate-root/configuration
 ## Aggregate Root - Configuration
 
 When creating a class of the Aggregate Root Actor or the root trait of the Aggregate Root behavior, it is necessary to declare
-the Aggregate Root configuration interface. If you do not intend to extend the default Aggregate Root configuration interface, just use the `Config` trait as show in the examples below:
+the Aggregate Root configuration interface. If you do not intend to extend the default Aggregate Root configuration interface, just use the [Config]() trait as show in the examples below:
 
 Root trait of the Reservation AR behavior:
 ```scala
-sealed trait ReservationActions extends AggregateActions[Event, ReservationActions, Config] 
+sealed trait Reservation extends Behavior[Event, Reservation, Config] 
 ```
  
 Reservation AR Actor:
 ```scala
-class Reservation(val config: Config) extends AggregateRoot[Event, ReservationActions, Reservation]
+class ReservationAggregateRoot(val config: Config) extends AggregateRoot[Event, Reservation, ReservationAggregateRoot]
   with ConfigClass[Config]
 ```
 
 The default configuration interface exposes two properties: `PassivationConfig` and `RespondingPolicy`.
 
-```scala
-trait Config {
-  def pc: PassivationConfig
-  def respondingPolicy: RespondingPolicy
-}
-```
-The `DefaultConfig` defines the `replyWithEvents` flag, that you should set to false if the `SparseReply` responding policy should be used instead of the default one (`ReplyWithEvents`). 
+### Passivation Configuration
 
-The AR Actor Factory is responsible for creating and **configuring** the AR Actor:
+The inactivity timeout, defined by the [Graceful Passivation]() protocol, can be configured independently for each Aggregate Root Actor class. It is the responsibility of the Office to create [PassivationConfig]() object with default value for inactivity timeout. The value can be adjusted by the [Aggregate Root Actor Factory]().
 
-```scala
-implicit object ReservationARFactory extends AggregateRootActorFactory[Reservation] {
-    def props(pc: PassivationConfig) = Props(
-      new Reservation(DefaultConfig(pc, replyWithEvents = false))
-    )
-  }
-```
 
 ### Responding Policy
 
@@ -57,6 +44,48 @@ You can define a custom Responding Policy by providing your own implementation o
 * [ReplyWithEvents]() - the sequence of [OfficeEventMessage]() is returned
 
 
-### Passivation 
+The default configuration class (`DefaultConfig`) defines the `replyWithEvents` flag, that you should set to false if the `SparseReply` responding policy should be used instead of the default one (`ReplyWithEvents`). 
 
-TODO
+See also: [Aggregate Root Actor Factory]()
+
+### Logging
+
+To enable extensive logging of the Aggregate Root Actor, use [AggregateRootLogger]() trait. It should be mixed into the the Aggregate Root Actor class.
+
+Received commands, executed reactions, and the current state will be included in the log, as shown in the example below:
+
+Lottery AR test scenario:
+
+```scala
+"Lottery should" should {
+    "run" in {
+      given {
+        a_list_of [CreateLottery, AddParticipant, AddParticipant]
+      }
+      .when {
+        a [Run]
+      }
+      .expectEventMatching {
+        case e: WinnerSelected => e
+      }
+}
+```
+
+Generated log messages:
+ 
+```text
+13:17:23.775UTC DEBUG akka://Tests/user/LotteryAggregateRoot_26aaff - Actor created b02772909
+13:17:24.090UTC DEBUG LotteryAggregateRoot-b02772909 - Command received: CreateLottery(b02772909)
+13:17:24.150UTC DEBUG LotteryAggregateRoot-b02772909 - Command accepted. LotteryCreated(b02772909)
+13:17:24.176UTC DEBUG LotteryAggregateRoot-b02772909 - State: EmptyLottery
+13:17:24.191UTC DEBUG LotteryAggregateRoot-b02772909 - Command received: AddParticipant(b02772909,Paul)
+13:17:24.194UTC DEBUG LotteryAggregateRoot-b02772909 - Command accepted. ParticipantAdded(Paul,b02772909)
+13:17:24.198UTC DEBUG LotteryAggregateRoot-b02772909 - State: NonEmptyLottery(List(Paul))
+13:17:24.199UTC DEBUG LotteryAggregateRoot-b02772909 - Command received: AddParticipant(b02772909,John)
+13:17:24.203UTC DEBUG LotteryAggregateRoot-b02772909 - Command accepted. ParticipantAdded(John,b02772909)
+13:17:24.205UTC DEBUG LotteryAggregateRoot-b02772909 - State: NonEmptyLottery(List(John, Paul))
+13:17:24.255UTC DEBUG akka://Tests/user/LotteryAggregateRoot_4402a5 - Actor created b02772909
+13:17:24.264UTC DEBUG LotteryAggregateRoot-b02772909 - Command received: Run(b02772909)
+13:17:24.267UTC DEBUG LotteryAggregateRoot-b02772909 - Command accepted. WinnerSelected(John,2017-07-16T15:17:24.265+02:00,b02772909)
+13:17:24.269UTC DEBUG LotteryAggregateRoot-b02772909 - State: FinishedLottery(John,b02772909)
+```

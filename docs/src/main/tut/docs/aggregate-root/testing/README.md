@@ -3,11 +3,41 @@ layout: docs
 title: Aggregate Root - Testing
 permalink: /docs/aggregate-root/testing
 ---
-## Testing Aggregate Root
+## Testing Aggregate Root's behavior
 
-Examples:
+Akka-DDD provides Given-When-Then test fixture to be used for testing Aggregate Root's behavior. The [Office]() infrastructure, that is necessary to run the test, is created automatically before the test is executed. The [OfficeSpec]() class that the test class should extend from, expects Aggregate Root Actor Factory to be available in the implicit scope. Please see example below:
 
-when/expect
+```scala
+object ReservationSpec {
+  implicit def factory: AggregateRootActorFactory[ReservationAggregateRoot] =
+    new AggregateRootActorFactory[ReservationAggregateRoot] {
+      def props(pc: PassivationConfig): Props = Props(new ReservationAggregateRoot(DefaultConfig(pc)))
+    }
+}
+
+class ReservationSpec extends OfficeSpec[ReservationAggregateRoot] {
+
+  def reservationOffice: Office = officeUnderTest
+  def reservationId: EntityId = aggregateId
+
+  "Reservation office" should {
+    "create reservation" in {
+      when(
+        CreateReservation(reservationId, "client1")
+      )
+      .expectEvent(
+        ReservationCreated(reservationId, "client1")
+      )
+    }
+  }
+}
+```
+By default, each behavior specification is executed with a different AggregateRoot Id, and so it is executed by a different instance of the Aggregate Root Actor.
+You may choose to use the same Actor for running all behavior specifications by setting the `shareAggregateRoot` constructor parameter of the `OfficeSpec` to `true`. 
+
+### Examples 
+
+A sample specification of the initial behavior (no Given section):
 
 ```scala
 "create Dummy" in {
@@ -20,7 +50,7 @@ when/expect
 }
 ```
 
-given/when/expect
+A sample specification of the behavior of an existing Aggregate Root.
 
 ```scala
 "update Dummy's name" in {
@@ -36,7 +66,7 @@ given/when/expect
 }
 ```
 
-when/expectException
+A sample specification of a behavior that is expected to reject the command.
 
 ```scala
 "reject negative value" in {
@@ -49,7 +79,18 @@ when/expectException
 
 ### Testing with Command Generators
 
-Commands are generated (see generators above). The command under test (created inside When clause) is accessible from inside Then/expect clause. No need to define val members for name, description, etc. No need to define concrete values for name, description, etc.
+You may choose to implement [ScalaCheck Generators]() for the commands. For example, given the following generator for the [CreateDummy]() command:
+
+```scala
+  implicit def create: Gen[CreateDummy] = for {
+    name <- Gen.alphaStr
+    description <- Gen.alphaStr
+    value <- Gen.choose(1, 1000)
+  } yield {
+    CreateDummy(dummyId, name, description, value)
+  }
+```
+you can write the behavior specification more concisely:
 
 ```scala
 "create Dummy" in {
@@ -61,8 +102,9 @@ Commands are generated (see generators above). The command under test (created i
   }
 }
 ```
-
-Events triggered by Given command(s) are accessible from inside When clause. `Gen.suchThat` can be used to configure command generator inside test body.
+Notice, that the command created inside the When clause (in the example above) is accessible from inside the Then/expect clause.
+ 
+In the following sample behavior specification, a result event of the initial command, is accessed from inside the When clause. `Gen.suchThat` can be used to adjust a command generator inside the test body.
 
 ```scala
 "update Dummy's name" in {
@@ -78,7 +120,7 @@ Events triggered by Given command(s) are accessible from inside When clause. `Ge
 }
 ```
 
-Multiple commands in When section are supported. `expectEvents` should be used in `Then` section to assert multiple events were raised.
+It is possible to declare multiple commands in the When section. `expectEvents` should be used in the `Then` section to assert multiple events.
 
 ```scala
 "update Dummy's value twice" in {
@@ -94,7 +136,7 @@ Multiple commands in When section are supported. `expectEvents` should be used i
 }
 ```
 
-No problem with two or more commands inside Given clause.
+The following sample behavior specification show how to declare multiple generated commands in the Given section.
 
 ```scala
 "handle subsequent Update command" in {
@@ -110,7 +152,7 @@ No problem with two or more commands inside Given clause.
 }
 ```
 
-Events triggered by Given command(s) are accessible from inside Then/expect clause.
+Another sample behavior specification showing that result events of the initial commands are accessible from inside the Then/expect clause.
 
 ```scala
 "confirm generated value" in {
@@ -126,7 +168,7 @@ Events triggered by Given command(s) are accessible from inside Then/expect clau
 }
 ```
 
-Gen.map can be used to modify generated command.
+The following sample behavior specification uses `Gen.map` to modify the generated command.
 
 ```scala
 "reject negative value" in {

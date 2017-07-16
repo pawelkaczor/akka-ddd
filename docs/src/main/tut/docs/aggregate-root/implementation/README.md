@@ -6,25 +6,53 @@ permalink: /docs/aggregate-root/implementation
 
 ## Aggregate Root - Implementation
 
-The Akka-DDD framework allows to model the behavior of the Aggregate Root as a state machine using the [Algebraic Data Type](). Each type must extend from the [AggregateActions]() trait and implement the `actions` method as shown in the example below.
+The Akka-DDD framework allows to model a behavior of an Aggregate Root as a state machine using the [Algebraic Data Type](). Each type must extend from the [Behavior]() trait and implement the `actions`. Please see the example below.
+
+[Dummy]() is the base trait of the Dummy behavior ADT.
 
 ```scala
-def actions =
-  handleCommand {
-      case ChangeValue(id, newValue) =>
-        rejectNegative(newValue) orElse ValueChanged(id, newValue)
-    
-      case Reset(id) =>
-        ValueChanged(id, 0)
-  }
-  .handleEvent {
-      case ValueChanged(_, newValue) =>
-        copy(value = newValue)
-  }
+sealed trait Dummy extends Behavior[DummyEvent, Dummy, DummyConfig]
 ```
-The command processing logic consists of two parts: **command handling (reaction)** and **event handling (state transition)**. The `actions` method is a factory of the Command Handler and Event Handler functions. It creates an instance of [Actions]() containing given Command Handler and Event Handler functions.
 
-### Command Handling (reaction)
+One of the possible states the Dummy can reach is the Active state. The behavior of Dummy in the Active state is implemented in the following way:
+
+```scala
+case class Active(value: Int, version: Long) extends Dummy {
+    def actions =
+      handleCommand {
+          case ChangeValue(id, newValue) =>
+            rejectNegative(newValue) orElse ValueChanged(id, newValue)
+        
+          case Reset(id) =>
+            ValueChanged(id, 0)
+      }
+      .handleEvent {
+          case ValueChanged(_, newValue) =>
+            copy(value = newValue)
+      }
+}
+```
+
+The initial behavior of the Aggregate Root (with no associated state) should satisfy the [Uninitialized] type class, so that it can be automatically created by the framework. See example below:
+
+```scala
+implicit object Uninitialized extends Dummy with Uninitialized[Dummy] {
+
+    def actions: Actions =
+      handleCommand {
+        case CreateDummy(id, name, description, value) =>
+          rejectNegative(value) orElse
+            DummyCreated(id, name, description, value)
+      }.handleEvent {
+          case DummyCreated(_, _, _, value) =>
+            Active(value, 0)
+      }
+}
+```
+
+The behavior (the command processing logic) consists of two parts: **command handling (reaction)** and **event handling (state transition)**. The `actions` method is a factory of the Command Handler and Event Handler functions. It creates an instance of [Actions]() that contains Command Handler and Event Handler functions.
+
+## Command Handling (reaction)
 
 The actual command handling logic (the Command Handler) is a partial function that accepts a `Command` and returns a `Reaction`. The `Reaction`, that indicates the acceptance of a command, can be constructed from an event or a sequence of events. The `Reaction`, that indicates the [rejection]() of a command, can be created by providing a rejection reason. 
 
@@ -35,7 +63,6 @@ The Command Handler indicates that the command is accepted by returning an Event
 ```scala
 case AddParticipant(id, name) => ParticipantAdded(name, id)
 ```
-
 
 Sometimes a single event is not enough. You can build a sequence of events in many ways, for example by transforming an existing sequence of an arbitrary type.
 
@@ -90,26 +117,19 @@ case CreateDummy(id, name, description, value) =>
 Again you can either pass a message or a custom rejection reason to the `rejectIf` method. 
 
 
-### Collaboration with external actors
+### Collaboration with other actors
 
-Sometimes the command handling logic is more complex and requires the AR Actor to collaborate with other Actors. In such cases the `Reaction` needs to be implemented as a method of the AR Actor and exposed as a property of type `Reaction` of the [Aggregate Root configuration]() object. The command handler will simply return the `Reaction` that is available in the AR configuration. 
-
-The example of collaboration implementation can be found in the DummyAggregateRoot Actor:
-
-```
-DummyAggregateRoot code
-```    
-
-Finally, the implementation of the command handler:
+Sometimes the command handling logic is more complex and requires the AR Actor to collaborate with other Actors. In such cases the `Reaction` needs to be implemented as a method of the AR Actor and exposed as a property of type `Reaction` of the [Aggregate Root configuration]() object. The command handler will simply return the `Reaction` that is available in the AR configuration as shown in the example below ([Dummy]() behavior): 
 
 ```scala
 case GenerateValue(_) =>
   ctx.config.valueGeneration
 ```
+See also: [Aggregate Root Actor - Collaboration with other actors]()
 
+## Event handling (state transition)
 
-### Event handling (state transition)
-
+The Event Handler is a partial function that accepts Event and returns Behavior.
 
 ```scala
 case ParticipantRemoved(name, id) =>
@@ -119,8 +139,17 @@ case ParticipantRemoved(name, id) =>
     EmptyLottery
   else
     copy(participants = newParticipants)
-
 ```
 
-### Behavior composition
+In the example above, the result is either a new version of the current behavior (with modified `participants` property) or completely new behavior (`EmptyLottery`).
 
+## Complete examples
+
+* [Dummy](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyAggregateRoot.scala)
+* [Reservation](https://github.com/pawelkaczor/ddd-leaven-akka-v2/blob/master/sales/write-back/src/main/scala/ecommerce/sales/ReservationAggregateRoot.scala)
+* [Lottery](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/lottery/domain/model/Lottery.scala) 
+* [Document](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dms/DocumentAR.scala)
+
+## Behavior composition
+
+TODO

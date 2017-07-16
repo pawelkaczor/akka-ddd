@@ -1,4 +1,3 @@
-// format:off
 lazy val micrositeSettings = Seq(
   micrositeName := "Akka-DDD",
   micrositeDescription := "Scala CQRS/ES framework",
@@ -10,7 +9,6 @@ lazy val micrositeSettings = Seq(
   micrositeHighlightTheme := "github",
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.md"
 )
-// format:on
 
 
 // 252338 453F78 759AAB
