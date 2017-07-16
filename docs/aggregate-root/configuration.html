@@ -4,12 +4,12 @@
 the Aggregate Root configuration interface. If you do not intend to extend the default Aggregate Root configuration interface, just use the <a href="">Config</a> trait as show in the examples below:</p>
 
 <p>Root trait of the Reservation AR behavior:</p>
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">ReservationActions</span> <span class="k">extends</span> <span class="nc">AggregateActions</span><span class="o">[</span><span class="kt">Event</span>, <span class="kt">ReservationActions</span>, <span class="kt">Config</span><span class="o">]</span> 
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">sealed</span> <span class="k">trait</span> <span class="nc">Reservation</span> <span class="k">extends</span> <span class="nc">Behavior</span><span class="o">[</span><span class="kt">Event</span>, <span class="kt">Reservation</span>, <span class="kt">Config</span><span class="o">]</span> 
 </code></pre>
 </div>
 
 <p>Reservation AR Actor:</p>
-<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Reservation</span><span class="o">(</span><span class="k">val</span> <span class="n">config</span><span class="k">:</span> <span class="kt">Config</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">AggregateRoot</span><span class="o">[</span><span class="kt">Event</span>, <span class="kt">ReservationActions</span>, <span class="kt">Reservation</span><span class="o">]</span>
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">class</span> <span class="nc">ReservationAggregateRoot</span><span class="o">(</span><span class="k">val</span> <span class="n">config</span><span class="k">:</span> <span class="kt">Config</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">AggregateRoot</span><span class="o">[</span><span class="kt">Event</span>, <span class="kt">Reservation</span>, <span class="kt">ReservationAggregateRoot</span><span class="o">]</span>
   <span class="k">with</span> <span class="nc">ConfigClass</span><span class="o">[</span><span class="kt">Config</span><span class="o">]</span>
 </code></pre>
 </div>

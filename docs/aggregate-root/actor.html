@@ -50,6 +50,36 @@ The office identifier should allow obtaining the identifier of the office journa
 <p>To reduce memory consumption, idle Aggregate Root Actors should be passivated (removed from the memory) after a specified inactivity timeout. To do it <a href="">safely</a> AR Actor is configured to receive <a href="">ReceiveTimeout</a> after specified inactivity period. Being notified, AR Actor asks the Office to dismiss him gracefully. The pattern/protocol is called Graceful Passivation and is supported by the Akka-DDD (see <a href="">GracefulPassivation</a> trait).</p>
 
 <p>See also: <a href="">Passivation Configuration</a></p>
+
+<h2 id="collaboration-with-other-actors">Collaboration with other Actors</h2>
+
+<p>The example of collaboration implementation can be found in the <a href="">DummyAggregateRoot</a> Actor:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">class</span> <span class="nc">DummyAggregateRoot</span><span class="o">(</span><span class="n">cfg</span><span class="k">:</span> <span class="kt">DummyConfig</span><span class="o">)</span>
+    <span class="k">extends</span> <span class="nc">AggregateRoot</span><span class="o">[</span><span class="kt">DummyEvent</span>, <span class="kt">Dummy</span>, <span class="kt">DummyAggregateRoot</span><span class="o">]</span>
+    <span class="k">with</span> <span class="nc">AggregateRootLogger</span><span class="o">[</span><span class="kt">DummyEvent</span><span class="o">]</span>
+    <span class="k">with</span> <span class="nc">ConfigClass</span><span class="o">[</span><span class="kt">DummyConfig</span><span class="o">]</span> <span class="o">{</span>
+
+  <span class="k">val</span> <span class="n">config</span><span class="k">:</span> <span class="kt">DummyConfig</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">copy</span><span class="o">(</span><span class="n">valueGeneration</span> <span class="k">=</span> <span class="n">valueGeneration</span><span class="o">)</span>
+
+  <span class="k">lazy</span> <span class="k">val</span> <span class="n">valueGeneratorActor</span><span class="k">:</span> <span class="kt">ActorRef</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">actorOf</span><span class="o">(</span><span class="nc">ValueGeneratorActor</span><span class="o">.</span><span class="n">props</span><span class="o">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">valueGenerator</span><span class="o">))</span>
+
+  <span class="k">private</span> <span class="k">def</span> <span class="n">valueGeneration</span><span class="k">:</span> <span class="kt">Collaboration</span> <span class="o">=</span> <span class="o">{</span>
+    <span class="k">implicit</span> <span class="k">val</span> <span class="n">timeout</span> <span class="k">=</span> <span class="mf">10.</span><span class="n">millis</span>
+    <span class="o">(</span><span class="n">valueGeneratorActor</span> <span class="o">!&lt;</span> <span class="nc">GenerateRandom</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">case</span> <span class="nc">ValueGeneratorActor</span><span class="o">.</span><span class="nc">ValueGenerated</span><span class="o">(</span><span class="n">value</span><span class="o">)</span> <span class="k">=&gt;</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">rejectNegative</span><span class="o">(</span><span class="n">value</span><span class="o">)</span> <span class="n">orElse</span>
+          <span class="nc">ValueGenerated</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">value</span><span class="o">,</span> <span class="n">confirmationToken</span> <span class="k">=</span> <span class="n">uuidObj</span><span class="o">)</span> <span class="k">match</span> <span class="o">{</span>
+          <span class="k">case</span> <span class="nc">Reject</span><span class="o">(</span><span class="k">_</span><span class="o">)</span> <span class="k">=&gt;</span> <span class="n">valueGeneration</span>
+          <span class="k">case</span> <span class="n">r</span>         <span class="k">=&gt;</span> <span class="n">r</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>ValueGeneratorActor is some other actor responsible for generating a random value in response to the <code class="highlighter-rouge">GenerateRandom</code> message. The Dummy Aggregate Root Actor needs to expose, via the [Aggregate Root Configuration] interface, the interaction with the ValueGeneratorActor as a <code class="highlighter-rouge">Collaboration</code> type. <code class="highlighter-rouge">Collaboration</code> is a special subtype of the <code class="highlighter-rouge">Reaction</code> type. See <a href="">Aggregate Root Implementation - Command Handling</a> for more information about the <code class="highlighter-rouge">Reaction</code>.</p>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/akka-ddd/highlight/highlight.pack.js"></script><script>hljs.configure({
 languages:['scala','java','bash']
 });
