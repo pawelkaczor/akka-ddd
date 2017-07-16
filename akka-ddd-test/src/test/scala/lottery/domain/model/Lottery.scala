@@ -11,7 +11,7 @@ import scala.util.Random
 
 object LotteryBehaviour {
 
-  sealed trait Lottery extends AggregateActions[LotteryEvent, Lottery, Config]
+  sealed trait Lottery extends Behavior[LotteryEvent, Lottery, Config]
 
   implicit case object UninitializedLottery extends Lottery with Uninitialized[Lottery] {
 

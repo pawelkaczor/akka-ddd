@@ -7,7 +7,7 @@ import pl.newicom.dddd.scheduling.Scheduler.SchedulerBehavior
 
 object Scheduler extends AggregateRootSupport {
 
-  sealed trait SchedulerBehavior extends AggregateActions[SchedulerEvent, SchedulerBehavior, Config]
+  sealed trait SchedulerBehavior extends Behavior[SchedulerEvent, SchedulerBehavior, Config]
 
   implicit case object Uninitialized extends SchedulerBehavior with Uninitialized[SchedulerBehavior] {
     def actions =

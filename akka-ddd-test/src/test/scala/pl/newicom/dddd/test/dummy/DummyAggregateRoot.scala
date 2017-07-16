@@ -19,14 +19,12 @@ object DummyAggregateRoot extends AggregateRootSupport {
     def respondingPolicy: RespondingPolicy = ReplyWithEvents
   }
 
-  sealed trait DummyBehaviour extends AggregateActions[DummyEvent, DummyBehaviour, DummyConfig] {
+  sealed trait Dummy extends Behavior[DummyEvent, Dummy, DummyConfig] {
     def isActive = false
     def rejectNegative(value: Int): RejectConditionally = rejectIf(value < 0, "negative value not allowed")
   }
 
-  sealed trait Dummy extends DummyBehaviour
-
-  implicit case object Uninitialized extends DummyBehaviour with Uninitialized[DummyBehaviour] {
+  implicit case object Uninitialized extends Dummy with Uninitialized[Dummy] {
 
     def actions: Actions =
       handleCommand {
@@ -94,7 +92,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
 class DummyAggregateRoot(cfg: DummyConfig)
-    extends AggregateRoot[DummyEvent, DummyBehaviour, DummyAggregateRoot]
+    extends AggregateRoot[DummyEvent, Dummy, DummyAggregateRoot]
     with AggregateRootLogger[DummyEvent]
     with ConfigClass[DummyConfig] {
 

@@ -79,10 +79,10 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
   }
 
   def handleCommand: HandleCommand =
-    state.asInstanceOf[AggregateBehaviour[Event, S, C]].commandHandler
+    state.asInstanceOf[Behavior[Event, S, C]].commandHandler
 
   private def handleQuery: HandleQuery =
-    state.asInstanceOf[AggregateBehaviour[Event, S, C]].qHandler
+    state.asInstanceOf[Behavior[Event, S, C]].qHandler
 
   private def handleUnknown: HandlePayload = {
     case payload: Any =>

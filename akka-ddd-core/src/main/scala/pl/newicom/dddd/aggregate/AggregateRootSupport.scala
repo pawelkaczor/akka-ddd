@@ -29,7 +29,7 @@ object AggregateRootSupport {
 
 }
 
-trait AggregateRootSupport extends AggregateBehaviourSupport {
+trait AggregateRootSupport extends BehaviorSupport {
 
   implicit def officeListener[A <: AggregateRoot[_, _, _] : LocalOfficeId]: OfficeListener[A] = new OfficeListener[A]
 
