@@ -8,7 +8,7 @@
 </code></pre>
 </div>
 
-<p>One of the possible states the Dummy can reach is Active state. The behavior of Dummy in Active state is implemented in the following way:</p>
+<p>One of the possible states the Dummy can reach is the Active state. The behavior of Dummy in the Active state is implemented in the following way:</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">case</span> <span class="k">class</span> <span class="nc">Active</span><span class="o">(</span><span class="n">value</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">version</span><span class="k">:</span> <span class="kt">Long</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Dummy</span> <span class="o">{</span>
     <span class="k">def</span> <span class="n">actions</span> <span class="k">=</span>
@@ -22,6 +22,23 @@
       <span class="o">.</span><span class="n">handleEvent</span> <span class="o">{</span>
           <span class="k">case</span> <span class="nc">ValueChanged</span><span class="o">(</span><span class="k">_</span><span class="o">,</span> <span class="n">newValue</span><span class="o">)</span> <span class="k">=&gt;</span>
             <span class="n">copy</span><span class="o">(</span><span class="n">value</span> <span class="k">=</span> <span class="n">newValue</span><span class="o">)</span>
+      <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>The initial behavior of the Aggregate Root (with no associated state) should satisfy the [Uninitialized] type class, so that it can be automatically created by the framework. See example below:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">implicit</span> <span class="k">object</span> <span class="nc">Uninitialized</span> <span class="k">extends</span> <span class="nc">Dummy</span> <span class="k">with</span> <span class="nc">Uninitialized</span><span class="o">[</span><span class="kt">Dummy</span><span class="o">]</span> <span class="o">{</span>
+
+    <span class="k">def</span> <span class="n">actions</span><span class="k">:</span> <span class="kt">Actions</span> <span class="o">=</span>
+      <span class="n">handleCommand</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="nc">CreateDummy</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">name</span><span class="o">,</span> <span class="n">description</span><span class="o">,</span> <span class="n">value</span><span class="o">)</span> <span class="k">=&gt;</span>
+          <span class="n">rejectNegative</span><span class="o">(</span><span class="n">value</span><span class="o">)</span> <span class="n">orElse</span>
+            <span class="nc">DummyCreated</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">name</span><span class="o">,</span> <span class="n">description</span><span class="o">,</span> <span class="n">value</span><span class="o">)</span>
+      <span class="o">}.</span><span class="n">handleEvent</span> <span class="o">{</span>
+          <span class="k">case</span> <span class="nc">DummyCreated</span><span class="o">(</span><span class="k">_</span><span class="o">,</span> <span class="k">_</span><span class="o">,</span> <span class="k">_</span><span class="o">,</span> <span class="n">value</span><span class="o">)</span> <span class="k">=&gt;</span>
+            <span class="nc">Active</span><span class="o">(</span><span class="n">value</span><span class="o">,</span> <span class="mi">0</span><span class="o">)</span>
       <span class="o">}</span>
 <span class="o">}</span>
 </code></pre>
