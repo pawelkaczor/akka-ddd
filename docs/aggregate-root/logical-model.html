@@ -4,9 +4,9 @@
 The Aggregate Root exposes a set of <strong>business operations</strong> (commands) related to a <strong>business entity</strong>. 
 When a <strong>command</strong> is received, it is <strong>validated</strong> against the <strong>current state</strong> of the AR and either it is <strong>accepted</strong> or <strong>rejected</strong>. If a command is accepted, an <strong>event</strong> (or a sequence of events) is stored in the AR journal and the state of the AR is updated. The state of the AR is its internal property, that can never be accessed directly from the outside of the AR. Thus, the structure of the AR (the structure of the AR state) is not a property of the AR logical model.</p>
 
-<p>The <strong>logical model</strong> of the AR can only be defined as a <strong>set of behavior scenarios</strong>, each expressed in the following form:</p>
+<p>The <strong>logical model</strong> of the AR can only be defined as a <strong>set of behavior scenarios / specifications</strong>, each expressed in the following form:</p>
 
-<h3 id="aggregate-root---behavior-scenario">Aggregate Root - Behavior Scenario</h3>
+<h3 id="aggregate-root---behavior-specification">Aggregate Root - Behavior Specification</h3>
 
 <table style="margin-left:40px; font-size: 18px">
 <tr>
@@ -28,9 +28,9 @@ When a <strong>command</strong> is received, it is <strong>validated</strong> ag
 <tr><td style="border: none">&nbsp;</td></tr>
 </table>
 
-<p>It turns out that the AR logical model defined as a set of AR behavior scenarios is a perfectly valid, complete specification of the unit test that the AR implementation should be accompanied by.</p>
+<p>Not surprisingly, the AR logical model defined as a set of AR behavior specifications is a perfectly valid, complete specification of the unit test that the AR implementation should be accompanied by.</p>
 
-<p>Following, is a single behavior scenario for the <a href="">Reservation</a> AR, implemented as a unit test using Given-When-Then test fixture provided by the Akka-DDD:</p>
+<p>Following, is a single behavior specification for the <a href="">Reservation</a> AR, implemented as a unit test using Given-When-Then test fixture provided by the Akka-DDD:</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"Reservation office"</span> <span class="n">should</span> <span class="o">{</span>
     <span class="s">"confirm reservation"</span> <span class="n">in</span> <span class="o">{</span>

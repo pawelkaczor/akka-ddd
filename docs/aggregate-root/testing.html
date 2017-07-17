@@ -3,10 +3,9 @@
 <p>Akka-DDD provides Given-When-Then test fixture to be used for testing Aggregate Root’s behavior. The <a href="">Office</a> infrastructure, that is necessary to run the test, is created automatically before the test is executed. The <a href="">OfficeSpec</a> class that the test class should extend from, expects Aggregate Root Actor Factory to be available in the implicit scope. Please see example below:</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="k">object</span> <span class="nc">ReservationSpec</span> <span class="o">{</span>
-  <span class="k">implicit</span> <span class="k">def</span> <span class="n">factory</span><span class="o">(</span><span class="k">implicit</span> <span class="n">it</span><span class="k">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="mf">1.</span><span class="n">minute</span><span class="o">)</span><span class="k">:</span> <span class="kt">AggregateRootActorFactory</span><span class="o">[</span><span class="kt">ReservationAggregateRoot</span><span class="o">]</span> <span class="k">=</span>
+  <span class="k">implicit</span> <span class="k">def</span> <span class="n">factory</span><span class="k">:</span> <span class="kt">AggregateRootActorFactory</span><span class="o">[</span><span class="kt">ReservationAggregateRoot</span><span class="o">]</span> <span class="k">=</span>
     <span class="k">new</span> <span class="nc">AggregateRootActorFactory</span><span class="o">[</span><span class="kt">ReservationAggregateRoot</span><span class="o">]</span> <span class="o">{</span>
-      <span class="k">override</span> <span class="k">def</span> <span class="n">props</span><span class="o">(</span><span class="n">pc</span><span class="k">:</span> <span class="kt">PassivationConfig</span><span class="o">)</span><span class="k">:</span> <span class="kt">Props</span> <span class="o">=</span> <span class="nc">Props</span><span class="o">(</span><span class="k">new</span> <span class="nc">ReservationAggregateRoot</span><span class="o">(</span><span class="nc">DefaultConfig</span><span class="o">(</span><span class="n">pc</span><span class="o">)))</span>
-      <span class="k">override</span> <span class="k">def</span> <span class="n">inactivityTimeout</span><span class="k">:</span> <span class="kt">Duration</span> <span class="o">=</span> <span class="n">it</span>
+      <span class="k">def</span> <span class="n">props</span><span class="o">(</span><span class="n">pc</span><span class="k">:</span> <span class="kt">PassivationConfig</span><span class="o">)</span><span class="k">:</span> <span class="kt">Props</span> <span class="o">=</span> <span class="nc">Props</span><span class="o">(</span><span class="k">new</span> <span class="nc">ReservationAggregateRoot</span><span class="o">(</span><span class="nc">DefaultConfig</span><span class="o">(</span><span class="n">pc</span><span class="o">)))</span>
     <span class="o">}</span>
 <span class="o">}</span>
 
@@ -28,12 +27,13 @@
 <span class="o">}</span>
 </code></pre>
 </div>
-<p>By default, each behavior scenario is assigned a different (random) AggregateRoot Id, and so it is executed by a different instance of the Aggregate Root Actor.
-You may choose to use the same Actor for running all behavior scenarios by setting the <code class="highlighter-rouge">shareAggregateRoot</code> constructor parameter of the <code class="highlighter-rouge">OfficeSpec</code> to <code class="highlighter-rouge">true</code>.</p>
+<p>By default, each behavior specification is executed with a different AggregateRoot Id, and so it is executed by a different instance of the Aggregate Root Actor.
+You may choose to use the same Actor for running all behavior specifications by setting the <code class="highlighter-rouge">shareAggregateRoot</code> constructor parameter of the <code class="highlighter-rouge">OfficeSpec</code> to <code class="highlighter-rouge">true</code>.</p>
 
 <h3 id="examples">Examples</h3>
 
-<p>when/expect</p>
+<p>A sample specification of the initial behavior (no Given section):</p>
+
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"create Dummy"</span> <span class="n">in</span> <span class="o">{</span>
   <span class="n">when</span> <span class="o">{</span>
     <span class="nc">CreateDummy</span><span class="o">(</span><span class="n">dummyId</span><span class="o">,</span> <span class="s">"dummy name"</span><span class="o">,</span> <span class="s">"dummy description"</span><span class="o">,</span> <span class="mi">100</span><span class="o">)</span>
@@ -45,7 +45,7 @@ You may choose to use the same Actor for running all behavior scenarios by setti
 </code></pre>
 </div>
 
-<p>given/when/expect</p>
+<p>A sample specification of the behavior of an existing Aggregate Root.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"update Dummy's name"</span> <span class="n">in</span> <span class="o">{</span>
   <span class="n">given</span> <span class="o">{</span>
@@ -61,7 +61,7 @@ You may choose to use the same Actor for running all behavior scenarios by setti
 </code></pre>
 </div>
 
-<p>when/expectException</p>
+<p>A sample specification of a behavior that is expected to reject the command.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"reject negative value"</span> <span class="n">in</span> <span class="o">{</span>
   <span class="n">when</span> <span class="o">{</span>
@@ -74,7 +74,18 @@ You may choose to use the same Actor for running all behavior scenarios by setti
 
 <h3 id="testing-with-command-generators">Testing with Command Generators</h3>
 
-<p>Commands are generated (see generators above). The command under test (created inside When clause) is accessible from inside Then/expect clause. No need to define val members for name, description, etc. No need to define concrete values for name, description, etc.</p>
+<p>You may choose to implement <a href="">ScalaCheck Generators</a> for the commands. For example, given the following generator for the <a href="">CreateDummy</a> command:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code>  <span class="k">implicit</span> <span class="k">def</span> <span class="n">create</span><span class="k">:</span> <span class="kt">Gen</span><span class="o">[</span><span class="kt">CreateDummy</span><span class="o">]</span> <span class="k">=</span> <span class="k">for</span> <span class="o">{</span>
+    <span class="n">name</span> <span class="k">&lt;-</span> <span class="nc">Gen</span><span class="o">.</span><span class="n">alphaStr</span>
+    <span class="n">description</span> <span class="k">&lt;-</span> <span class="nc">Gen</span><span class="o">.</span><span class="n">alphaStr</span>
+    <span class="n">value</span> <span class="k">&lt;-</span> <span class="nc">Gen</span><span class="o">.</span><span class="n">choose</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">1000</span><span class="o">)</span>
+  <span class="o">}</span> <span class="k">yield</span> <span class="o">{</span>
+    <span class="nc">CreateDummy</span><span class="o">(</span><span class="n">dummyId</span><span class="o">,</span> <span class="n">name</span><span class="o">,</span> <span class="n">description</span><span class="o">,</span> <span class="n">value</span><span class="o">)</span>
+  <span class="o">}</span>
+</code></pre>
+</div>
+<p>, you can write the behavior specification more concisely:</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"create Dummy"</span> <span class="n">in</span> <span class="o">{</span>
   <span class="n">when</span> <span class="o">{</span>
@@ -86,8 +97,9 @@ You may choose to use the same Actor for running all behavior scenarios by setti
 <span class="o">}</span>
 </code></pre>
 </div>
+<p>Notice, that the command created inside the When clause (in the example above) is accessible from inside the Then/expect clause.</p>
 
-<p>Events triggered by Given command(s) are accessible from inside When clause. <code class="highlighter-rouge">Gen.suchThat</code> can be used to configure command generator inside test body.</p>
+<p>In the following sample behavior specification, a result event of the initial command, is accessed from inside the When clause. <code class="highlighter-rouge">Gen.suchThat</code> can be used to adjust a command generator inside the test body.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"update Dummy's name"</span> <span class="n">in</span> <span class="o">{</span>
   <span class="n">given</span> <span class="o">{</span>
@@ -103,7 +115,7 @@ You may choose to use the same Actor for running all behavior scenarios by setti
 </code></pre>
 </div>
 
-<p>Multiple commands in When section are supported. <code class="highlighter-rouge">expectEvents</code> should be used in <code class="highlighter-rouge">Then</code> section to assert multiple events were raised.</p>
+<p>It is possible to declare multiple commands in the When section. <code class="highlighter-rouge">expectEvents</code> should be used in the <code class="highlighter-rouge">Then</code> section to assert multiple events.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"update Dummy's value twice"</span> <span class="n">in</span> <span class="o">{</span>
   <span class="n">given</span> <span class="o">{</span>
@@ -119,7 +131,7 @@ You may choose to use the same Actor for running all behavior scenarios by setti
 </code></pre>
 </div>
 
-<p>No problem with two or more commands inside Given clause.</p>
+<p>The following sample behavior specification show how to declare multiple generated commands in the Given section.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"handle subsequent Update command"</span> <span class="n">in</span> <span class="o">{</span>
   <span class="n">given</span><span class="o">(</span>
@@ -135,7 +147,7 @@ You may choose to use the same Actor for running all behavior scenarios by setti
 </code></pre>
 </div>
 
-<p>Events triggered by Given command(s) are accessible from inside Then/expect clause.</p>
+<p>Another sample behavior specification showing that result events of the initial commands are accessible from inside the Then/expect clause.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"confirm generated value"</span> <span class="n">in</span> <span class="o">{</span>
   <span class="n">given</span><span class="o">(</span>
@@ -151,7 +163,7 @@ You may choose to use the same Actor for running all behavior scenarios by setti
 </code></pre>
 </div>
 
-<p>Gen.map can be used to modify generated command.</p>
+<p>The following sample behavior specification uses <code class="highlighter-rouge">Gen.map</code> to modify the generated command.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"reject negative value"</span> <span class="n">in</span> <span class="o">{</span>
   <span class="n">when</span> <span class="o">{</span>
