@@ -8,21 +8,46 @@ When a <strong>command</strong> is received, it is <strong>validated</strong> ag
 
 <h3 id="aggregate-root---behavior-scenario">Aggregate Root - Behavior Scenario</h3>
 
-<h4 id="given">Given</h4>
+<table style="margin-left:40px; font-size: 18px">
+<tr>
+<td style="border: none">
+<h4 style="margin-top:10px">Given</h4>
+&nbsp; &nbsp; &nbsp; &nbsp; a sequence of commands CG-1...CG-n accepted
+<h4>When</h4>
 
-<p>        a sequence of commands CG-1…CG-n accepted</p>
+&nbsp; &nbsp; &nbsp; &nbsp; a command CR received   
 
-<h4 id="when">When</h4>
+<h4>Then</h4>
 
-<p>        a command CR received</p>
+&nbsp; &nbsp; &nbsp; &nbsp; an event E (or a sequence of events E-1...E-n) stored in the AR journal
 
-<h4 id="then">Then</h4>
+</td></tr>
 
-<p>        an event E (or a sequence of events E-1…E-n) stored in the AR journal</p>
+<tr><td style="border: none">&nbsp; &nbsp; &nbsp; &nbsp; <b>or</b></td></tr>
+<tr><td style="border: none">&nbsp; &nbsp; &nbsp; &nbsp; the command CR rejected due to a reason R</td></tr>
+<tr><td style="border: none">&nbsp;</td></tr>
+</table>
 
-<p>        <strong>or</strong> the command CR rejected due to a reason R</p>
+<p>It turns out that the AR logical model defined as a set of AR behavior scenarios is a perfectly valid, complete specification of the unit test that the AR implementation should be accompanied by.</p>
 
-<p>It turns out that the AR logical model defined as a set of AR behavior scenarios is a perfectly valid, complete specification of the Unit Test that the AR implementation should be accompanied by.</p>
+<p>Following, is a single behavior scenario for the <a href="">Reservation</a> AR, implemented as a unit test using Given-When-Then test fixture provided by the Akka-DDD:</p>
+
+<div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"Reservation office"</span> <span class="n">should</span> <span class="o">{</span>
+    <span class="s">"confirm reservation"</span> <span class="n">in</span> <span class="o">{</span>
+      <span class="n">given</span><span class="o">(</span>
+        <span class="nc">CreateReservation</span><span class="o">(</span><span class="n">reservationId</span><span class="o">,</span> <span class="s">"client1"</span><span class="o">),</span>
+        <span class="nc">ReserveProduct</span><span class="o">(</span><span class="n">reservationId</span><span class="o">,</span> <span class="n">product</span><span class="o">,</span> <span class="n">quantity</span> <span class="k">=</span> <span class="mi">1</span><span class="o">)</span>
+      <span class="o">)</span>
+      <span class="o">.</span><span class="n">when</span><span class="o">(</span>
+        <span class="nc">ConfirmReservation</span><span class="o">(</span><span class="n">reservationId</span><span class="o">)</span>
+      <span class="o">)</span>
+      <span class="o">.</span><span class="n">expectEvent</span> <span class="o">{</span>
+        <span class="nc">ReservationConfirmed</span><span class="o">(</span><span class="n">reservationId</span><span class="o">,</span> <span class="s">"client1"</span><span class="o">,</span> <span class="n">product</span><span class="o">.</span><span class="n">price</span><span class="o">)</span>
+      <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
 
 <p>See: <a href="testing">Testing Aggregate Root</a></p>
 </section></div></div></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/akka-ddd/highlight/highlight.pack.js"></script><script>hljs.configure({
