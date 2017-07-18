@@ -3,7 +3,7 @@
 <p><a href="">Aggregate Root Actor</a> is responsible for running the Aggregate Root state machine (the AR behavior). It is a <a href="">Persistent Actor</a>.
 When a <a href="">Command Messages</a> comes in, the actor invokes the current <a href="">Command Handler</a> (the Command Handler associated with the current state) and if the command is accepted, appends the <a href="">Event Message</a>(s) to the actor’s journal. Once the event message(s) is persisted, the AR actor invokes the current <a href="">Event Handler</a> (the Event Handler associated with the current state) and the AR transitions to the next state.</p>
 
-<p>Aggregate Root Actors are not directly accessible by the clients. They are like clerks working in an office. The only way to perform an operation on a particular Aggregate Root (a business entity / case) is to submit a form (command) to the respective Office.</p>
+<p>Aggregate Root Actors are not directly accessible by the clients. They are like clerks working in an office. The only way to perform an operation on a particular Aggregate Root (a business entity / case) is to submit a form (command) to the respective <a href="">Office</a>.</p>
 
 <h3 id="aggregate-root-actor-factory">Aggregate Root Actor Factory</h3>
 
@@ -17,8 +17,6 @@ When a <a href="">Command Messages</a> comes in, the actor invokes the current <
 <p>See also: <a href="">Aggregate Root Configuration</a></p>
 
 <h2 id="office"><a name="Office"></a>Office</h2>
-
-<p>TODO</p>
 
 <p>The office should publish its identifier to be used across the system by the service consumers and client applications.
 The office identifier should allow obtaining the identifier of the office journal and the identifiers of the journals of the individual business entities (cases).</p>
