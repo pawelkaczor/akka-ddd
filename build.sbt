@@ -8,7 +8,6 @@ name := "akka-ddd"
 version      in ThisBuild := "1.7.0-SNAPSHOT"
 organization in ThisBuild := "pl.newicom.dddd"
 scalaVersion in ThisBuild := "2.12.2"
-crossScalaVersions in ThisBuild := Seq("2.12.2", "2.11.11")
 
 scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions", "-unchecked")
 
