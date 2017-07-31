@@ -3,8 +3,8 @@ import sbt._
 object Deps {
 
   object Version {
-    val Akka                  = "2.5.1"
-    val AkkaHttp              = "10.0.6"
+    val Akka                  = "2.5.3"
+    val AkkaHttp              = "10.0.9"
 
     val EventStoreClient      = "4.1.0"
     val EventStoreAkkaJournal = "4.1.1"
