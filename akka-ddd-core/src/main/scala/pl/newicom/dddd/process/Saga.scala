@@ -59,6 +59,7 @@ abstract class Saga extends SagaBase {
           .withMetaData(em.metadata)
           .withoutMetaAttribute(Tags)
           .withPublisherType(BP)
+          .withReused(eventToPersist == event)
           .withCausationId(em.id)
 
         persist(emToPersist) { persisted =>

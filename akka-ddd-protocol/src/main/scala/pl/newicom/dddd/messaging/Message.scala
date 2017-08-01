@@ -20,6 +20,7 @@ object MetaData {
   val EventNumber   = "_eventNumber"
   val Tags          = "tags"
   val PublisherType = "publisherType"
+  val Reused        = "reused"
 
   def empty: MetaData = MetaData(Map.empty)
 }
@@ -125,6 +126,12 @@ trait Message extends Serializable {
   def withPublisherType(publisherType: PublisherType.Value): MessageImpl =
     withMetaAttribute(MetaData.PublisherType, publisherType.toString)
 
+  def withReused(reused: Boolean): MessageImpl =
+    if (reused)
+      withMetaAttribute(Reused, reused)
+    else
+      this.asInstanceOf[MessageImpl]
+
   def tags: Set[String] =
     tryGetMetaAttribute[Set[String]](Tags).toSet.flatten
 
@@ -148,4 +155,8 @@ trait Message extends Serializable {
 
   def publisherType: Option[PublisherType.Value] =
     tryGetMetaAttribute[String](MetaData.PublisherType).map(PublisherType.withName)
+
+  def reused: Option[Boolean] =
+    tryGetMetaAttribute[Boolean](Reused)
+
 }

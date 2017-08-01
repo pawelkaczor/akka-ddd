@@ -35,9 +35,17 @@ class TaggingEventAdapter extends WriteEventAdapter {
 
   def toJournal(msg: Any): Any = msg match {
     case em: EventMessage =>
-      val tags = em.tags ++ tagsByEvent.getOrElse(em.payloadFullName, Set())
+      val tags = em.tags ++ getTags(em)
       if (tags.isEmpty) em else Tagged(em.withTags(tags.toSeq :_*), tags)
     case _ => msg
+  }
+
+  private def getTags(em: EventMessage): Set[String] = {
+    if (em.reused.contains(true)) {
+      Set()
+    } else {
+      tagsByEvent.getOrElse(em.payloadFullName, List()).toSet
+    }
   }
 
   def manifest(event: Any): String = ""
