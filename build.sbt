@@ -26,7 +26,7 @@ lazy val root = (project in file("."))
 lazy val `akka-ddd-protocol` = project
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(Akka.actor) ++ Json.`4s`
+    libraryDependencies ++= Seq(Akka.actor, Enum.enumeratum) ++ Json.`4s`
   )
 
 lazy val `akka-ddd-messaging` = project

@@ -1,7 +1,5 @@
 package pl.newicom.dddd.writefront
 
-import java.util.Date
-
 import akka.actor.Actor
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model.StatusCodes
@@ -12,7 +10,6 @@ import pl.newicom.dddd.aggregate.error.CommandRejected
 import pl.newicom.dddd.http.JsonMarshalling
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.streams.ImplicitMaterializer
-import pl.newicom.dddd.utils.UUIDSupport.uuid
 
 import scala.util.{Failure, Success, Try}
 
@@ -35,7 +32,7 @@ trait HttpCommandHandler extends CommandDispatcher with CommandDirectives with D
   }
 
   def toCommandMessage(command: Command): CommandMessage =
-    CommandMessage(command, uuid, new Date)
+    CommandMessage(command)
 
   def toClientResponse: OfficeResponseToClientResponse =  {
     case Success(result) =>

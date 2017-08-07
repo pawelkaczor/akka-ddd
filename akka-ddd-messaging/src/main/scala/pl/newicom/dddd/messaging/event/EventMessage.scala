@@ -1,34 +1,26 @@
 package pl.newicom.dddd.messaging.event
 
-import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate.DomainEvent
-import pl.newicom.dddd.messaging.MetaData.CorrelationId
-import pl.newicom.dddd.messaging.{MetaData, AddressableMessage, Message}
-import pl.newicom.dddd.utils.UUIDSupport._
+import pl.newicom.dddd.messaging.MetaAttribute.Correlation_Id
+import pl.newicom.dddd.messaging.{AddressableMessage, Message, MetaData}
 
 object EventMessage {
-  def unapply(em: EventMessage): Option[(String, DomainEvent)] = {
+  def unapply(em: EventMessage): Option[(String, DomainEvent)] =
     Some(em.id, em.event)
-  }
 
-  def apply(
-             event0: DomainEvent,
-             id0: String = uuid,
-             timestamp0: DateTime = new DateTime,
-             metaData0: Option[MetaData] = None): EventMessage = new EventMessage {
+  def apply(event: DomainEvent): EventMessage =
+    apply(event, MetaData.initial)
+
+  def apply(event0: DomainEvent, metaData0: MetaData): EventMessage = new EventMessage {
 
     override def event: DomainEvent = event0
 
-    override def timestamp: DateTime = timestamp0
-
-    override def id: String = id0
-
     override type MessageImpl = EventMessage
 
-    override def metadata: Option[MetaData] = metaData0
+    override def metadata: MetaData = metaData0
 
-    override def copyWithMetaData(newMetaData: Option[MetaData]): MessageImpl =
-      EventMessage(event, id, timestamp, newMetaData)
+    override protected def withNewMetaData(newMetaData: MetaData): MessageImpl =
+      EventMessage(event, newMetaData)
   }
 }
 
@@ -37,13 +29,13 @@ trait EventMessage extends Message with AddressableMessage {
   type MessageImpl <: EventMessage
 
   def event: DomainEvent
-  def id: String
-  def timestamp: DateTime
 
-  override def destination: Option[String] = tryGetMetaAttribute[String](CorrelationId)
-  override def payload: DomainEvent = event
+  override def destination: Option[String] =
+    tryGetMetaAttribute[String](Correlation_Id)
 
-  override def toString: String = {
-    s"EventMessage(event = $event, id = $id, timestamp = $timestamp, metaData = $metadata)"
-  }
+  override def payload: DomainEvent =
+    event
+
+  override def toString: String =
+    s"EventMessage(event = $event, metaData = $metadata)"
 }

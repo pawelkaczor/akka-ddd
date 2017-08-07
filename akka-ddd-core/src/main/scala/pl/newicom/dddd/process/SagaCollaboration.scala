@@ -5,8 +5,8 @@ import org.joda.time.DateTime.now
 import org.joda.time.{DateTime, Period}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.DeliveryHandler
-import pl.newicom.dddd.messaging.Message
-import pl.newicom.dddd.messaging.MetaData._
+import pl.newicom.dddd.messaging.{Message, MetaData, MetaDataPropagationPolicy}
+import pl.newicom.dddd.messaging.MetaAttribute.Delivery_Id
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.office.{CommandHandlerResolver, Office, RemoteOfficeId}
@@ -19,12 +19,14 @@ trait SagaCollaboration {
 
   protected def deliverMsg(target: ActorPath, msg: Message): Unit = {
     deliver(target)(deliveryId => {
-      msg.withMetaAttribute(DeliveryId, deliveryId)
+      msg.withMetaAttribute(Delivery_Id, deliveryId)
     })
   }
 
   protected def deliverCommand(target: ActorPath, command: Command): Unit = {
-    deliverMsg(target, CommandMessage(command).causedBy(currentEventMsg))
+    deliverMsg(target, CommandMessage(command).withMetaData(
+      MetaDataPropagationPolicy.onCommandSentByPM(currentEventMsg.metadata, MetaData.empty))
+    )
   }
 
   protected def schedule(event: DomainEvent, deadline: DateTime, correlationId: EntityId = sagaId): Unit = {

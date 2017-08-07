@@ -3,7 +3,7 @@ package pl.newicom.dddd.test.dummy
 import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitialized, CommandHandlerNotDefined, DomainException, NoResponseReceived}
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, EntityId}
+import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, AggregateRootLogger, EntityId}
 import pl.newicom.dddd.office.Office
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 import pl.newicom.dddd.test.dummy.DummyOfficeSpec._
@@ -18,7 +18,7 @@ object DummyOfficeSpec {
   implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
     new AggregateRootActorFactory[DummyAggregateRoot] {
       override def props(pc: PassivationConfig): Props = Props(
-        new DummyAggregateRoot(DummyConfig(pc, valueGenerator = () => -1))
+        new DummyAggregateRoot(DummyConfig(pc, valueGenerator = () => -1)) with AggregateRootLogger[DummyEvent]
       )
       override def inactivityTimeout: Duration = it
 

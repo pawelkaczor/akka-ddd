@@ -6,6 +6,7 @@ object Deps {
     val Akka                  = "2.5.3"
     val AkkaHttp              = "10.0.9"
 
+    val Enumeratum            = "1.5.12"
     val EventStoreClient      = "4.1.0"
     val EventStoreAkkaJournal = "4.1.1"
 
@@ -50,7 +51,12 @@ object Deps {
   }
 
   object Json {
-    val `4s`  = Seq(Json4s.native, Json4s.ext)
+    val `4s`  = Seq(Json4s.native, Json4s.ext, Enum.jsonSupport)
+  }
+
+  object Enum {
+    val enumeratum  = "com.beachape" %% "enumeratum" % Version.Enumeratum
+    val jsonSupport = "com.beachape" %% "enumeratum-json4s" % Version.Enumeratum
   }
 
   object Json4s {

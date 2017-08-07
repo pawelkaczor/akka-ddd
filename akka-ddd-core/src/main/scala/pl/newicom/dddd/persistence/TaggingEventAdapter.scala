@@ -7,16 +7,19 @@ import pl.newicom.dddd.persistence.TaggingEventAdapter.tagsByEvent
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.util.Try
 
 object TaggingEventAdapter {
 
-  def config: Config = ConfigFactory.parseResourcesAnySyntax("tags")
+  def config: Option[Config] = Try(ConfigFactory.parseResourcesAnySyntax("tags")).toOption
 
   val tagsByEvent: Map[String, List[String]] = {
     val map = new mutable.HashMap[String, mutable.Set[String]] with mutable.MultiMap[String, String]
-    config.root().entrySet().asScala.foreach { entry =>
-      entry.getValue.asInstanceOf[ConfigList].unwrapped().asScala.foreach { v =>
-        map.addBinding(entry.getKey, v.asInstanceOf[String])
+    config.foreach { c =>
+      c.root().entrySet().asScala.foreach { entry =>
+        entry.getValue.asInstanceOf[ConfigList].unwrapped().asScala.foreach { v =>
+          map.addBinding(entry.getKey, v.asInstanceOf[String])
+        }
       }
     }
     reverseMultimap(map.toMap)
