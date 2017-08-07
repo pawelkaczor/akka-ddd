@@ -3,10 +3,10 @@ package pl.newicom.dddd.process
 import akka.persistence.RecoveryCompleted
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.alod._
-import pl.newicom.dddd.messaging.MetaAttribute.Publisher_Type.PublisherTypeValue.BP
 import pl.newicom.dddd.messaging.MetaAttribute.{Publisher_Type, Reused}
-import pl.newicom.dddd.messaging.{MetaData, MetaDataPropagationPolicy}
+import pl.newicom.dddd.messaging.PublisherTypeValue.BP
 import pl.newicom.dddd.messaging.event.EventMessage
+import pl.newicom.dddd.messaging.{MetaData, MetaDataPropagationPolicy}
 
 case object EventDroppedMarkerEvent extends DomainEvent
 
@@ -59,7 +59,7 @@ abstract class Saga extends SagaBase {
         val emToPersist = EventMessage(eventToPersist).withMetaData(
           MetaDataPropagationPolicy.onEventAcceptedByPM(
             receivedAttrs = em.metadata,
-            targetAttrs   = MetaData(Publisher_Type -> BP.toString, Reused -> (eventToPersist == event))
+            targetAttrs   = MetaData(Publisher_Type -> BP, Reused -> (eventToPersist == event))
           ))
 
         persist(emToPersist) { persisted =>

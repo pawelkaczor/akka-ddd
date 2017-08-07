@@ -3,7 +3,6 @@ package pl.newicom.dddd.messaging
 import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.delivery.protocol.{Processed, Receipt, alod}
-import pl.newicom.dddd.messaging.MetaAttribute.Publisher_Type.PublisherTypeValue
 
 import scala.util.{Success, Try}
 import pl.newicom.dddd.messaging.MetaAttribute._
@@ -74,7 +73,7 @@ trait Message extends Serializable {
     withMetaAttribute(Tags, this.tags ++ tags)
 
   def withPublisherType(publisherType: PublisherTypeValue.Value): MessageImpl =
-    withMetaAttribute(MetaAttribute.Publisher_Type, publisherType.toString)
+    withMetaAttribute(Publisher_Type, publisherType)
 
   def withReused(reused: Boolean): MessageImpl =
     if (reused)
@@ -86,10 +85,7 @@ trait Message extends Serializable {
     tryGetMetaAttribute(Tags).toSet.flatten
 
   def deliveryId: Option[Long] =
-    tryGetMetaAttribute(Delivery_Id).map {
-      case bigInt: scala.math.BigInt => bigInt.toLong
-      case l: Long                   => l
-    }
+    tryGetMetaAttribute(Delivery_Id)
 
   def correlationId: Option[EntityId] =
     tryGetMetaAttribute(Correlation_Id)
@@ -104,7 +100,7 @@ trait Message extends Serializable {
     tryGetMetaAttribute(Event_Number)
 
   def publisherType: Option[PublisherTypeValue.Value] =
-    tryGetMetaAttribute(MetaAttribute.Publisher_Type).map(PublisherTypeValue.withName)
+    tryGetMetaAttribute(Publisher_Type)
 
   def reused: Option[Boolean] =
     tryGetMetaAttribute(Reused)
