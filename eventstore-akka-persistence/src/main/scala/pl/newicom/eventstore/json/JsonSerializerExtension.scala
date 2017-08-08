@@ -9,11 +9,12 @@ import akka.persistence.{PersistentRepr, SnapshotMetadata}
 import akka.serialization.{Serialization, SerializationExtension, SerializerWithStringManifest}
 import org.json4s.Extraction.decompose
 import org.json4s.JsonAST._
+import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.Serialization.{read, write}
 import org.json4s.{CustomSerializer, Formats, FullTypeHints, JValue, Serializer, TypeInfo}
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.delivery.protocol.alod.{Processed => AlodProcessed}
-import pl.newicom.dddd.messaging.MetaData
+import pl.newicom.dddd.messaging.{MetaData, PublisherTypeValue}
 import pl.newicom.dddd.scheduling.{EventScheduled, ScheduledEventMetadata}
 import pl.newicom.dddd.serialization.{JsonExtraSerHints, JsonSerHints}
 import pl.newicom.dddd.serialization.JsonSerHints._
@@ -32,7 +33,7 @@ class JsonSerializerExtensionImpl(system: ExtendedActorSystem) extends Extension
       FullTypeHints(
         List(classOf[MetaData], classOf[Processed], classOf[AlodProcessed], classOf[PersistentRepr], classOf[EventScheduled])),
     serializers =
-      List(ActorRefSerializer, ActorPathSerializer, new ScheduledEventSerializer, SnapshotJsonSerializer(system))
+      List(ActorRefSerializer, ActorPathSerializer, new ScheduledEventSerializer, SnapshotJsonSerializer(system), new EnumNameSerializer(PublisherTypeValue))
   )
 
   val UTF8: Charset = Charset.forName("UTF-8")

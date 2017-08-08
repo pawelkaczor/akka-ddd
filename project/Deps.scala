@@ -10,7 +10,7 @@ object Deps {
     val EventStoreClient      = "4.1.0"
     val EventStoreAkkaJournal = "4.1.1"
 
-    val json4s                = "3.5.0"
+    val json4s                = "3.5.1"
 
     val Slick                 = "3.2.1"
     val PostgresqlSlickExt    = "0.15.3" // Slick 3.2.1
