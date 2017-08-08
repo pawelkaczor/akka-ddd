@@ -45,7 +45,7 @@ case class MetaData(content: Map[String, Any]) extends Serializable {
     content.get(attrName).asInstanceOf[Option[B]]
 
   def tryGet[B](attr: MetaAttribute[B]): Option[B] =
-    content.get(attr.entryName).map(attr.value)
+    content.get(attr.entryName).map(attr.read)
 
   override def toString: String =
     content.toString

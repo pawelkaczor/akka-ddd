@@ -58,8 +58,8 @@ abstract class Saga extends SagaBase {
 
         val emToPersist = EventMessage(eventToPersist).withMetaData(
           MetaDataPropagationPolicy.onEventAcceptedByPM(
-            receivedAttrs = em.metadata,
-            targetAttrs   = MetaData(Publisher_Type -> BP, Reused -> (eventToPersist == event))
+            receivedEvent = em.metadata,
+            eventToStore   = MetaData(Publisher_Type -> BP, Reused -> (eventToPersist == event))
           ))
 
         persist(emToPersist) { persisted =>

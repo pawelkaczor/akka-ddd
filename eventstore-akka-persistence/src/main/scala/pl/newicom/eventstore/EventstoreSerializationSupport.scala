@@ -77,10 +77,7 @@ trait EventstoreSerializationSupport {
   }
 
   private def toPayloadAndMetadata(em: EventMessage): (DomainEvent, MetaData) =
-    (
-      em.event,
-      em.withMetaAttribute(Id, em.id).withMetaAttribute(Timestamp, em.timestamp).metadata
-    )
+    (em.event, em.metadata)
 
   private def fromPayloadAndMetadata(payload: AnyRef, maybeMetadata: Option[MetaData]): EventMessage = {
     if (maybeMetadata.isDefined) {

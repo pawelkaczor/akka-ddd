@@ -3,8 +3,8 @@ package pl.newicom.dddd.messaging
 import pl.newicom.dddd.messaging.MetaAttribute._
 
 object MetaDataPropagationPolicy {
-  val onCommandAccepted: OnCommandAccepted.type     = OnCommandAccepted
-  val onCommandSentByPM: OnCommandSentByPM.type     = OnCommandSentByPM
+  val onCommandAccepted: OnCommandAcceptedByAR.type     = OnCommandAcceptedByAR
+  val onCommandSentByPM: OnCommandDeliveryRequestedByPM.type     = OnCommandDeliveryRequestedByPM
   val onEventAcceptedByPM: OnEventAcceptedByPM.type = OnEventAcceptedByPM
 }
 
@@ -12,31 +12,31 @@ sealed trait MetaDataPropagationPolicy {
   def apply(from: MetaData, to: MetaData): MetaData
 }
 
-case object OnCommandAccepted extends MetaDataPropagationPolicy {
-  override def apply(commandAttrs: MetaData, eventAttrs: MetaData): MetaData = {
-    eventAttrs
-      .withAttr(Causation_Id, commandAttrs.get(Id))
-      .withOptionalAttr(Correlation_Id, commandAttrs.tryGet(Correlation_Id))
-      .withAttr(Tags, Tags.merge(commandAttrs, eventAttrs))
-  }
-}
-
-case object OnCommandSentByPM extends MetaDataPropagationPolicy {
-  override def apply(eventAttrs: MetaData, commandAttrs: MetaData): MetaData = {
-    commandAttrs
-      .withAttr(Causation_Id, eventAttrs.get(Id))
-      .withOptionalAttr(Correlation_Id, eventAttrs.tryGet(Correlation_Id))
-      .withAttr(Tags, Tags.merge(eventAttrs, commandAttrs))
+case object OnCommandAcceptedByAR extends MetaDataPropagationPolicy {
+  override def apply(command: MetaData, event: MetaData): MetaData = {
+    event
+      .withAttr(Causation_Id, command.get(Id))
+      .withOptionalAttr(Correlation_Id, command.tryGet(Correlation_Id))
+      .withAttr(Tags, Tags.merge(command, event))
   }
 }
 
 case object OnEventAcceptedByPM extends MetaDataPropagationPolicy {
-  override def apply(receivedAttrs: MetaData, targetAttrs: MetaData): MetaData = {
-    targetAttrs
-      .withAttr(Delivery_Id, receivedAttrs.get(Delivery_Id))
-      .withOptionalAttr(Must_Follow, receivedAttrs.tryGet(Must_Follow))
-      .withAttr(Causation_Id, receivedAttrs.get(Id))
-      .withOptionalAttr(Correlation_Id, receivedAttrs.tryGet(Correlation_Id))
+  override def apply(receivedEvent: MetaData, eventToStore: MetaData): MetaData = {
+    eventToStore
+      .withAttr(Delivery_Id, receivedEvent.get(Delivery_Id))
+      .withOptionalAttr(Must_Follow, receivedEvent.tryGet(Must_Follow))
+      .withAttr(Causation_Id, receivedEvent.get(Id))
+      .withOptionalAttr(Correlation_Id, receivedEvent.tryGet(Correlation_Id))
       .remove(Tags)
+  }
+}
+
+case object OnCommandDeliveryRequestedByPM extends MetaDataPropagationPolicy {
+  override def apply(event: MetaData, command: MetaData): MetaData = {
+    command
+      .withAttr(Causation_Id, event.get(Id))
+      .withOptionalAttr(Correlation_Id, event.tryGet(Correlation_Id))
+      .withAttr(Tags, Tags.merge(event, command))
   }
 }
