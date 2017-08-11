@@ -25,6 +25,8 @@ object AggregateRootSupport {
 
     def orElse(alternative: => RejectConditionally): RejectConditionally =
       if (condition) this else alternative
+
+    def isRejected: Boolean = !condition
   }
 
 }

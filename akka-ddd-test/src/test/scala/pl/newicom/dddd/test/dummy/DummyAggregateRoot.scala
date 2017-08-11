@@ -21,7 +21,9 @@ object DummyAggregateRoot extends AggregateRootSupport {
 
   sealed trait Dummy extends Behavior[DummyEvent, Dummy, DummyConfig] {
     def isActive = false
-    def rejectNegative(value: Int): RejectConditionally = rejectIf(value < 0, "negative value not allowed")
+
+    def rejectInvalid(value: Int): RejectConditionally =
+      rejectIf(value < 0, "negative value not allowed")
   }
 
   implicit case object Uninitialized extends Dummy with Uninitialized[Dummy] {
@@ -29,7 +31,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
     def actions: Actions =
       handleCommand {
         case CreateDummy(id, name, description, value) =>
-          rejectNegative(value) orElse
+          rejectInvalid(value) orElse
             DummyCreated(id, name, description, value)
       }.handleEvent {
           case DummyCreated(_, _, _, value) =>
@@ -51,7 +53,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
             DescriptionChanged(id, description)
 
           case ChangeValue(id, newValue) =>
-            rejectNegative(newValue) orElse
+            rejectInvalid(newValue) orElse
               ValueChanged(id, newValue, version + 1)
 
           case Reset(id, name) =>
@@ -103,7 +105,7 @@ class DummyAggregateRoot(cfg: DummyConfig)
     implicit val timeout: FiniteDuration = 10.millis
     (valueGeneratorActor !< GenerateRandom) {
       case ValueGeneratorActor.ValueGenerated(value) =>
-        state.rejectNegative(value) orElse
+        state.rejectInvalid(value) orElse
           ValueGenerated(id, value, confirmationToken = uuidObj) match {
           case Reject(_) => valueGeneration
           case r         => r

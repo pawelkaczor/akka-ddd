@@ -2,7 +2,7 @@ package pl.newicom.dddd.test.dummy
 
 import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitialized, CommandHandlerNotDefined, DomainException, NoResponseReceived}
+import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitialized, CommandHandlerNotDefined, DomainException}
 import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, AggregateRootLogger, EntityId}
 import pl.newicom.dddd.office.Office
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
@@ -90,17 +90,6 @@ class DummyOfficeSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
         CreateDummy(dummyId, "dummy name", "dummy description", value = -1)
       }
       .expectException[DomainException]("negative value not allowed")
-    }
-
-
-    "eventually reject negative generated value" in {
-        given {
-          CreateDummy(dummyId, "dummy name", "dummy description", 100)
-        }
-        .when {
-          GenerateValue(dummyId)
-        }
-        .expectException[NoResponseReceived]()
     }
 
     "change value and name on reset" in {
