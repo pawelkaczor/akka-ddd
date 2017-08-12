@@ -130,7 +130,13 @@ lazy val `akka-ddd-monitoring` = project
 lazy val commonSettings: Seq[Setting[_]] = Publish.settings ++ Seq(
   updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true),
   licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
-  startYear := Some(2014)
+  startYear := Some(2014),
+  publishTo := Some(
+    if (isSnapshot.value)
+      Opts.resolver.sonatypeSnapshots
+    else
+      Opts.resolver.sonatypeStaging
+  )
 )
 
 
