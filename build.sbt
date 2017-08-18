@@ -7,7 +7,7 @@ name := "akka-ddd"
 
 version      in ThisBuild := "1.7.3-SNAPSHOT"
 organization in ThisBuild := "pl.newicom.dddd"
-scalaVersion in ThisBuild := "2.12.2"
+scalaVersion in ThisBuild := "2.12.3"
 
 scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions", "-unchecked")
 
@@ -88,7 +88,7 @@ lazy val `akka-ddd-test` = project
     testOptions       in Test            := Seq(Tests.Filter(specFilter)),
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
     parallelExecution in IntegrationTest := false,
-    libraryDependencies ++= levelDB ++ Seq(
+    libraryDependencies ++= Seq(
       Akka.testkit, Akka.multiNodeTestkit, scalaCheck, scalaTest, commonIO, logbackClassic % "test"
     ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence` % "test->compile")
@@ -128,15 +128,9 @@ lazy val `akka-ddd-monitoring` = project
   ).dependsOn(`akka-ddd-core`)
 
 lazy val commonSettings: Seq[Setting[_]] = Publish.settings ++ Seq(
-  updateOptions := updateOptions.value.withCachedResolution(cachedResoluton = true),
   licenses := Seq("MIT" -> url("http://raw.github.com/pawelkaczor/akka-ddd/master/LICENSE.md")),
   startYear := Some(2014),
-  publishTo := Some(
-    if (isSnapshot.value)
-      Opts.resolver.sonatypeSnapshots
-    else
-      Opts.resolver.sonatypeStaging
-  )
+  publishTo := Some(if (isSnapshot.value) Opts.resolver.sonatypeSnapshots else Opts.resolver.sonatypeStaging)
 )
 
 
