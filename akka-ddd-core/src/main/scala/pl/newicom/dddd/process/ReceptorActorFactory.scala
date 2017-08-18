@@ -4,8 +4,9 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import pl.newicom.dddd.actor.CreationSupport
 import pl.newicom.dddd.coordination.ReceptorConfig
 import pl.newicom.dddd.office.LocalOfficeId
+import pl.newicom.dddd.utils.UUIDSupport
 
-abstract class ReceptorActorFactory[A : LocalOfficeId : CreationSupport](implicit system: ActorSystem) {
+abstract class ReceptorActorFactory[A : LocalOfficeId : CreationSupport](implicit system: ActorSystem) extends UUIDSupport {
 
   type ReceptorFactory = ReceptorConfig => Receptor
 
@@ -13,7 +14,7 @@ abstract class ReceptorActorFactory[A : LocalOfficeId : CreationSupport](implici
 
   def apply(receptorConfig: ReceptorConfig): ActorRef = {
     val receptorProps = Props[Receptor](receptorFactory(receptorConfig))
-    implicitly[CreationSupport[A]].createChild(receptorProps, s"Receptor-${receptorConfig.stimuliSource.id}")
+    implicitly[CreationSupport[A]].createChild(receptorProps, s"Receptor-${receptorConfig.stimuliSource.id}-$uuid7")
   }
 
 }
