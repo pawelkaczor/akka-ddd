@@ -1,5 +1,6 @@
 package pl.newicom.dddd.messaging
 
+import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import pl.newicom.dddd.messaging.MetaAttribute.{Id, Timestamp}
 import pl.newicom.dddd.utils.UUIDSupport.uuid
@@ -8,8 +9,8 @@ object MetaData {
   def empty: MetaData =
     new MetaData(Map.empty)
 
-  def initial: MetaData =
-    MetaData(Id -> uuid, Timestamp -> now)
+  def initial(id: String = uuid, timestamp: DateTime = now): MetaData =
+    MetaData(Id -> id, Timestamp -> timestamp)
 
   def apply(attrs: (MetaAttribute[_], Any)*): MetaData =
     new MetaData(attrs.toMap.map(kv => kv._1.entryName -> kv._2))

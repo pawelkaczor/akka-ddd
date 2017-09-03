@@ -9,7 +9,7 @@ object OfficeEventMessage {
     OfficeEventMessage(caseRef, em.event, em.metadata)
 
   def apply(caseRef: CaseRef, event: DomainEvent): OfficeEventMessage =
-    OfficeEventMessage(caseRef, event, MetaData.initial)
+    OfficeEventMessage(caseRef, event, MetaData.initial())
 }
 
 case class OfficeEventMessage(caseRef: CaseRef, event: DomainEvent, metadata: MetaData) extends EventMessage {

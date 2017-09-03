@@ -9,7 +9,7 @@ object EventMessage {
     Some(em.id, em.event)
 
   def apply(event: DomainEvent): EventMessage =
-    apply(event, MetaData.initial)
+    apply(event, MetaData.initial())
 
   def apply(event0: DomainEvent, metaData0: MetaData): EventMessage = new EventMessage {
 
