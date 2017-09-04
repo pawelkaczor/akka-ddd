@@ -26,7 +26,7 @@ object OfficeSpec {
  * @param shareAggregateRoot if set to true, the same AR instance will be used in all tests, default is false
  */
 abstract class OfficeSpec[Event <: DomainEvent, A <: AggregateRoot[Event, _, A] : BusinessEntityActorFactory : LocalOfficeId](_system: Option[ActorSystem] = None, val shareAggregateRoot: Boolean = false)(implicit arClassTag: ClassTag[A])
-  extends GivenWhenThenTestFixture(_system.getOrElse(sys(arClassTag.runtimeClass))) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
+  extends GivenWhenThenTestFixture[Event](_system.getOrElse(sys(arClassTag.runtimeClass))) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
 
   val logger: Logger = getLogger(getClass)
 

@@ -99,9 +99,10 @@ class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(te
       .when {
         Reset(dummyId, "new dummy name")
       }
-      .expectEvents (
-        ValueChanged(dummyId, value = 0, dummyVersion = 1), NameChanged(dummyId, "new dummy name")
-      )
+      .expect { c =>
+        ValueChanged(dummyId, value = 0, dummyVersion = 1) &
+        NameChanged(dummyId, c.name)
+      }
     }
 
   }

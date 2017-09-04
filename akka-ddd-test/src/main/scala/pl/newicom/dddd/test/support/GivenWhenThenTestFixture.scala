@@ -12,7 +12,7 @@ import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
 import pl.newicom.dddd.office.Office
 import pl.newicom.dddd.office.SimpleOffice.Batch
-import pl.newicom.dddd.test.support.GivenWhenThenTestFixture.{CommandsHandler, PastEvents, WhenContext, testProbe}
+import pl.newicom.dddd.test.support.GivenWhenThenTestFixture.{CommandsHandler, ExpectedEvents, PastEvents, WhenContext, testProbe}
 import pl.newicom.dddd.utils.UUIDSupport.uuid
 
 import scala.annotation.tailrec
@@ -68,14 +68,13 @@ case class When[E <: DomainEvent, C <: Command](wc: WhenContext[C], whenFun: () 
     )
   }
 
-  def expect(f: (WhenContext[C]) => AnyRef): Unit = {
+  def expect(f: (WhenContext[C]) => ExpectedEvents[E]): Unit =
     f(wc) match {
-      case arr @  Seq(_, _*) =>
-        expectEvents(arr.asInstanceOf[Seq[E]] :_*)
-      case e =>
-        expectEvent(e.asInstanceOf[E])
+      case ExpectedEvents(Seq(e)) =>
+        expectEvent(e)
+      case ExpectedEvents(events) =>
+        expectEvents(events :_*)
     }
-  }
 
   def expect2(f: (C, Any) => E): Unit = {
     expectEvent(f(wc.command, wc.params.head))
@@ -87,7 +86,7 @@ case class When[E <: DomainEvent, C <: Command](wc: WhenContext[C], whenFun: () 
     }
   }
 
-  def expectException[E <: CommandRejected](message: String = null)(implicit t: ClassTag[E]): Unit = {
+  def expectException[CR <: CommandRejected](message: String = null)(implicit t: ClassTag[CR]): Unit = {
     testProbe(whenFun).expectMsgPF[Boolean](timeout, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
       case Failure(ex) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
     }
@@ -131,6 +130,8 @@ object GivenWhenThenTestFixture {
     def last[E](implicit ct: ClassTag[E]): E = event[E](_.last)
   }
 
+  case class ExpectedEvents[E](events: Seq[E])
+
   def testProbe(f: () => Unit)(implicit system: ActorSystem): TestProbe = {
     new TestProbe(system) {
       var initialized = false
@@ -169,6 +170,7 @@ object GivenWhenThenTestFixture {
     val (c, param1) = cGen.sample.get
     WhenContext(Seq(c), PastEvents(), List(param1))
   }
+
 }
 
 abstract class GivenWhenThenTestFixture[Event <: DomainEvent](_system: ActorSystem) extends TestKit(_system) with ImplicitSender {
@@ -196,6 +198,14 @@ abstract class GivenWhenThenTestFixture[Event <: DomainEvent](_system: ActorSyst
     wc.pastEvents.first[E]
 
   protected def commandMetaDataProvider(c: Command): MetaData = MetaData.empty
+
+  implicit class ExpectedEventsBuilder(e: Event) {
+    def &(other: Event): ExpectedEvents[Event] =
+      ExpectedEvents(Seq(e, other))
+  }
+
+  implicit def toExpectedEvents(e: Event): ExpectedEvents[Event] =
+    ExpectedEvents(Seq(e))
 
   // Private methods
 
