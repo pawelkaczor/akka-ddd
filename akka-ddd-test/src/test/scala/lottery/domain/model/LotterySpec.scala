@@ -63,8 +63,11 @@ class LotterySpec extends LotterySpecSupport {
       .when {
         a [RemoveAllParticipants]
       }
-      .expectEvents(
-        ParticipantRemoved("Paul", lotteryId), ParticipantRemoved("John", lotteryId)
+      .expect( implicit hist =>
+        Seq(
+          ParticipantRemoved(first[ParticipantAdded].name, lotteryId),
+          ParticipantRemoved(last[ParticipantAdded].name, lotteryId)
+        )
       )
     }
 

@@ -26,10 +26,10 @@ import scala.util.{Failure, Success}
 case class Given(cs: Seq[Command] = Seq.empty)(implicit s: ActorSystem, ch: CommandsHandler, timeout: FiniteDuration) {
   val pastEvents: PastEvents = PastEvents(ch(cs).toList)
 
-  def when[C <: Command](f: (WhenContext[_]) => WhenContext[C]): When[C] =
+  def when[E <: DomainEvent, C <: Command](f: (WhenContext[_]) => WhenContext[C]): When[E, C] =
     when(f(fakeWhenContext(pastEvents)))
 
-  def when[C <: Command](wc: WhenContext[C]): When[C] = when(wc, () => {
+  def when[E <: DomainEvent, C <: Command](wc: WhenContext[C]): When[E, C] = when(wc, () => {
     ch(wc.commands).map(_.result).flatMap {
       case Success(eventMsgs) =>
         eventMsgs.asInstanceOf[Seq[OfficeEventMessage]].map(em => Success(em.payload))
@@ -37,7 +37,7 @@ case class Given(cs: Seq[Command] = Seq.empty)(implicit s: ActorSystem, ch: Comm
     }.foreach(s.eventStream.publish)
   })
 
-  private def when[C <: Command](wc: WhenContext[C], whenFun: () => Unit): When[C] = {
+  private def when[E <: DomainEvent, C <: Command](wc: WhenContext[C], whenFun: () => Unit): When[E, C] = {
     When(wc.copy(pastEvents = pastEvents), whenFun)
   }
 
@@ -50,16 +50,16 @@ case class Given(cs: Seq[Command] = Seq.empty)(implicit s: ActorSystem, ch: Comm
 /**
   * When
   */
-case class When[C <: Command](wc: WhenContext[C], whenFun: () => Unit)(implicit s: ActorSystem, timeout: FiniteDuration) {
+case class When[E <: DomainEvent, C <: Command](wc: WhenContext[C], whenFun: () => Unit)(implicit s: ActorSystem, timeout: FiniteDuration) {
 
-  def expectEvents(events: DomainEvent*): Unit = {
+  def expectEvents(events: E*): Unit = {
     val probe = testProbe(whenFun)
     events.foreach { _ =>
       probe.expectMsgAnyOf[DomainEvent](timeout, events.map(Success(_)): _*)
     }
   }
 
-  def expectEvent(e: DomainEvent): Unit = {
+  def expectEvent(e: E): Unit = {
     expectEventMatching(
       matcher = {
         case actual if actual == e => e
@@ -68,11 +68,16 @@ case class When[C <: Command](wc: WhenContext[C], whenFun: () => Unit)(implicit 
     )
   }
 
-  def expect(f: (WhenContext[C]) => DomainEvent): Unit = {
-    expectEvent(f(wc))
+  def expect(f: (WhenContext[C]) => AnyRef): Unit = {
+    f(wc) match {
+      case arr @  Seq(_, _*) =>
+        expectEvents(arr.asInstanceOf[Seq[E]] :_*)
+      case e =>
+        expectEvent(e.asInstanceOf[E])
+    }
   }
 
-  def expect2(f: (C, Any) => DomainEvent): Unit = {
+  def expect2(f: (C, Any) => E): Unit = {
     expectEvent(f(wc.command, wc.params.head))
   }
 
@@ -166,7 +171,7 @@ object GivenWhenThenTestFixture {
   }
 }
 
-abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_system) with ImplicitSender {
+abstract class GivenWhenThenTestFixture[Event <: DomainEvent](_system: ActorSystem) extends TestKit(_system) with ImplicitSender {
 
   implicit val timeout: FiniteDuration = Timeout(5.seconds).duration
 
@@ -180,7 +185,7 @@ abstract class GivenWhenThenTestFixture(_system: ActorSystem) extends TestKit(_s
 
   def given(cs: Command*): Given = Given(cs)
 
-  def when[C <: Command](wc: WhenContext[C]): When[C] = Given().when(wc)
+  def when[C <: Command](wc: WhenContext[C]): When[Event, C] = Given().when(wc)
 
   def last[E](implicit wc: WhenContext[_], ct: ClassTag[E]): E = past
 

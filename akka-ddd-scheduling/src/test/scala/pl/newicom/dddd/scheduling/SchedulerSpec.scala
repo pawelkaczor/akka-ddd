@@ -26,7 +26,7 @@ object SchedulerSpec {
 
 }
 
-class SchedulerSpec extends OfficeSpec[Scheduler](Some(testSystem)) {
+class SchedulerSpec extends OfficeSpec[SchedulerEvent, Scheduler](Some(testSystem)) {
 
   "Scheduling office" should {
     "schedule event" in {

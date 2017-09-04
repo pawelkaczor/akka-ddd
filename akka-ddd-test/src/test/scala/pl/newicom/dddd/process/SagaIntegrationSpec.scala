@@ -37,7 +37,7 @@ object SagaIntegrationSpec {
 /**
  * Requires EventStore to be running on localhost!
  */
-class SagaIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("ReceptorIntegrationSpec"))) {
+class SagaIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("ReceptorIntegrationSpec"))) {
 
   override val shareAggregateRoot = true
 

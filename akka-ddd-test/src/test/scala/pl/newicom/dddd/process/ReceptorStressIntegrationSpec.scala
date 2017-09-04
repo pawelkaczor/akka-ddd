@@ -38,7 +38,7 @@ object ReceptorStressIntegrationSpec {
 /**
   * Requires EventStore to be running on localhost!
   */
-class ReceptorStressIntegrationSpec extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("ReceptorStressSpec"))) {
+class ReceptorStressIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("ReceptorStressSpec"))) {
 
   def dummyId: EntityId = aggregateId
 

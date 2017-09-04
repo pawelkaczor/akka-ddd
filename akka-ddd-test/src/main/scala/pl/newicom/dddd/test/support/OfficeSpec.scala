@@ -7,7 +7,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, WordSpecLike}
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
-import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId}
+import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.{LocalOfficeId, Office, OfficeListener}
 import pl.newicom.dddd.office.OfficeFactory._
@@ -25,7 +25,7 @@ object OfficeSpec {
 /**
  * @param shareAggregateRoot if set to true, the same AR instance will be used in all tests, default is false
  */
-abstract class OfficeSpec[A <: BusinessEntity : BusinessEntityActorFactory: LocalOfficeId](_system: Option[ActorSystem] = None, val shareAggregateRoot: Boolean = false)(implicit arClassTag: ClassTag[A])
+abstract class OfficeSpec[Event <: DomainEvent, A <: AggregateRoot[Event, _, A] : BusinessEntityActorFactory : LocalOfficeId](_system: Option[ActorSystem] = None, val shareAggregateRoot: Boolean = false)(implicit arClassTag: ClassTag[A])
   extends GivenWhenThenTestFixture(_system.getOrElse(sys(arClassTag.runtimeClass))) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
 
   val logger: Logger = getLogger(getClass)
