@@ -1,7 +1,7 @@
  language: scala
 
  scala:
-   - "2.12.2"
+   - "2.12.3"
 
  jdk:
    - oraclejdk8
@@ -33,7 +33,4 @@
   - sudo apt-get install -y -qq httpie
 
  before_script:
-  - docker run --name ecommerce-event-store -d -p 2113:2113 -p 1113:1113 -e EVENTSTORE_START_STANDARD_PROJECTIONS=true eventstore/eventstore
-  - until nc -z 127.0.0.1 2113; do sleep 1; done
-  - sleep 5
-  - until http -a admin:changeit --timeout 1 --headers POST :2113/projections/continuous name==tags_proj type==JS emit==1 < $TRAVIS_BUILD_DIR/eventstore-akka-persistence/src/main/resources/tags.js | head -n 1 | grep 201; do sleep 1; done
+  - docker run --name ecommerce-event-store -d -p 2113:2113 -p 1113:1113 newicom/eventstore
