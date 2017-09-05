@@ -1,9 +1,8 @@
 import sbt._
 import Keys._
-import xerial.sbt.Sonatype.sonatypeSettings
 
 object Publish {
-  lazy val settings = sonatypeSettings ++ Seq(
+  lazy val settings = Seq(
     scmInfo := Some(
       ScmInfo(url("https://github.com/pawelkaczor/akka-ddd"), "scm:git:git@github.com:pawelkaczor/akka-ddd.git</")
     ),
