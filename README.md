@@ -1,4 +1,4 @@
-akka-ddd [![Build Status](https://travis-ci.org/pawelkaczor/akka-ddd.svg?branch=master)](https://travis-ci.org/pawelkaczor/akka-ddd) [![Version](https://img.shields.io/maven-central/v/pl.newicom.dddd/akka-ddd-core_2.11.svg?label=version)](http://search.maven.org/#search%7Cga%7C1%7Cg%3Apl.newicom.dddd)
+akka-ddd [![Build Status](https://travis-ci.org/pawelkaczor/akka-ddd.svg?branch=master)](https://travis-ci.org/pawelkaczor/akka-ddd) [![Version](https://img.shields.io/maven-central/v/pl.newicom.dddd/akka-ddd-core_2.12.svg?label=version)](http://search.maven.org/#search%7Cga%7C1%7Cg%3Apl.newicom.dddd)
 ========
 
 [![Join the chat at https://gitter.im/pawelkaczor/akka-ddd](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/pawelkaczor/akka-ddd?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -9,14 +9,6 @@ Used by: [DDD Leaven Akka Ver 2](https://github.com/pawelkaczor/ddd-leaven-akka-
 
 #### Modules overview
 
-#### akka-ddd-protocol
-
-Defines protocol to be used by the write-front application.
- 
-#### akka-ddd-messaging
-
-Contains classes usable on both write and read side of the system. 
-
 #### akka-ddd-core
 
 Contains core artifacts to be used on the write side of the system:
@@ -24,7 +16,8 @@ Contains core artifacts to be used on the write side of the system:
 - [AggregateRoot](akka-ddd-core/src/main/scala/pl/newicom/dddd/aggregate/AggregateRoot.scala) trait - 
 abstract persistent, event sourced actor responsible for processing commands received from the office. 
 Implementation of AggregateRoot trait represents concrete business entity (i.e Reservation, Product, etc) 
-See example AR: [Reservation](https://github.com/pawelkaczor/ddd-leaven-akka-v2/blob/master/sales/write-back/src/main/scala/ecommerce/sales/Reservation.scala)
+
+For more information visit the [documentation](http://newicom.pl/akka-ddd/docs/aggregate-root.html).
    
 - [Office](akka-ddd-core/src/main/scala/pl/newicom/dddd/office/OfficeFactory.scala) - 
 an actor that is used by the client to talk to Aggregate Roots of a particular class. 
@@ -40,24 +33,28 @@ allows one office to react on events occurred in another office. Receptor is cap
 
 #### eventstore-akka-persistence
 
-Incorporates [Akka Persistence journal and snapshot-store](https://github.com/EventStore/EventStore.Akka.Persistence) backed by [Event Store](http://geteventstore.com). Registers [JSON Serializer](eventstore-akka-persistence/src/main/scala/pl/newicom/eventstore/plugin/EventStoreSerializer.scala) as [Akka custom serializer](http://doc.akka.io/docs/akka/snapshot/scala/persistence.html#Custom_serialization) for ```akka.persistence.PersistentRepr``` (wrapper class that is used by Akka Persistence to store event in the journal). Json format is natural choice for Event Store as it enables creating user projections using javascript directly in Event Store. Provides also [EventstoreSubscriber](eventstore-akka-persistence/src/main/scala/pl/newicom/eventstore/EventstoreSubscriber.scala) that should be mixed into the [Receptor](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/process/Receptor.scala) (available in akka-ddd-core).     
+Incorporates [Akka Persistence journal and snapshot-store](https://github.com/EventStore/EventStore.Akka.Persistence) backed by [Event Store](http://eventstore.org). Registers [JSON Serializer](eventstore-akka-persistence/src/main/scala/pl/newicom/eventstore/plugin/EventStoreSerializer.scala) as [Akka custom serializer](http://doc.akka.io/docs/akka/snapshot/scala/persistence.html#Custom_serialization) for ```akka.persistence.PersistentRepr``` (wrapper class that is used by Akka Persistence to store event in the journal). Provides also [EventstoreSubscriber](eventstore-akka-persistence/src/main/scala/pl/newicom/eventstore/EventstoreSubscriber.scala) that should be mixed into the [Receptor](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/process/Receptor.scala) (available in akka-ddd-core).     
 
 #### akka-ddd-scheduling
 
-Provides durable scheduler (backed by Event Store!) that is typically used by Saga to schedule timeout/deadline messages. See: [Durable Scheduler - big picture](https://github.com/pawelkaczor/akka-ddd/wiki/Durable-Scheduler).
+Provides durable scheduler (backed by the Event Store!) that is typically used by a Saga to schedule timeout/deadline messages. See: [Durable Scheduler - big picture](https://github.com/pawelkaczor/akka-ddd/wiki/Durable-Scheduler).
 
 #### view-update
 
-Generic artifacts for building view update services that consume events from [Event Store](http://geteventstore.com/) and update a configured view store (i.e. Sql database). See: [View Update Service - big picture](https://github.com/pawelkaczor/akka-ddd/wiki/View-Update-Service)
+Generic artifacts for building View Update Service - a service that consumes events from an Event Store and updates a View Store (i.e. SQL database). See: [View Update Service - big picture](https://github.com/pawelkaczor/akka-ddd/wiki/View-Update-Service)
 
 #### view-update-sql
 
-Sql (defult is Postgresql) specific implementation of view-update artifacts.
+SQL-specific implementation of view-update artifacts.
 
 #### akka-ddd-test
 
-Allows easy creation of test of Aggregate Root implementations. Supports both "simple" and "global" offices. See [DummyOfficeSpec](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyOfficeSpec.scala) and [DummyOfficeWithGenSpec](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-test/src/test/scala/pl/newicom/dddd/test/dummy/DummyOfficeWithGenSpec.scala).
+Allows easy creation of Aggregate Root specifications (tests). See [Testing Aggregate Root’s behavior](http://newicom.pl/akka-ddd/docs/aggregate-root/testing).
 
 #### akka-ddd-write-front
 
-Artifacts for building http server with use of [Akka Http](http://doc.akka.io/docs/akka-http/current/scala.html) and [Akka Cluster Client](http://doc.akka.io/docs/akka/current/scala/cluster-client.html) responsible for handling commands sent as json messages. Provides infrastructure for demarshalling commands and forwarding them to write-backend application.
+Provides building blocks for the write-front application. 
+ 
+ - **HttpCommandHandler** - a route (building block of the [Akka Http](http://doc.akka.io/docs/akka-http/current/scala.html) endpoint) responsible for unmarshalling commands received in json format as HTTP POST requests. Once the command is unmarshalled, the handler passes it further to the **CommandDispatcher**. Eventually, once the command is processed on the backend and the response is received from the office (asynchronously), the handler converts it to an appropriate HTTP response that needs to be returned to the client.
+
+ - **CommandDispatcher** - takes care of forwarding the incoming commands to the appropriate offices operating on backend. The forwarding is performed using the [Akka Cluster Client](http://doc.akka.io/docs/akka/current/scala/cluster-client.html).
