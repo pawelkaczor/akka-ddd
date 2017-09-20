@@ -120,19 +120,21 @@ In the following sample behavior specification, a result event of the initial co
 }
 ```
 
-It is possible to declare multiple commands in the When section. `expectEvents` should be used in the `Then` section to assert multiple events.
+It is possible to declare multiple commands in the When section. ``&`` operator
+should be used to declare a sequence of expected events. 
 
 ```scala
 "update Dummy's value twice" in {
   given {
     a [CreateDummy]
   }
-  .when (
+  .when {
     Seq(ChangeValue(dummyId, 1), ChangeValue(dummyId, 2))
-  )
-  .expectEvents (
-    ValueChanged(dummyId, 1, 1), ValueChanged(dummyId, 2, 2)
-  )
+  }
+  .expect { c =>
+    ValueChanged(dummyId, 1, 1) & ValueChanged(dummyId, 2, 2)
+  }
+  
 }
 ```
 
