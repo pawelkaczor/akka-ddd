@@ -84,13 +84,12 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](
       given {
         a [CreateDummy]
       }
-      .when (
-        Seq(ChangeValue(dummyId, 1), ChangeValue(dummyId, 2))
-      )
-      .expect( c =>
-        ValueChanged(dummyId, 1, 1) &
-          ValueChanged(dummyId, 2, 2)
-      )
+      .when {
+        ChangeValue(dummyId, 1) & ChangeValue(dummyId, 2)
+      }
+      .expect { c =>
+        ValueChanged(dummyId, 1, 1) & ValueChanged(dummyId, 2, 2)
+      }
     }
 
     /**

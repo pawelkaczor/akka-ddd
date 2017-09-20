@@ -115,6 +115,8 @@ object GivenWhenThenTestFixture {
                                         pastEvents: PastEvents = PastEvents(),
                                         params: Seq[Any] = Seq.empty) {
     def command: C = commands.head
+
+    def &(c: C): WhenContext[C] = copy(commands = commands :+ c)
   }
 
   case class PastEvents(list: List[Processed] = List.empty) {
@@ -130,7 +132,9 @@ object GivenWhenThenTestFixture {
     def last[E](implicit ct: ClassTag[E]): E = event[E](_.last)
   }
 
-  case class ExpectedEvents[E](events: Seq[E])
+  case class ExpectedEvents[E](events: Seq[E]) {
+    def &(e: E): ExpectedEvents[E] = ExpectedEvents(events :+ e)
+  }
 
   def testProbe(f: () => Unit)(implicit system: ActorSystem): TestProbe = {
     new TestProbe(system) {
@@ -156,6 +160,7 @@ object GivenWhenThenTestFixture {
   implicit def whenContextToPastEvents[C <: Command](wc: WhenContext[C]): PastEvents = wc.pastEvents
 
   implicit def commandToWhenContext[C <: Command](c: C): WhenContext[C] = WhenContext(Seq(c))
+
   implicit def commandsToWhenContext[C <: Command](cs: Seq[C]): WhenContext[C] = WhenContext(cs)
 
   @tailrec
@@ -199,10 +204,7 @@ abstract class GivenWhenThenTestFixture[Event <: DomainEvent](_system: ActorSyst
 
   protected def commandMetaDataProvider(c: Command): MetaData = MetaData.empty
 
-  implicit class ExpectedEventsBuilder(e: Event) {
-    def &(other: Event): ExpectedEvents[Event] =
-      ExpectedEvents(Seq(e, other))
-  }
+  implicit def commandToWhenContext[C <: Command](c: C): WhenContext[C] = WhenContext(Seq(c))
 
   implicit def toExpectedEvents(e: Event): ExpectedEvents[Event] =
     ExpectedEvents(Seq(e))
