@@ -14,7 +14,6 @@ import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.test.support.OfficeSpec.sys
 import pl.newicom.dddd.utils.UUIDSupport._
 
-import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
@@ -26,7 +25,7 @@ object OfficeSpec {
  * @param shareAggregateRoot if set to true, the same AR instance will be used in all tests, default is false
  */
 abstract class OfficeSpec[Event <: DomainEvent, A <: AggregateRoot[Event, _, A] : BusinessEntityActorFactory : LocalOfficeId](_system: Option[ActorSystem] = None, val shareAggregateRoot: Boolean = false)(implicit arClassTag: ClassTag[A])
-  extends GivenWhenThenTestFixture[Event](_system.getOrElse(sys(arClassTag.runtimeClass))) with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
+  extends GivenWhenThenTestFixture[Event](_system.getOrElse(sys(arClassTag.runtimeClass))) with WithGenOfficeSpec with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
 
   val logger: Logger = getLogger(getClass)
 
@@ -55,23 +54,6 @@ abstract class OfficeSpec[Event <: DomainEvent, A <: AggregateRoot[Event, _, A] 
   }
 
   def aggregateId(implicit aggregateIdGen: Gen[EntityId]): EntityId = aggregateIdGen.sample.get
-
-  @tailrec
-  implicit final def arbitraryToSample[T](g: Gen[T]): T = {
-    g.sample match {
-      case Some(x) => x
-      case _ => arbitraryToSample(g)
-    }
-  }
-
-  def a[T](implicit g: Gen[T]): Gen[T] = g
-  def a_list_of[T1 <: Command, T2 <: Command, T3 <: Command, T4 <: Command](implicit g1: Gen[T1], g2: Gen[T2], g3: Gen[T3], g4: Gen[T4]): List[Command] = List(g1, g2, g3, g4)
-  def a_list_of[T1 <: Command, T2 <: Command, T3 <: Command](implicit g1: Gen[T1], g2: Gen[T2], g3: Gen[T3]): List[Command] = List(g1, g2, g3)
-  def a_list_of[T1 <: Command, T2 <: Command](implicit g1: Gen[T1], g2: Gen[T2]): List[Command] = List(g1, g2)
-
-  def arbitraryOf[T](adjust: (T) => T = {x: T => x})(implicit g: Gen[T]): T = adjust(g)
-
-  private def arbitrarySample[T](implicit g: Gen[T]): T = arbitraryToSample(g)
 
   implicit def topLevelParent[T : LocalOfficeId](implicit system: ActorSystem): CreationSupport[T] = {
     new CreationSupport[T] {

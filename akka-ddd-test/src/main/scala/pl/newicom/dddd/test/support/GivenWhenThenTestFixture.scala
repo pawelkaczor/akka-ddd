@@ -12,7 +12,7 @@ import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
 import pl.newicom.dddd.office.Office
 import pl.newicom.dddd.office.SimpleOffice.Batch
-import pl.newicom.dddd.test.support.GivenWhenThenTestFixture.{CommandsHandler, ExpectedEvents, PastEvents, WhenContext, testProbe}
+import pl.newicom.dddd.test.support.GivenWhenThenTestFixture.{Commands, CommandsHandler, ExpectedEvents, PastEvents, WhenContext, testProbe}
 import pl.newicom.dddd.utils.UUIDSupport.uuid
 
 import scala.annotation.tailrec
@@ -110,6 +110,10 @@ object GivenWhenThenTestFixture {
 
   type CommandsHandler = Seq[Command] => Seq[Processed]
 
+  case class Commands[C <: Command](commands: Seq[C]) {
+    def &(c: C): Commands[C] = Commands[C](commands :+ c)
+  }
+
   case class WhenContext[C <: Command](
                                         commands: Seq[C],
                                         pastEvents: PastEvents = PastEvents(),
@@ -163,6 +167,9 @@ object GivenWhenThenTestFixture {
 
   implicit def commandsToWhenContext[C <: Command](cs: Seq[C]): WhenContext[C] = WhenContext(cs)
 
+  implicit def commandsToWhenContext[C <: Command](cs: Commands[C]): WhenContext[C] = WhenContext[C](cs.commands)
+
+
   @tailrec
   implicit final def commandGenToWhenContext[C <: Command](cGen: Gen[C]): WhenContext[C] = {
     cGen.sample match {
@@ -192,6 +199,8 @@ abstract class GivenWhenThenTestFixture[Event <: DomainEvent](_system: ActorSyst
 
   def given(cs: Command*): Given = Given(cs)
 
+  def given[C <: Command](cs: Commands[C]): Given = Given(cs.commands)
+
   def when[C <: Command](wc: WhenContext[C]): When[Event, C] = Given().when(wc)
 
   def last[E](implicit wc: WhenContext[_], ct: ClassTag[E]): E = past
@@ -204,10 +213,11 @@ abstract class GivenWhenThenTestFixture[Event <: DomainEvent](_system: ActorSyst
 
   protected def commandMetaDataProvider(c: Command): MetaData = MetaData.empty
 
-  implicit def commandToWhenContext[C <: Command](c: C): WhenContext[C] = WhenContext(Seq(c))
-
   implicit def toExpectedEvents(e: Event): ExpectedEvents[Event] =
     ExpectedEvents(Seq(e))
+
+  implicit def toCommands(c: Command): Commands[Command] =
+    Commands(Seq(c))
 
   // Private methods
 

@@ -73,10 +73,10 @@ class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(te
     }
 
     "handle subsequent Update command" in {
-      given(
-        CreateDummy(dummyId, "dummy name", "dummy description", 100),
+      given {
+        CreateDummy(dummyId, "dummy name", "dummy description", 100) &
         ChangeName(dummyId, "some other dummy name")
-      )
+      }
       .when {
         ChangeName(dummyId, "yet another dummy name")
       }
