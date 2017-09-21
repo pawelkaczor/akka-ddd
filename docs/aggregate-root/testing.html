@@ -115,18 +115,19 @@ You may choose to use the same Actor for running all behavior specifications by 
 </code></pre>
 </div>
 
-<p>It is possible to declare multiple commands in the When section. <code class="highlighter-rouge">expectEvents</code> should be used in the <code class="highlighter-rouge">Then</code> section to assert multiple events.</p>
+<p>It is possible to declare multiple commands in Given and When sections and multiple events in Then section using <code class="highlighter-rouge">&amp;</code> operator.</p>
 
 <div class="language-scala highlighter-rouge"><pre class="highlight"><code><span class="s">"update Dummy's value twice"</span> <span class="n">in</span> <span class="o">{</span>
   <span class="n">given</span> <span class="o">{</span>
     <span class="n">a</span> <span class="o">[</span><span class="kt">CreateDummy</span><span class="o">]</span>
   <span class="o">}</span>
-  <span class="o">.</span><span class="n">when</span> <span class="o">(</span>
-    <span class="nc">Seq</span><span class="o">(</span><span class="nc">ChangeValue</span><span class="o">(</span><span class="n">dummyId</span><span class="o">,</span> <span class="mi">1</span><span class="o">),</span> <span class="nc">ChangeValue</span><span class="o">(</span><span class="n">dummyId</span><span class="o">,</span> <span class="mi">2</span><span class="o">))</span>
-  <span class="o">)</span>
-  <span class="o">.</span><span class="n">expectEvents</span> <span class="o">(</span>
-    <span class="nc">ValueChanged</span><span class="o">(</span><span class="n">dummyId</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">1</span><span class="o">),</span> <span class="nc">ValueChanged</span><span class="o">(</span><span class="n">dummyId</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">2</span><span class="o">)</span>
-  <span class="o">)</span>
+  <span class="o">.</span><span class="n">when</span> <span class="o">{</span>
+    <span class="nc">ChangeValue</span><span class="o">(</span><span class="n">dummyId</span><span class="o">,</span> <span class="mi">1</span><span class="o">)</span> <span class="o">&amp;</span> <span class="nc">ChangeValue</span><span class="o">(</span><span class="n">dummyId</span><span class="o">,</span> <span class="mi">2</span><span class="o">)</span>
+  <span class="o">}</span>
+  <span class="o">.</span><span class="n">expect</span> <span class="o">{</span> <span class="n">c</span> <span class="k">=&gt;</span>
+    <span class="nc">ValueChanged</span><span class="o">(</span><span class="n">dummyId</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">1</span><span class="o">)</span> <span class="o">&amp;</span> <span class="nc">ValueChanged</span><span class="o">(</span><span class="n">dummyId</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">2</span><span class="o">)</span>
+  <span class="o">}</span>
+  
 <span class="o">}</span>
 </code></pre>
 </div>
