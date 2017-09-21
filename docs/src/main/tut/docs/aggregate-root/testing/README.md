@@ -120,8 +120,7 @@ In the following sample behavior specification, a result event of the initial co
 }
 ```
 
-It is possible to declare multiple commands in the When section. ``&`` operator
-should be used to declare a sequence of expected events. 
+It is possible to declare multiple commands in Given and When sections and multiple events in Then section using ``&`` operator. 
 
 ```scala
 "update Dummy's value twice" in {
@@ -129,7 +128,7 @@ should be used to declare a sequence of expected events.
     a [CreateDummy]
   }
   .when {
-    Seq(ChangeValue(dummyId, 1), ChangeValue(dummyId, 2))
+    ChangeValue(dummyId, 1) & ChangeValue(dummyId, 2)
   }
   .expect { c =>
     ValueChanged(dummyId, 1, 1) & ValueChanged(dummyId, 2, 2)
