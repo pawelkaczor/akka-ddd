@@ -23,7 +23,7 @@ object DummyOfficeWithGenSpec {
     }
 }
 
-class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](Some(testSystem)) {
+class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
 
   def dummyOffice: Office = officeUnderTest
 
@@ -78,18 +78,18 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyAggregateRoot](Some(testSys
 
     /**
       * Multiple commands in When section are supported.
-      * 'expectEvents' should be used in Then section to assert multiple events were raised.
+      * 'expect' in Then section is able to handle multiple expected events.
       */
     "update Dummy's value twice" in {
       given {
         a [CreateDummy]
       }
-      .when (
-        Seq(ChangeValue(dummyId, 1), ChangeValue(dummyId, 2))
-      )
-      .expectEvents (
-        ValueChanged(dummyId, 1, 1), ValueChanged(dummyId, 2, 2)
-      )
+      .when {
+        ChangeValue(dummyId, 1) & ChangeValue(dummyId, 2)
+      }
+      .expect { c =>
+        ValueChanged(dummyId, 1, 1) & ValueChanged(dummyId, 2, 2)
+      }
     }
 
     /**

@@ -2,7 +2,8 @@ package pl.newicom.dddd.serialization
 
 import com.typesafe.config.Config
 import org.json4s._
-import org.json4s.ext.{UUIDSerializer, JodaTimeSerializers}
+import org.json4s.ext.{EnumNameSerializer, JodaTimeSerializers, UUIDSerializer}
+import pl.newicom.dddd.messaging.PublisherTypeValue
 import pl.newicom.dddd.serialization.JsonSerHints.DefaultSerializationHints
 import pl.newicom.dddd.serialization.{JsonAbstractSerHints => AbstractHints, JsonExtraSerHints => ExtraHints, JsonSerHints => FinalizedHints}
 
@@ -53,7 +54,7 @@ case class JsonExtraSerHints(typeHints: TypeHints, serializers: List[Serializer[
 object JsonSerHints {
 
   val NoExtraHints = ExtraHints(NoTypeHints, List())
-  val DefaultSerializationHints = FinalizedHints(NoExtraHints, DefaultFormats ++ JodaTimeSerializers.all + UUIDSerializer)
+  val DefaultSerializationHints = FinalizedHints(NoExtraHints, DefaultFormats ++ JodaTimeSerializers.all + UUIDSerializer + new EnumNameSerializer(PublisherTypeValue))
 
   def fromConfig(config: Config) = new FromConfigJsonSerializationHintsProvider(config).hints()
 

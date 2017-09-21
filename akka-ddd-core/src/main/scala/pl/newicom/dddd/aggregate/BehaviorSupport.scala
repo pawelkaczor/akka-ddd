@@ -3,7 +3,7 @@ package pl.newicom.dddd.aggregate
 import pl.newicom.dddd.aggregate.AggregateRootSupport.{Reject, RejectConditionally}
 import pl.newicom.dddd.aggregate.error.DomainException
 
-trait AggregateBehaviourSupport {
+trait BehaviorSupport {
   def error(msg: String): Reject  = reject(msg)
   def reject(msg: String): Reject = Reject(new DomainException(msg))
 

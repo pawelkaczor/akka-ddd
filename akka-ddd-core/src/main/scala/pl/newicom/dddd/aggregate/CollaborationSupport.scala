@@ -3,14 +3,15 @@ package pl.newicom.dddd.aggregate
 import akka.actor.{ActorRef, Stash}
 import pl.newicom.dddd.aggregate.AggregateRootSupport.{AcceptC, Reaction}
 import pl.newicom.dddd.aggregate.error.{NoResponseReceived, UnexpectedResponseReceived}
-
+import akka.actor.Timers
 import scala.concurrent.duration._
 
 object CollaborationSupport {
+  private case object TimeoutKey
   case object ReceiveTimeout
 }
 
-trait CollaborationSupport[Event <: DomainEvent] extends Stash {
+trait CollaborationSupport[Event <: DomainEvent] extends Stash with Timers {
   this: AggregateRoot[Event, _, _] =>
   import CollaborationSupport._
   type HandleResponse = PartialFunction[Any, Reaction[Event]]
@@ -35,12 +36,11 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash {
   }
 
   private def internalExpectOnce(target: ActorRef, receive: HandleResponse, callback: Reaction[Event] => Unit)(implicit timeout: FiniteDuration): Unit = {
-    import context.dispatcher
-    val scheduledTimeout = context.system.scheduler.scheduleOnce(timeout, self, ReceiveTimeout)
+    timers.startSingleTimer(TimeoutKey, ReceiveTimeout, timeout)
 
     context.become(
       receive.andThen(callback).andThen { _ =>
-        scheduledTimeout.cancel()
+        timers.cancel(TimeoutKey)
         unstashAll()
         context.unbecome()
       } orElse {

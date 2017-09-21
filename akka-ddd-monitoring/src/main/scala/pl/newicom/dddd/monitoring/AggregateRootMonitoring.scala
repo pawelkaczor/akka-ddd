@@ -23,15 +23,15 @@ trait AggregateRootMonitoring extends EventHandler with EventMessageFactory with
       /**
         * Record elapsed time since the command was created (by write-front)
         */
-      def recordCommandCreationToReceptionPeriod() =
+      def recordCommandCreationToReceptionPeriod(): Unit =
         newTraceContext(
           name            = Reception_Of_Command.traceContextName(this, cm),
-          startedOnMillis = cm.timestamp.getTime
+          startedOnMillis = cm.timestamp.getMillis
         ).foreach(
           _.finish()
         )
 
-      def startRecordingOfCommandHandling() =
+      def startRecordingOfCommandHandling(): Unit =
         setNewCurrentTraceContext(
           name = Handling_Of_Command.traceContextName(this, cm)
         )

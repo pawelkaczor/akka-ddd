@@ -2,7 +2,7 @@ package lottery.domain.model
 
 import akka.actor.Props
 import lottery.domain.model.LotteryBehaviour.LotteryId
-import lottery.domain.model.LotteryProtocol.{AddParticipant, CreateLottery, RemoveAllParticipants, Run}
+import lottery.domain.model.LotteryProtocol._
 import lottery.domain.model.LotterySpecSupport._
 import org.scalacheck.Gen
 import pl.newicom.dddd.actor.PassivationConfig
@@ -21,7 +21,7 @@ object LotterySpecSupport {
     }
 }
 
-class LotterySpecSupport extends OfficeSpec[LotteryAggregateRoot](Some(testSystem)) {
+class LotterySpecSupport extends OfficeSpec[LotteryEvent, LotteryAggregateRoot](Some(testSystem)) {
 
   def lotteryId: LotteryId = aggregateId
 

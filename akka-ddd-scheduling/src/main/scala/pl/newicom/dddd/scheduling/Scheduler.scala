@@ -7,7 +7,7 @@ import pl.newicom.dddd.scheduling.Scheduler.SchedulerBehavior
 
 object Scheduler extends AggregateRootSupport {
 
-  sealed trait SchedulerBehavior extends AggregateActions[SchedulerEvent, SchedulerBehavior, Config]
+  sealed trait SchedulerBehavior extends Behavior[SchedulerEvent, SchedulerBehavior, Config]
 
   implicit case object Uninitialized extends SchedulerBehavior with Uninitialized[SchedulerBehavior] {
     def actions =
@@ -30,7 +30,6 @@ object Scheduler extends AggregateRootSupport {
 
 class Scheduler(override val config: Config)(implicit val officeID: LocalOfficeId[Scheduler])
   extends AggregateRoot[SchedulerEvent, SchedulerBehavior, Scheduler]
-    with SparseReply
     with ConfigClass[Config] {
 
   // Skip recovery

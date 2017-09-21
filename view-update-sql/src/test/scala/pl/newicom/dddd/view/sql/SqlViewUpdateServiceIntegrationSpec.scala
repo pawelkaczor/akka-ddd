@@ -43,10 +43,10 @@ object SqlViewUpdateServiceIntegrationSpec {
 }
 
 /**
- * Requires Event Store (with projections enabled!) to be up and running.
+ * Requires Event Store to be up and running.
  */
 class SqlViewUpdateServiceIntegrationSpec
-  extends OfficeSpec[DummyAggregateRoot](Some(integrationTestSystem("SqlViewUpdateServiceIntegrationSpec")))
+  extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("SqlViewUpdateServiceIntegrationSpec")))
   with SqlViewStoreTestSupport {
 
   override def viewStore = new SqlViewStore(config)

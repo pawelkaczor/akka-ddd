@@ -3,8 +3,10 @@ package pl.newicom.dddd.process
 import akka.persistence.RecoveryCompleted
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.alod._
-import pl.newicom.dddd.messaging.MetaData.Tags
+import pl.newicom.dddd.messaging.MetaAttribute.{Publisher_Type, Reused}
+import pl.newicom.dddd.messaging.PublisherTypeValue.BP
 import pl.newicom.dddd.messaging.event.EventMessage
+import pl.newicom.dddd.messaging.{MetaData, MetaDataPropagationPolicy}
 
 case object EventDroppedMarkerEvent extends DomainEvent
 
@@ -28,7 +30,7 @@ abstract class Saga extends SagaBase {
   this: SagaAbstractStateHandling =>
 
   override def receiveRecover: Receive = {
-    case rc: RecoveryCompleted =>
+    case _: RecoveryCompleted =>
       // do nothing
     case msg: Any =>
       _updateState(msg)
@@ -54,10 +56,11 @@ abstract class Saga extends SagaBase {
           case DropEvent => EventDroppedMarkerEvent
         }
 
-        val emToPersist = EventMessage(eventToPersist)
-          .withMetaData(em.metadata)
-          .withoutMetaAttribute(Tags)
-          .withCausationId(em.id)
+        val emToPersist = EventMessage(eventToPersist).withMetaData(
+          MetaDataPropagationPolicy.onEventAcceptedByPM(
+            receivedEvent = em.metadata,
+            eventToStore   = MetaData(Publisher_Type -> BP, Reused -> (eventToPersist == event))
+          ))
 
         persist(emToPersist) { persisted =>
           log.debug("Event message persisted: {}", persisted)
@@ -69,7 +72,7 @@ abstract class Saga extends SagaBase {
       }
 
     case receipt: Delivered if initialized =>
-      persist(EventMessage(receipt))(_updateState)
+      persist(EventMessage(receipt).withPublisherType(BP))(_updateState)
   }
 
   private def _updateState(msg: Any): Unit = {

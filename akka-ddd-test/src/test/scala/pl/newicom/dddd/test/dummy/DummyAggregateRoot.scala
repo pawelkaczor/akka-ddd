@@ -15,19 +15,23 @@ object DummyAggregateRoot extends AggregateRootSupport {
   case class DummyConfig(pc: PassivationConfig,
                          valueGenerator: () => Int = () => (Math.random() * 100).toInt - 50, //  -50 < v < 50,
                          valueGeneration: Reaction[DummyEvent] = reject("value generation not defined"))
-      extends Config
-
-  sealed trait Dummy extends AggregateActions[DummyEvent, Dummy, DummyConfig] {
-    def isActive = false
-    def rejectNegative(value: Int): RejectConditionally = rejectIf(value < 0, "negative value not allowed")
+      extends Config {
+    def respondingPolicy: RespondingPolicy = ReplyWithEvents
   }
 
-  implicit object Uninitialized extends Dummy with Uninitialized[Dummy] {
+  sealed trait Dummy extends Behavior[DummyEvent, Dummy, DummyConfig] {
+    def isActive = false
+
+    def rejectInvalid(value: Int): RejectConditionally =
+      rejectIf(value < 0, "negative value not allowed")
+  }
+
+  implicit case object Uninitialized extends Dummy with Uninitialized[Dummy] {
 
     def actions: Actions =
       handleCommand {
         case CreateDummy(id, name, description, value) =>
-          rejectNegative(value) orElse
+          rejectInvalid(value) orElse
             DummyCreated(id, name, description, value)
       }.handleEvent {
           case DummyCreated(_, _, _, value) =>
@@ -49,7 +53,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
             DescriptionChanged(id, description)
 
           case ChangeValue(id, newValue) =>
-            rejectNegative(newValue) orElse
+            rejectInvalid(newValue) orElse
               ValueChanged(id, newValue, version + 1)
 
           case Reset(id, name) =>
@@ -91,7 +95,7 @@ import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
 class DummyAggregateRoot(cfg: DummyConfig)
     extends AggregateRoot[DummyEvent, Dummy, DummyAggregateRoot]
-    with ReplyWithEvents with AggregateRootLogger[DummyEvent]
+    with AggregateRootLogger[DummyEvent]
     with ConfigClass[DummyConfig] {
 
   val config: DummyConfig = cfg.copy(valueGeneration = valueGeneration)
@@ -99,10 +103,10 @@ class DummyAggregateRoot(cfg: DummyConfig)
   lazy val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(cfg.valueGenerator))
 
   private def valueGeneration: Collaboration = {
-    implicit val timeout = 10.millis
+    implicit val timeout: FiniteDuration = 10.millis
     (valueGeneratorActor !< GenerateRandom) {
       case ValueGeneratorActor.ValueGenerated(value) =>
-        state.rejectNegative(value) orElse
+        state.rejectInvalid(value) orElse
           ValueGenerated(id, value, confirmationToken = uuidObj) match {
           case Reject(_) => valueGeneration
           case r         => r

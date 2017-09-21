@@ -14,7 +14,7 @@ object DocumentAR extends AggregateRootSupport {
 
   implicit val initialVersions: Uninitialized[DMSActionsRoot] = Gateway(SortedMap())
 
-  sealed trait DMSActionsRoot extends AggregateActions[DMSEvent, DMSActionsRoot, Config]
+  sealed trait DMSActionsRoot extends Behavior[DMSEvent, DMSActionsRoot, Config]
 
   abstract class Document extends DMSActionsRoot {
     def version: Version
@@ -127,6 +127,6 @@ object DocumentAR extends AggregateRootSupport {
 
 }
 
-abstract class DocumentAR(val config: Config) extends AggregateRoot[DMSEvent, DMSActionsRoot, DocumentAR]
+class DocumentAR(val config: Config) extends AggregateRoot[DMSEvent, DMSActionsRoot, DocumentAR]
   with ConfigClass[Config]
   with AggregateRootLogger[DMSEvent]

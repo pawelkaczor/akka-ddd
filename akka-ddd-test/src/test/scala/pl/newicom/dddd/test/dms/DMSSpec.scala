@@ -2,10 +2,10 @@ package pl.newicom.dddd.test.dms
 
 import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig, EntityId, ReplyWithEvents}
+import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig, EntityId}
 import pl.newicom.dddd.office.Office
 import pl.newicom.dddd.test.dms.DMSProtocol.VersionUpdate.{creation, noVU}
-import pl.newicom.dddd.test.dms.DMSProtocol.{ChangeContent, ContentChanged, Create, Created, GetPublishedRevisions, GetPublishedVersions, Publish, Published, PublishedRevisions, PublishedVersions, Revision, Version, VersionUpdate}
+import pl.newicom.dddd.test.dms.DMSProtocol.{ChangeContent, ContentChanged, Create, Created, DMSEvent, GetPublishedRevisions, GetPublishedVersions, Publish, Published, PublishedRevisions, PublishedVersions, Revision, Version, VersionUpdate}
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 import DMSSpec._
@@ -18,14 +18,14 @@ import scala.concurrent.Await
 object DMSSpec {
   implicit def actorFactory: AggregateRootActorFactory[DocumentAR] =
     new AggregateRootActorFactory[DocumentAR] {
-      override def props(pc: PassivationConfig): Props = Props(new DocumentAR(DefaultConfig(pc)) with ReplyWithEvents)
+      override def props(pc: PassivationConfig): Props = Props(new DocumentAR(DefaultConfig(pc)))
     }
 
   def v(major: Int, minor: Int) = Version(major, minor)
   def vu(from: Version, to: Version) = VersionUpdate(Some(from), to)
 }
 
-class DMSSpec extends OfficeSpec[DocumentAR](Some(testSystem), shareAggregateRoot = true) with Matchers {
+class DMSSpec extends OfficeSpec[DMSEvent, DocumentAR](Some(testSystem), shareAggregateRoot = true) with Matchers {
 
   def cmsOffice: Office = officeUnderTest
 

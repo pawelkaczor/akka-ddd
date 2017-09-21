@@ -11,7 +11,7 @@ import scala.util.Random
 
 object LotteryBehaviour {
 
-  sealed trait Lottery extends AggregateActions[LotteryEvent, Lottery, Config]
+  sealed trait Lottery extends Behavior[LotteryEvent, Lottery, Config]
 
   implicit case object UninitializedLottery extends Lottery with Uninitialized[Lottery] {
 
@@ -134,7 +134,7 @@ object LotteryBehaviour {
       handleCommand {
         // no command can be accepted after having selected a winner
         case anyCommand  =>
-          throw new LotteryHasAlreadyAWinner(s"Lottery has already a winner and the winner is $winner")
+          reject (new LotteryHasAlreadyAWinner(s"Lottery has already a winner and the winner is $winner"))
       }
 
     def actions = rejectAllCommands

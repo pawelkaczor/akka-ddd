@@ -1,124 +1,108 @@
 package pl.newicom.dddd.messaging
 
+import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate.EntityId
-import pl.newicom.dddd.delivery.protocol.{Receipt, Processed, alod}
-import pl.newicom.dddd.messaging.MetaData._
+import pl.newicom.dddd.delivery.protocol.{Processed, Receipt, alod}
 
 import scala.util.{Success, Try}
-
-object MetaData {
-  val DeliveryId    = "_deliveryId"
-  val CausationId   = "causationId"
-  val CorrelationId = "correlationId"
-  // contains ID of a message that the recipient of this message should process before it can process this message
-  val MustFollow  = "_mustFollow"
-  val SessionId   = "sessionId"
-  val EventNumber = "_eventNumber"
-  val Tags        = "tags"
-
-  def empty: MetaData = MetaData(Map.empty)
-}
-
-case class MetaData(content: Map[String, Any]) extends Serializable {
-
-  def mergeWithMetadata(metadata: Option[MetaData]): MetaData = {
-    metadata.map(_.content).map(add).getOrElse(this)
-  }
-
-  def add(content: Map[String, Any]): MetaData = {
-    copy(content = this.content ++ content)
-  }
-
-  def remove(key: String): MetaData = {
-    copy(content = this.content - key)
-  }
-
-  def contains(attrName: String) = content.contains(attrName)
-
-  def get[B](attrName: String) = tryGet[B](attrName).get
-
-  def tryGet[B](attrName: String): Option[B] = content.get(attrName).asInstanceOf[Option[B]]
-
-  def exceptDeliveryAttributes: Option[MetaData] = {
-    val resultMap = this.content.filterKeys(a => !a.startsWith("_"))
-    if (resultMap.isEmpty) None else Some(MetaData(resultMap))
-  }
-
-  override def toString: String = content.toString()
-}
+import pl.newicom.dddd.messaging.MetaAttribute._
 
 trait Message extends Serializable {
 
-  def id: String
-
   type MessageImpl <: Message
 
-  def causedBy(msg: Message): MessageImpl =
-    withMetaData(msg.metadataExceptDeliveryAttributes)
-      .withCausationId(msg.id)
-      .asInstanceOf[MessageImpl]
+  def id: EntityId =
+    metadata.get(Id)
 
-  def metadataExceptDeliveryAttributes: Option[MetaData] = {
-    metadata.flatMap(_.exceptDeliveryAttributes)
-  }
+  def timestamp: DateTime =
+    metadata.get(Timestamp)
 
-  def withMetaData(metadata: Option[MetaData]): MessageImpl = {
-    copyWithMetaData(this.metadata.map(_.mergeWithMetadata(metadata)).orElse(metadata))
-  }
+  def metadata: MetaData
 
-  def withMetaData(metadataContent: Map[String, Any]): MessageImpl = {
-    withMetaData(Some(MetaData(metadataContent)))
-  }
+  protected def withNewMetaData(m: MetaData): MessageImpl
 
-  def copyWithMetaData(m: Option[MetaData]): MessageImpl
+  def withMetaData(m: MetaData): MessageImpl =
+    withMetaData(m.content)
 
-  def metadata: Option[MetaData]
+  def withMetaData(attributes: Map[String, Any]): MessageImpl =
+    withNewMetaData(this.metadata.withMetaData(MetaData(attributes)))
 
-  def withoutMetaAttribute(attrName: String): MessageImpl =
-    copyWithMetaData(metadata.map(_.remove(attrName)))
+  def withMetaAttribute(attrName: String, value: Any): MessageImpl =
+    withMetaData(Map(attrName -> value))
 
+  def withMetaAttribute[A](attr: MetaAttribute[A], value: A): MessageImpl =
+    withMetaData(Map(attr.entryName -> value))
 
-  def withMetaAttribute(attrName: String, value: Any): MessageImpl = withMetaData(Map(attrName -> value))
+  def hasMetaAttribute(attrName: String): Boolean =
+    metadata.contains(attrName)
 
-  def hasMetaAttribute(attrName: String) = metadata.exists(_.contains(attrName))
+  def getMetaAttribute[B](attr: MetaAttribute[B]): B =
+    tryGetMetaAttribute(attr).get
 
-  def getMetaAttribute[B](attrName: String) = tryGetMetaAttribute[B](attrName).get
+  def getMetaAttribute[B](attrName: String): B =
+    tryGetMetaAttribute[B](attrName).get
 
-  def tryGetMetaAttribute[B](attrName: String): Option[B] = if (metadata.isDefined) metadata.get.tryGet[B](attrName) else None
+  def tryGetMetaAttribute[B](attrName: String): Option[B] =
+    metadata.tryGet[B](attrName)
 
-  def deliveryReceipt(result: Try[Any] = Success("OK")): Receipt = {
+  def tryGetMetaAttribute[B](attr: MetaAttribute[B]): Option[B] =
+    metadata.tryGet(attr)
+
+  def deliveryReceipt(result: Try[Any] = Success("OK")): Receipt =
     deliveryId.map(id => alod.Processed(id, result)).getOrElse(Processed(result))
-  }
 
-  def withDeliveryId(deliveryId: Long) = withMetaAttribute(DeliveryId, deliveryId)
+  def withDeliveryId(deliveryId: Long): MessageImpl =
+    withMetaAttribute(Delivery_Id, deliveryId)
 
-  def withEventNumber(eventNumber: Int) = withMetaAttribute(EventNumber, eventNumber)
+  def withEventNumber(eventNumber: Int): MessageImpl =
+    withMetaAttribute(Event_Number, eventNumber)
 
-  def withCorrelationId(correlationId: EntityId) = withMetaAttribute(CorrelationId, correlationId)
+  def withCorrelationId(correlationId: EntityId): MessageImpl =
+    withMetaAttribute(Correlation_Id, correlationId)
 
-  def withCausationId(causationId: EntityId) = withMetaAttribute(CausationId, causationId)
+  def withCausationId(causationId: EntityId): MessageImpl =
+    withMetaAttribute(Causation_Id, causationId)
 
-  def withMustFollow(mustFollow: Option[String]) =
-    mustFollow.map(msgId => withMetaAttribute(MustFollow, msgId)).getOrElse(this.asInstanceOf[MessageImpl])
+  def withMustFollow(mustFollow: Option[String]): MessageImpl =
+    mustFollow.map(msgId => withMetaAttribute(Must_Follow, msgId)).getOrElse(this.asInstanceOf[MessageImpl])
 
-  def withSessionId(sessionId: EntityId) = withMetaAttribute(SessionId, sessionId)
+  def withTag(tag: String): MessageImpl =
+    withMetaAttribute(MetaAttribute.Tags, tags + tag)
 
-  def withTag(tag: String) = withMetaAttribute(MetaData.Tags, tags + tag)
+  def withTags(tags: String*): MessageImpl =
+    withMetaAttribute(Tags, this.tags ++ tags)
 
-  def withTags(tags: String*) = withMetaAttribute(MetaData.Tags, this.tags ++ tags)
+  def withPublisherType(publisherType: PublisherTypeValue.Value): MessageImpl =
+    withMetaAttribute(Publisher_Type, publisherType)
 
-  def tags: Set[String] = tryGetMetaAttribute[Set[String]](Tags).toSet.flatten
+  def withReused(reused: Boolean): MessageImpl =
+    if (reused)
+      withMetaAttribute(Reused, reused)
+    else
+      this.asInstanceOf[MessageImpl]
 
-  def deliveryId: Option[Long] = tryGetMetaAttribute[Any](DeliveryId).map {
-    case bigInt: scala.math.BigInt => bigInt.toLong
-    case l: Long                   => l
-  }
+  def tags: Set[String] =
+    tryGetMetaAttribute(Tags).toSet.flatten
 
-  def correlationId: Option[EntityId] = tryGetMetaAttribute[EntityId](CorrelationId)
+  def deliveryId: Option[Long] =
+    tryGetMetaAttribute(Delivery_Id)
 
-  def causationId: Option[EntityId] = tryGetMetaAttribute[EntityId](CausationId)
+  def correlationId: Option[EntityId] =
+    tryGetMetaAttribute(Correlation_Id)
 
-  def mustFollow: Option[String] = tryGetMetaAttribute[String](MustFollow)
+  def causationId: Option[EntityId] =
+    tryGetMetaAttribute(Causation_Id)
 
-  def eventNumber: Option[Int] = tryGetMetaAttribute[Int](EventNumber)
+  def mustFollow: Option[String] =
+    tryGetMetaAttribute(Must_Follow)
+
+  def eventNumber: Option[Int] =
+    tryGetMetaAttribute(Event_Number)
+
+  def publisherType: Option[PublisherTypeValue.Value] =
+    tryGetMetaAttribute(Publisher_Type)
+
+  def reused: Option[Boolean] =
+    tryGetMetaAttribute(Reused)
+
 }

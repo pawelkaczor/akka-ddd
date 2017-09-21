@@ -1,4 +1,4 @@
-fromStreams(['clock', '$ce-deadlines']).
+fromStreams(['clock', 'deadlines']).
 when({
     '$init' : function(s,e) {
         return { "deadlines": []}

@@ -7,7 +7,7 @@ import pl.newicom.dddd.aggregate.AggregateRootSupport._
 import pl.newicom.dddd.aggregate.error._
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
-import pl.newicom.dddd.messaging.{AddressableMessage, Message, MetaData}
+import pl.newicom.dddd.messaging.{AddressableMessage, Message}
 import pl.newicom.dddd.office.LocalOfficeId
 
 import scala.concurrent.duration._
@@ -39,7 +39,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
   type HandleCommand = CommandHandlerContext[C] => PartialFunction[Command, Reaction[Event]]
   type HandleQuery   = PartialFunction[Query, Reaction[_]]
 
-  def commandHandlerContext(cm: CommandMessage) = CommandHandlerContext(caseRef, config, cm.metadata.getOrElse(MetaData.empty))
+  def commandHandlerContext(cm: CommandMessage) = CommandHandlerContext(caseRef, config, cm.metadata)
 
   override def officeId: LocalOfficeId[A] = implicitly[LocalOfficeId[A]]
   override def department: String         = officeId.department
@@ -79,10 +79,10 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
   }
 
   def handleCommand: HandleCommand =
-    state.asInstanceOf[AggregateBehaviour[Event, S, C]].commandHandler
+    state.asInstanceOf[Behavior[Event, S, C]].commandHandler
 
   private def handleQuery: HandleQuery =
-    state.asInstanceOf[AggregateBehaviour[Event, S, C]].qHandler
+    state.asInstanceOf[Behavior[Event, S, C]].qHandler
 
   private def handleUnknown: HandlePayload = {
     case payload: Any =>
@@ -118,7 +118,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
 
   private def raise(events: Seq[Event]): Unit = {
     var eventsCount   = 0
-    val eventMessages = events.map(e => toEventMessage(e, officeId)).map(_.causedBy(commandMsgReceived))
+    val eventMessages = events.map(e => toEventMessage(e, officeId, commandMsgReceived))
 
     val handler =
       sm.eventMessageHandler.andThen { _ =>
@@ -134,7 +134,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
   }
 
   private def reply(result: Try[Seq[OfficeEventMessage]], cm: CommandMessage = commandMsgReceived) {
-    msgSender ! cm.deliveryReceipt(result.map(successMapper))
+    msgSender ! cm.deliveryReceipt(result.map(config.respondingPolicy.successMapper))
   }
 
   def handleDuplicated(msg: Message): Unit =

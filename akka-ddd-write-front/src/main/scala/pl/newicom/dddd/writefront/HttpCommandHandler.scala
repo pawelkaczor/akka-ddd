@@ -1,7 +1,5 @@
 package pl.newicom.dddd.writefront
 
-import java.util.Date
-
 import akka.actor.Actor
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model.StatusCodes
@@ -10,6 +8,7 @@ import org.json4s.Formats
 import pl.newicom.dddd.aggregate.Command
 import pl.newicom.dddd.aggregate.error.CommandRejected
 import pl.newicom.dddd.http.JsonMarshalling
+import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.streams.ImplicitMaterializer
 import pl.newicom.dddd.utils.UUIDSupport.uuid
@@ -26,16 +25,19 @@ trait HttpCommandHandler extends CommandDispatcher with CommandDirectives with D
   def handle[A <: Command](implicit f: Formats): Route =
     commandManifest[A] { implicit cManifest =>
       post {
-        entity(as[A]) { command =>
+        (optionalCommandId & entity(as[A])) { (commandIdOpt, command) =>
           complete {
-            dispatch(toCommandMessage(command)) map toClientResponse
+            val commandId = commandIdOpt.getOrElse(uuid)
+            dispatch(toCommandMessage(command, commandId)) map toClientResponse
           }
         }
       }
   }
 
-  def toCommandMessage(command: Command): CommandMessage =
-    CommandMessage(command, uuid, new Date)
+  def toCommandMessage(command: Command, commandId: String): CommandMessage = {
+    val metadata = MetaData.initial(commandId)
+    CommandMessage(command, metadata)
+  }
 
   def toClientResponse: OfficeResponseToClientResponse =  {
     case Success(result) =>

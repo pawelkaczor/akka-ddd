@@ -3,16 +3,17 @@ import sbt._
 object Deps {
 
   object Version {
-    val Akka                  = "2.5.1"
-    val AkkaHttp              = "10.0.6"
+    val Akka                  = "2.5.4"
+    val AkkaHttp              = "10.0.9"
 
+    val Enumeratum            = "1.5.12"
     val EventStoreClient      = "4.1.0"
-    val EventStoreAkkaJournal = "4.1.0"
-    
-    val json4s                = "3.5.0"
+    val EventStoreAkkaJournal = "4.1.1"
 
-    val Slick                 = "3.2.0"
-    val PostgresqlSlickExt    = "0.15.0" // Slick 3.2.0
+    val json4s                = "3.5.1"
+
+    val Slick                 = "3.2.1"
+    val PostgresqlSlickExt    = "0.15.3" // Slick 3.2.1
     val H2Driver              = "1.4.189"
 
     // monitoring
@@ -50,7 +51,12 @@ object Deps {
   }
 
   object Json {
-    val `4s`  = Seq(Json4s.native, Json4s.ext)
+    val `4s`  = Seq(Json4s.native, Json4s.ext, Enum.jsonSupport)
+  }
+
+  object Enum {
+    val enumeratum  = "com.beachape" %% "enumeratum" % Version.Enumeratum
+    val jsonSupport = "com.beachape" %% "enumeratum-json4s" % Version.Enumeratum
   }
 
   object Json4s {
