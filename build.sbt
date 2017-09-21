@@ -17,6 +17,8 @@ licenses          in ThisBuild := ("Apache2", new URL("http://raw.githubusercont
 
 sonatypeProfileName := "pl.newicom"
 
+enablePlugins(MicrositesPlugin)
+
 lazy val root = (project in file("."))
   .aggregate(`akka-ddd-protocol`, `akka-ddd-messaging`, `akka-ddd-monitoring`, `akka-ddd-core`, `akka-ddd-write-front`, `view-update`, `view-update-sql`, `akka-ddd-test`, `eventstore-akka-persistence`, `http-support`, `akka-ddd-scheduling`)
   .settings(
