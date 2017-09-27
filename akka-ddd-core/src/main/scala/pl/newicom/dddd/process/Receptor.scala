@@ -62,8 +62,11 @@ abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySuppo
 
   def receiveEvent: Receive = {
     case EventMessageEntry(em, position, _) =>
-      config.transduction.lift(em).foreach { msg =>
-        deliver(msg, deliveryId = position)
+      config.transduction.lift(em) match {
+        case Some(msg) =>
+          deliver(msg, deliveryId = position)
+        case None =>
+          demandCallback.foreach(_.onEventProcessed())
       }
   }
 
