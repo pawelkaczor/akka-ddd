@@ -11,8 +11,8 @@ import scala.reflect.ClassTag
 class CoordinationOffice[E: ClassTag](val config: ProcessConfig[E], actor: ActorRef) extends Office(config, actor) {
 
   def receptorConfig: ReceptorConfig =
-    ReceptorBuilder(config.process.id)
-      .reactTo(config.process.processClass)
+    ReceptorBuilder(id = config.process.id)
+      .reactTo(config.process.domain)
       .applyTransduction {
         case em @ EventMessage(_, event) if correlationIdResolver.isDefinedAt(event) =>
           em.withCorrelationId(correlationIdResolver(event))
