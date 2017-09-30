@@ -1,7 +1,7 @@
 package pl.newicom.dddd.office
 
 import akka.actor._
-import pl.newicom.dddd.actor.{ActorContextCreationSupport, BusinessEntityActorFactory, Passivate, PassivationConfig}
+import pl.newicom.dddd.actor.{Supervisor, BusinessEntityActorFactory, Passivate, PassivationConfig}
 import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId, Query}
 import pl.newicom.dddd.messaging.AddressableMessage
 import pl.newicom.dddd.messaging.command.CommandMessage
@@ -26,7 +26,7 @@ object SimpleOffice {
 
 class SimpleOffice[A <: BusinessEntity: LocalOfficeId](
     implicit clerkFactory: BusinessEntityActorFactory[A])
-  extends ActorContextCreationSupport with Actor with ActorLogging {
+  extends Supervisor with Actor with ActorLogging {
 
   val caseIdResolution = new AggregateIdResolution
   val clerkProps: Props = clerkFactory.props(PassivationConfig(Passivate(PoisonPill), clerkFactory.inactivityTimeout))

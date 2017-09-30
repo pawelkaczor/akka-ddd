@@ -1,11 +1,12 @@
 package pl.newicom.dddd.coordination
 
 import akka.actor.ActorPath
-import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.aggregate.{BusinessEntity, EntityId}
 import pl.newicom.dddd.coordination.ReceptorConfig.{ReceiverResolver, StimuliSource, Transduction}
 import pl.newicom.dddd.messaging.Message
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOfficeId
+import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 object ReceptorConfig {
   type Transduction = PartialFunction[EventMessage, Message]
@@ -15,6 +16,7 @@ object ReceptorConfig {
 
 
 case class ReceptorConfig(
+                           receptorId: EntityId,
                            stimuliSource: StimuliSource,
                            transduction: Transduction,
                            receiverResolver: ReceiverResolver,
@@ -32,6 +34,7 @@ trait ReceptorGrammar {
 
 
 case class ReceptorBuilder(
+                            id:               EntityId = uuid7,
                             stimuliSource:    StimuliSource = null,
                             transduction:     Transduction = {case em => em},
                             receiverResolver: ReceiverResolver = null,
@@ -50,7 +53,7 @@ case class ReceptorBuilder(
     copy(transduction = transduction)
 
   def route(receiverResolver: ReceiverResolver): ReceptorConfig =
-    ReceptorConfig(stimuliSource, transduction, receiverResolver, capacity)
+    ReceptorConfig(id, stimuliSource, transduction, receiverResolver, capacity)
 
   def propagateTo(receiver: ActorPath): ReceptorConfig =
     route({case _ => receiver})
