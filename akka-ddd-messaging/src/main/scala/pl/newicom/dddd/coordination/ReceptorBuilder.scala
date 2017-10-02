@@ -6,7 +6,6 @@ import pl.newicom.dddd.coordination.ReceptorConfig.{ReceiverResolver, StimuliSou
 import pl.newicom.dddd.messaging.Message
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOfficeId
-import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 object ReceptorConfig {
   type Transduction     = PartialFunction[EventMessage, Message]
@@ -31,7 +30,7 @@ trait ReceptorGrammar {
 }
 
 case class ReceptorBuilder(
-      id: EntityId = uuid7,
+      id: EntityId,
       stimuliSource: StimuliSource = null,
       transduction: Transduction = { case em => em },
       receiverResolver: ReceiverResolver = null,
