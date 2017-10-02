@@ -8,12 +8,13 @@ import pl.newicom.dddd.process._
 import pl.newicom.dddd.saga.{BusinessProcessId, ProcessConfig}
 import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyCreated, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyState, EventApplied, Poison}
+import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 object DummySaga {
 
   val Poison: Int = 100
 
-  class DummySagaConfig(bpsName: String) extends ProcessConfig[DummySaga](BusinessProcessId(bpsName)) {
+  class DummySagaConfig(bpsName: String) extends ProcessConfig[DummySaga](BusinessProcessId(bpsName, uuid7)) {
 
     override val id: EntityId = bpsName
 

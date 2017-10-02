@@ -3,11 +3,10 @@ package pl.newicom.dddd.saga
 import pl.newicom.dddd.aggregate.{BusinessEntity, DomainEvent, EntityId}
 import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.saga.ProcessConfig._
-import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 import scala.reflect.ClassTag
 
-case class BusinessProcessId(processDomain: String, processId: EntityId = uuid7, department: String = null) extends BusinessEntity {
+case class BusinessProcessId(processDomain: String, processId: EntityId, department: String = null) extends BusinessEntity {
   def id: EntityId = processId
 
   def domain: BusinessEntity = new BusinessEntity {

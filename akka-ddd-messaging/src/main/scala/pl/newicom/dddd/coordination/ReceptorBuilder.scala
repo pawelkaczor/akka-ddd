@@ -9,45 +9,40 @@ import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 object ReceptorConfig {
-  type Transduction = PartialFunction[EventMessage, Message]
+  type Transduction     = PartialFunction[EventMessage, Message]
   type ReceiverResolver = PartialFunction[Message, ActorPath]
-  type StimuliSource = BusinessEntity
+  type StimuliSource    = BusinessEntity
 }
-
 
 case class ReceptorConfig(
-                           receptorId: EntityId,
-                           stimuliSource: StimuliSource,
-                           transduction: Transduction,
-                           receiverResolver: ReceiverResolver,
-                           capacity: Int,
-                           isSupporting_MustFollow_Attribute: Boolean = true
+    receptorId: EntityId,
+    stimuliSource: StimuliSource,
+    transduction: Transduction,
+    receiverResolver: ReceiverResolver,
+    capacity: Int,
+    isSupporting_MustFollow_Attribute: Boolean = true
 )
 
-
 trait ReceptorGrammar {
-  def reactTo[A : LocalOfficeId]:                                     ReceptorGrammar
-  def applyTransduction(transduction: Transduction):                  ReceptorGrammar
-  def route(receiverResolver: ReceiverResolver):                      ReceptorConfig
-  def propagateTo(receiver: ActorPath):                               ReceptorConfig
+  def reactTo[A: LocalOfficeId]: ReceptorGrammar
+  def applyTransduction(transduction: Transduction): ReceptorGrammar
+  def route(receiverResolver: ReceiverResolver): ReceptorConfig
+  def propagateTo(receiver: ActorPath): ReceptorConfig
 }
 
-
 case class ReceptorBuilder(
-                            id:               EntityId = uuid7,
-                            stimuliSource:    StimuliSource = null,
-                            transduction:     Transduction = {case em => em},
-                            receiverResolver: ReceiverResolver = null,
-                            capacity:         Int = 1000)
-  extends ReceptorGrammar {
+      id: EntityId = uuid7,
+      stimuliSource: StimuliSource = null,
+      transduction: Transduction = { case em => em },
+      receiverResolver: ReceiverResolver = null,
+      capacity: Int = 1000)
+    extends ReceptorGrammar {
 
-  def reactTo[A : LocalOfficeId]: ReceptorBuilder = {
-    reactTo(implicitly[LocalOfficeId[A]].asInstanceOf[BusinessEntity])
-  }
+  def reactTo[A: LocalOfficeId]: ReceptorBuilder =
+    reactTo(implicitly[LocalOfficeId[A]])
 
-  def reactTo(observable: BusinessEntity): ReceptorBuilder = {
+  def reactTo(observable: BusinessEntity): ReceptorBuilder =
     copy(stimuliSource = observable)
-  }
 
   def applyTransduction(transduction: Transduction): ReceptorBuilder =
     copy(transduction = transduction)
@@ -56,7 +51,7 @@ case class ReceptorBuilder(
     ReceptorConfig(id, stimuliSource, transduction, receiverResolver, capacity)
 
   def propagateTo(receiver: ActorPath): ReceptorConfig =
-    route({case _ => receiver})
+    route({ case _ => receiver })
 
   def withCapacity(capacity: Int): ReceptorBuilder =
     copy(capacity = capacity)
