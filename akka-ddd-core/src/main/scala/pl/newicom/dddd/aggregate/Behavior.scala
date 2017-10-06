@@ -5,7 +5,7 @@ import pl.newicom.dddd.aggregate.AggregateRootSupport.{AcceptC, AcceptQ, Reactio
 import scala.PartialFunction.empty
 import scala.reflect.ClassTag
 
-trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends AggregateState[S] with BehaviorSupport  {
+trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends AggregateState[S] with BehaviorSupport[E]  {
 
   type HandleQuery              = PartialFunction[Query, Reaction[_]]
   type HandleCommand            = PartialFunction[Command, Reaction[E]]

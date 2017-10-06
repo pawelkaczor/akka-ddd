@@ -30,9 +30,9 @@ object DocumentAR extends AggregateRootSupport {
     def actions: Actions =
       handleCommand {
         case c: TargetingVersion =>
-          rejectIf(!docsByVersion.contains(c.version), s"Unknown version: ${c.version}").orElse {
+          acceptIf(docsByVersion.contains(c.version)) {
             docsByVersion(c.version).commandHandlerNoCtx(c)
-          }
+          }.orElse(s"Unknown version: ${c.version}")
 
         case c: DMSCommand =>
           val ch = latestOrNew.commandHandlerNoCtx

@@ -1,5 +1,6 @@
 package pl.newicom.dddd.aggregate
 
+import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.office.{LocalOfficeId, OfficeListener}
 
 object AggregateRootSupport {
@@ -29,9 +30,20 @@ object AggregateRootSupport {
     def isRejected: Boolean = !condition
   }
 
+  class AcceptConditionally[E <: DomainEvent](condition: Boolean, reaction: => Reaction[E]) {
+    def orElse(rejectionReason: String): Reaction[E] =
+      orElse(new DomainException(rejectionReason))
+
+    def orElse(rejectionReason: => DomainException): Reaction[E] =
+      if (condition) reaction else Reject(rejectionReason)
+
+    def isAccepted: Boolean = condition
+  }
+
+
 }
 
-trait AggregateRootSupport extends BehaviorSupport {
+trait AggregateRootSupport extends BehaviorSupport[DomainEvent] {
 
   implicit def officeListener[A <: AggregateRoot[_, _, _] : LocalOfficeId]: OfficeListener[A] = new OfficeListener[A]
 
