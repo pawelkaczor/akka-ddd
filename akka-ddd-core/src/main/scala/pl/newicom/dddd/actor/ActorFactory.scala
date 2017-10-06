@@ -1,10 +1,9 @@
 package pl.newicom.dddd.actor
 
 import akka.actor._
-
 import scala.language.implicitConversions
 
-abstract class CreationSupport[A] {
+abstract class ActorFactory[A] {
   def getChild(name: String): Option[ActorRef]
   def createChild(props: Props, name: String): ActorRef
   def getOrCreateChild(props: Props, name: String): ActorRef =
@@ -13,9 +12,8 @@ abstract class CreationSupport[A] {
     )
 }
 
-trait ActorContextCreationSupport extends CreationSupport[Any] {
-  this: ActorLogging =>
-  def context: ActorContext
+trait Supervisor extends ActorFactory[Any] {
+  this: Actor with ActorLogging =>
 
   def getChild(name: String): Option[ActorRef] =
     context.child(name)
@@ -26,3 +24,4 @@ trait ActorContextCreationSupport extends CreationSupport[Any] {
     actor
   }
 }
+

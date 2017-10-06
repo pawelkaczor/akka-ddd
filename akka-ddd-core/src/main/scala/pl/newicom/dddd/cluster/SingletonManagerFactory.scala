@@ -2,10 +2,10 @@ package pl.newicom.dddd.cluster
 
 import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
-import pl.newicom.dddd.actor.CreationSupport
+import pl.newicom.dddd.actor.ActorFactory
 import pl.newicom.dddd.office.LocalOfficeId
 
-class SingletonManagerFactory[A : LocalOfficeId](implicit system: ActorSystem) extends CreationSupport[A] {
+class SingletonManagerFactory[A : LocalOfficeId](implicit system: ActorSystem) extends ActorFactory[A] {
 
   override def getChild(name: String): Option[ActorRef] = throw new UnsupportedOperationException
 

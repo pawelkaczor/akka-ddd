@@ -6,7 +6,7 @@ import org.scalacheck.Gen
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, WordSpecLike}
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
-import pl.newicom.dddd.actor.{BusinessEntityActorFactory, CreationSupport}
+import pl.newicom.dddd.actor.{BusinessEntityActorFactory, ActorFactory}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.{LocalOfficeId, Office, OfficeListener}
@@ -55,8 +55,8 @@ abstract class OfficeSpec[Event <: DomainEvent, A <: AggregateRoot[Event, _, A] 
 
   def aggregateId(implicit aggregateIdGen: Gen[EntityId]): EntityId = aggregateIdGen.sample.get
 
-  implicit def topLevelParent[T : LocalOfficeId](implicit system: ActorSystem): CreationSupport[T] = {
-    new CreationSupport[T] {
+  implicit def topLevelParent[T : LocalOfficeId](implicit system: ActorSystem): ActorFactory[T] = {
+    new ActorFactory[T] {
       override def getChild(name: String): Option[ActorRef] = None
       override def createChild(props: Props, name: String): ActorRef = {
         system.actorOf(props, name)

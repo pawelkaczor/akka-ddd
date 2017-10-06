@@ -21,7 +21,7 @@ trait ReceptorPersistence extends ReceivePipeline with RegularSnapshotting {
 abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySupport with ReceptorPersistence {
   this: EventStreamSubscriber =>
 
-  override def redeliverInterval = 30.seconds
+  override def redeliverInterval: FiniteDuration = 30.seconds
   override def warnAfterNumberOfUnconfirmedAttempts = 15
 
   val snapshottingConfig = RegularSnapshottingConfig(
@@ -37,7 +37,7 @@ abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySuppo
     })
 
   override lazy val persistenceId: String =
-    s"Receptor-${config.stimuliSource.id}-${self.path.hashCode}"
+    self.path.name
 
   var demandCallback: Option[DemandCallback] = None
 

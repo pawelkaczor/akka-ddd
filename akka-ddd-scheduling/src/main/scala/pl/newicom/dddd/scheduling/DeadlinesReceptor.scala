@@ -9,7 +9,7 @@ import pl.newicom.dddd.messaging.event.EventMessage
 object DeadlinesReceptor {
 
   def apply(businessUnit: EntityId, department: String): ReceptorConfig =
-    ReceptorBuilder()
+    ReceptorBuilder("DeadlinesProcess")
       .reactTo(currentDeadlinesOfficeId(department).caseRef(businessUnit))
       .route {
         case em: EventMessage =>
