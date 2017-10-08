@@ -2,7 +2,6 @@ package pl.newicom.dddd.test.dms
 
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
-import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.test.dms.DocumentAR.DMSActionsRoot
 import pl.newicom.dddd.test.dms.DMSProtocol.VersionUpdate.creation
@@ -31,22 +30,18 @@ object DocumentAR extends AggregateRootSupport {
       handleCommand {
         case c: TargetingVersion =>
           acceptIf(docsByVersion.contains(c.version)) {
-            docsByVersion(c.version).commandHandlerNoCtx(c)
+            docsByVersion(c.version)(c)
           }.orElse(s"Unknown version: ${c.version}")
 
         case c: DMSCommand =>
-          val ch = latestOrNew.commandHandlerNoCtx
-          if (ch.isDefinedAt(c)) {
-            ch(c)
-          } else {
-            reject(new DomainException(s"Document does not exist. $c can not be processed: missing command handler!"))
-          }
+          latestOrNew(c)
+
       }.handleEvent {
           case e: DMSEvent =>
             if (docsByVersion.isEmpty && e.versionUpdate.isCreation)
-              UntitledDocument.apply(e)
+              UntitledDocument(e)
             else
-              docsByVersion(e.versionUpdate.from.get).apply(e)
+              docsByVersion(e.versionUpdate.from.get)(e)
       }
       .map(withDocument)
       .handleQuery[GetPublishedVersions] { q =>

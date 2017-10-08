@@ -19,8 +19,8 @@ abstract class AggregateRootActorFactory[A <: AggregateRoot[_, _, A]: LocalOffic
 
 trait AggregateState[S <: AggregateState[S]] {
   type StateMachine = PartialFunction[DomainEvent, S]
-  def apply: StateMachine
-  def eventHandlerDefined(e: DomainEvent): Boolean = apply.isDefinedAt(e)
+  def eventHandler: StateMachine
+  def eventHandlerDefined(e: DomainEvent): Boolean = eventHandler.isDefinedAt(e)
   def initialized: Boolean                         = true
 }
 
@@ -170,7 +170,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
       def caseName    = officeId.caseName
       s match {
         case state if state.eventHandlerDefined(event) =>
-          state.apply(event)
+          state.eventHandler(event)
         case state if state.initialized =>
           throw new StateTransitionNotDefined(commandName, eventName)
         case _ =>

@@ -1,6 +1,7 @@
 package pl.newicom.dddd.aggregate
 
-import pl.newicom.dddd.aggregate.AggregateRootSupport.{AcceptC, AcceptQ, Reaction}
+import pl.newicom.dddd.aggregate.AggregateRootSupport.{AcceptC, AcceptQ, Reaction, Reject}
+import pl.newicom.dddd.aggregate.error.CommandHandlerNotDefined
 
 import scala.PartialFunction.empty
 import scala.reflect.ClassTag
@@ -35,7 +36,7 @@ trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends Ag
       Actions(
         ctx => cHandler(ctx).orElse(other.commandHandlerNoCtx),
         qHandler.orElse(other.qHandler),
-        eventHandler.orElse(other.apply.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
+        eventHandler.orElse(other.eventHandler.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
       )
 
     def orElse(other: Actions): Actions =
@@ -48,13 +49,23 @@ trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends Ag
   def commandHandler: HandleCommandWithContext =
     actions.cHandler
 
+  def apply(command: Command): Reaction[E] =
+    if (commandHandlerNoCtx.isDefinedAt(command)) {
+      commandHandlerNoCtx(command)
+    } else {
+      Reject(new CommandHandlerNotDefined(command.getClass.getSimpleName))
+    }
+
+  def apply(event: E): S =
+    eventHandler(event)
+
+  override def eventHandler: StateMachine =
+    actions.eventHandler
+
   def qHandler: HandleQuery =
     actions.qHandler
 
   def reply[R](r: R): AcceptQ[R] = AcceptQ[R](r)
-
-  def apply: StateMachine =
-    actions.eventHandler
 
   protected def actions: Actions
 
