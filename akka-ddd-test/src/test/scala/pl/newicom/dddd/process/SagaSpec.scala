@@ -51,7 +51,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
 
       // Then
       probe.expectMsgClass(classOf[EventApplied])
-      probe.expectNoMsg(1.seconds)
+      probe.expectNoMessage(1.seconds)
     }
   }
 
@@ -70,7 +70,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
       coordinationOffice ! eventMessage(ValueChanged(processId, 2, 2L), previouslySentMsg = Some(em1))
       // Then
       probe.expectMsgClass(classOf[EventApplied])
-      probe.expectNoMsg(1.seconds)
+      probe.expectNoMessage(1.seconds)
     }
   }
 
@@ -90,7 +90,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
       // When
       coordinationOffice ! em2
       // Then
-      probe.expectNoMsg(1.seconds)
+      probe.expectNoMessage(1.seconds)
     }
   }
 

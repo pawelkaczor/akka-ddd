@@ -54,7 +54,7 @@ trait Message extends Serializable {
   def withDeliveryId(deliveryId: Long): MessageImpl =
     withMetaAttribute(Delivery_Id, deliveryId)
 
-  def withEventNumber(eventNumber: Int): MessageImpl =
+  def withEventNumber(eventNumber: Long): MessageImpl =
     withMetaAttribute(Event_Number, eventNumber)
 
   def withCorrelationId(correlationId: EntityId): MessageImpl =
@@ -96,7 +96,7 @@ trait Message extends Serializable {
   def mustFollow: Option[String] =
     tryGetMetaAttribute(Must_Follow)
 
-  def eventNumber: Option[Int] =
+  def eventNumber: Option[Long] =
     tryGetMetaAttribute(Event_Number)
 
   def publisherType: Option[PublisherTypeValue.Value] =

@@ -25,7 +25,7 @@ object MetaAttribute extends Enum[MetaAttribute[_]] {
     }
   }
 
-  case object Event_Number   extends MetaAttribute[Int]
+  case object Event_Number   extends MetaAttribute[Long]
 
   case object Id             extends MetaAttribute[String]
 

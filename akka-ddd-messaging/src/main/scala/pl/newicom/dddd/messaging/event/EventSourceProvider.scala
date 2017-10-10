@@ -34,7 +34,7 @@ trait EventSourceProvider extends EventStoreProvider {
 
         case em: EventMessage =>
           val caseRef = CaseRef(envelop.persistenceId, observable, Some(envelop.sequenceNr))
-          val oem = OfficeEventMessage(em, caseRef).withEventNumber(envelop.sequenceNr.toInt)
+          val oem = OfficeEventMessage(em, caseRef).withEventNumber(envelop.sequenceNr)
           EventMessageEntry(oem, envelop.sequenceNr, Some(em.timestamp))
 
         case unexpected =>
