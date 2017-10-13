@@ -41,7 +41,7 @@ object MetaAttribute extends Enum[MetaAttribute[_]] {
 
   case object Tags extends MetaAttribute[Set[String]] {
     def merge(md1: MetaData, md2: MetaData): Set[String] = {
-      (md1.tryGet(Tags) ++ md1.tryGet(Tags)).flatten.toSet
+      (md1.tryGet(Tags) ++ md2.tryGet(Tags)).flatten.toSet
     }
   }
 
