@@ -20,7 +20,7 @@ object ProcessConfig {
 }
 
 abstract class ProcessConfig[E : ClassTag](val process: BusinessProcessId)
-  extends LocalOfficeId[E](process.processDomain, Option(process.department).getOrElse(process.processDomain)) {
+  extends LocalOfficeId[E](process.processId, Option(process.department).getOrElse(process.processDomain)) {
 
   /**
     * Correlation ID identifies process instance.
