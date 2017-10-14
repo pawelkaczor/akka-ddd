@@ -1,6 +1,6 @@
 package pl.newicom.dddd.aggregate
 
-import akka.persistence.RecoveryCompleted
+import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
 import akka.persistence.journal.Tagged
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
 import pl.newicom.dddd.aggregate.AggregateRootSupport._
@@ -9,6 +9,7 @@ import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
 import pl.newicom.dddd.messaging.{AddressableMessage, Message}
 import pl.newicom.dddd.office.LocalOfficeId
+import pl.newicom.dddd.persistence.SaveSnapshotRequest
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
@@ -57,9 +58,14 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
 
   override def receiveRecover: Receive = {
     case em: EventMessage =>
-      sm.apply(em)
+      sm(em)
     case Tagged(em @ EventMessage(_, _), _) =>
-      sm.apply(em)
+      sm(em)
+
+    case SnapshotOffer(metadata, state) =>
+      sm.reset(state.asInstanceOf[S])
+      log.debug(s"Snapshot restored: $state")
+
     case RecoveryCompleted => // ignore
   }
 
@@ -68,6 +74,18 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
       safely {
         handlePayload(msg).orElse(handleUnknown).andThen(execute)(msg.payload)
       }
+
+    case SaveSnapshotRequest =>
+      val snapshot = state
+      saveSnapshot(snapshot)
+
+    case SaveSnapshotSuccess(metadata) =>
+      log.debug("Snapshot saved successfully with metadata: {}", metadata)
+
+    case f @ SaveSnapshotFailure(metadata, reason) =>
+      log.error(s"$f")
+      throw reason
+
   }
 
   private def handlePayload(msg: AddressableMessage): HandlePayload = {
@@ -150,9 +168,11 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
 
     def state: S = s
 
-    def apply(em: EventMessage): Unit = {
+    def reset(snapshot: S): Unit =
+      s = snapshot
+
+    def apply(em: EventMessage): Unit =
       apply(eventHandler, em)
-    }
 
     def eventMessageHandler: (EventMessage) => EventMessage = em => {
       apply(eventHandler, em)

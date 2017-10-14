@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootSupport.{Reaction, Reject, RejectConditionally}
 import pl.newicom.dddd.aggregate._
+import pl.newicom.dddd.persistence.{RegularSnapshotting, RegularSnapshottingConfig}
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.ValueGeneratorActor.GenerateRandom
 import pl.newicom.dddd.utils.UUIDSupport.uuidObj
@@ -94,7 +95,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
 class DummyAggregateRoot(cfg: DummyConfig)
-    extends AggregateRoot[DummyEvent, Dummy, DummyAggregateRoot]
+    extends AggregateRoot[DummyEvent, Dummy, DummyAggregateRoot] with AggregateRootLogger[DummyEvent] with RegularSnapshotting
     with ConfigClass[DummyConfig] {
 
   val config: DummyConfig = cfg.copy(valueGeneration = valueGeneration)
@@ -113,4 +114,5 @@ class DummyAggregateRoot(cfg: DummyConfig)
     }
   }
 
+  def snapshottingConfig = RegularSnapshottingConfig(receiveCommand, interval = 1)
 }
