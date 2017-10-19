@@ -6,13 +6,12 @@ import pl.newicom.dddd.saga.ProcessConfig._
 
 import scala.reflect.ClassTag
 
+case class BusinessProcessDomain(id: EntityId, department: String) extends BusinessEntity
+
 case class BusinessProcessId(processDomain: String, processId: EntityId, department: String = null) extends BusinessEntity {
   def id: EntityId = processId
 
-  def domain: BusinessEntity = new BusinessEntity {
-    def id: String = processDomain
-    def department: String = BusinessProcessId.this.department
-  }
+  val domain: BusinessEntity = BusinessProcessDomain(processDomain, department)
 }
 
 object ProcessConfig {
