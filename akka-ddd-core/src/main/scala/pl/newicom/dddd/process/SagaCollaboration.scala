@@ -28,7 +28,7 @@ trait SagaCollaboration {
 
   protected def schedule(event: DomainEvent, deadline: DateTime, correlationId: EntityId = sagaId): Unit = {
     val command = ScheduleEvent("global", officePath, deadline, event)
-    handlerOf(command) deliver {
+    handlerOf(command) !! {
       CommandMessage(command)
         .withCorrelationId(correlationId)
         .withTag(officeId.id)
@@ -41,7 +41,7 @@ trait SagaCollaboration {
   //
 
   def ⟶[C <: Command](command: C): Unit =
-    handlerOf(command) deliver command
+    handlerOf(command) !! command
 
   def ⟵(event: DomainEvent): ToBeScheduled = schedule(event)
 

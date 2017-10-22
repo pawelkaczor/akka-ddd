@@ -229,7 +229,7 @@ abstract class GivenWhenThenTestFixture[Event <: DomainEvent](_system: ActorSyst
       if (cs.isEmpty) {
         Seq.empty
       } else {
-        officeUnderTest.actor ! Batch(cs.map(cm))
+        officeUnderTest ! Batch(cs.map(cm))
         expectMsgAllClassOf(timeout, cs.map(_ => classOf[Processed]): _*)
       }
   }.andThen(r => { if (r.nonEmpty) { ensureOfficeTerminated() }; r})

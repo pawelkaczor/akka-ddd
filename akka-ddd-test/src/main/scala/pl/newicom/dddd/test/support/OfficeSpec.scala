@@ -72,7 +72,6 @@ abstract class OfficeSpec[Event <: DomainEvent, A <: AggregateRoot[Event, _, A] 
         true
       case _ => false
     }
-
   }
 
   override def ensureOfficeTerminated(): Unit = {
