@@ -3,7 +3,7 @@ package pl.newicom.dddd.test.dms
 import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig, EntityId}
-import pl.newicom.dddd.office.Office
+import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.test.dms.DMSProtocol.VersionUpdate.{creation, noVU}
 import pl.newicom.dddd.test.dms.DMSProtocol.{ChangeContent, ContentChanged, Create, Created, DMSEvent, GetPublishedRevisions, GetPublishedVersions, Publish, Published, PublishedRevisions, PublishedVersions, Revision, Version, VersionUpdate}
 import pl.newicom.dddd.test.support.OfficeSpec
@@ -27,7 +27,7 @@ object DMSSpec {
 
 class DMSSpec extends OfficeSpec[DMSEvent, DocumentAR](Some(testSystem), shareAggregateRoot = true) with Matchers {
 
-  def cmsOffice: Office = officeUnderTest
+  def cmsOffice: OfficeRef = officeUnderTest
 
   def docId: EntityId = aggregateId
   implicit def toRevision(version: Version): Revision = Revision(docId, version)

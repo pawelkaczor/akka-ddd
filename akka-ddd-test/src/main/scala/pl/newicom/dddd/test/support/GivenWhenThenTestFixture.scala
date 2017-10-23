@@ -10,7 +10,7 @@ import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
-import pl.newicom.dddd.office.Office
+import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.office.SimpleOffice.Batch
 import pl.newicom.dddd.test.support.GivenWhenThenTestFixture.{Commands, CommandsHandler, ExpectedEvents, PastEvents, WhenContext, testProbe}
 import pl.newicom.dddd.utils.UUIDSupport.uuid
@@ -189,7 +189,7 @@ abstract class GivenWhenThenTestFixture[Event <: DomainEvent](_system: ActorSyst
 
   implicit val timeout: FiniteDuration = Timeout(5.seconds).duration
 
-  def officeUnderTest: Office
+  def officeUnderTest: OfficeRef
 
   def ensureOfficeTerminated(): Unit
 
@@ -229,7 +229,7 @@ abstract class GivenWhenThenTestFixture[Event <: DomainEvent](_system: ActorSyst
       if (cs.isEmpty) {
         Seq.empty
       } else {
-        officeUnderTest ! Batch(cs.map(cm))
+        officeUnderTest.actor ! Batch(cs.map(cm))
         expectMsgAllClassOf(timeout, cs.map(_ => classOf[Processed]): _*)
       }
   }.andThen(r => { if (r.nonEmpty) { ensureOfficeTerminated() }; r})

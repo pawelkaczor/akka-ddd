@@ -11,22 +11,22 @@ import scala.reflect.ClassTag
 
 object OfficeFactory {
 
-  def office[A <: BusinessEntity : BusinessEntityActorFactory : OfficeFactory : LocalOfficeId : OfficeListener : ClassTag]: Office = {
+  def office[A <: BusinessEntity : BusinessEntityActorFactory : OfficeFactory : LocalOfficeId : OfficeListener : ClassTag]: OfficeRef = {
 
     val officeId = implicitly[LocalOfficeId[A]]
     val actor = implicitly[OfficeFactory[A]].getOrCreate()
 
     val office = officeId match {
       case pc: ProcessConfig[A] =>   new CoordinationOffice[A](pc, actor)
-      case LocalOfficeId(_, _)  =>   new Office(officeId, actor)
+      case LocalOfficeId(_, _)  =>   new OfficeRef(officeId, actor)
     }
 
     implicitly[OfficeListener[A]].officeStarted(office)
     office
   }
 
-  def office(officeId: RemoteOfficeId[_])(implicit as: ActorSystem): Office =
-    new Office(officeId, cluster.proxy(officeId))
+  def office(officeId: RemoteOfficeId[_])(implicit as: ActorSystem): OfficeRef =
+    new OfficeRef(officeId, cluster.proxy(officeId))
 
   def coordinationOffice[A <: Saga : SagaActorFactory : OfficeFactory : ProcessConfig : OfficeListener : ClassTag]: CoordinationOffice[A] =
     office[A].asInstanceOf[CoordinationOffice[A]]

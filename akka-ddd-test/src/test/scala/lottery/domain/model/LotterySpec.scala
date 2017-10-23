@@ -2,11 +2,11 @@ package lottery.domain.model
 
 import lottery.domain.model.LotteryProtocol._
 import pl.newicom.dddd.aggregate.error.DomainException
-import pl.newicom.dddd.office.Office
+import pl.newicom.dddd.office.OfficeRef
 
 class LotterySpec extends LotterySpecSupport {
 
-  def lotteryOffice: Office = officeUnderTest
+  def lotteryOffice: OfficeRef = officeUnderTest
 
   "Lottery should" should {
 

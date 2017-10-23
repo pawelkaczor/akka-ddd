@@ -6,7 +6,7 @@ class OfficeListener[A : LocalOfficeId] {
 
     lazy val log = getLogger(getClass.getName)
 
-    def officeStarted(office: Office): Unit = {
+    def officeStarted(office: OfficeRef): Unit = {
       log.info("{} Office of {} Department- started up successfully.", office.id, office.department:Any)
     }
 }

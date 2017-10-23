@@ -9,7 +9,7 @@ import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig._
 import DummyOfficeWithGenSpec._
 import pl.newicom.dddd.aggregate.error.DomainException
-import pl.newicom.dddd.office.Office
+import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 
 import scala.concurrent.duration.{Duration, _}
@@ -25,7 +25,7 @@ object DummyOfficeWithGenSpec {
 
 class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
 
-  def dummyOffice: Office = officeUnderTest
+  def dummyOffice: OfficeRef = officeUnderTest
 
   def dummyId: EntityId = aggregateId
 

@@ -22,36 +22,27 @@ case class LocalOfficeId[E : ClassTag](id: EntityId, department: String) extends
   def caseName: String = caseClass.getSimpleName
 }
 
-trait OfficeHandler {
+trait OfficeRefLike {
   def officeId: OfficeId
   def id: EntityId = officeId.id
   def department: String = officeId.department
 
-  def !(msg: Any)(implicit sender: ActorRef): Unit
-  def !!(msg: Any)(implicit dh: DeliveryHandler): Unit
-
-  def ?(command: Command)(implicit ex: ExecutionContext, t: Timeout, sender: ActorRef): Future[Processed]
+  def ?(command: Command)(implicit sender: ActorRef, ex: ExecutionContext, t: Timeout): Future[Processed]
   def ?(query: Query)(implicit ex: ExecutionContext, t: Timeout, ct: ClassTag[query.R], sender: ActorRef): Future[query.R]
 }
 
-class Office(override val officeId: OfficeId, val actor: ActorRef) extends OfficeHandler {
+class OfficeRef(override val officeId: OfficeId, val actor: ActorRef) extends OfficeRefLike {
   import akka.pattern.ask
 
   def actorPath: ActorPath = actor.path
 
-  def !(msg: Any)(implicit sender: ActorRef): Unit =
-    actor ! msg
-
   def !!(msg: Any)(implicit dh: DeliveryHandler): Unit =
-    deliver(msg)
+    dh((actorPath, msg))
 
-  def ?(command: Command)(implicit ex: ExecutionContext, t: Timeout, sender: ActorRef): Future[Processed] =
+  def ?(command: Command)(implicit sender: ActorRef, ex: ExecutionContext, t: Timeout): Future[Processed] =
     (actor ? command).mapTo[Processed]
 
   def ?(query: Query)(implicit ex: ExecutionContext, t: Timeout, ct: ClassTag[query.R], sender: ActorRef): Future[query.R] =
     (actor ? query).mapTo[query.R]
-
-  private def deliver(msg: Any)(implicit dh: DeliveryHandler): Unit =
-    dh((actorPath, msg))
 
 }

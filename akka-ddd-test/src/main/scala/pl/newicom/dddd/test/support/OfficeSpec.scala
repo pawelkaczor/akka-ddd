@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory.getLogger
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, ActorFactory}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.office.SimpleOffice._
-import pl.newicom.dddd.office.{LocalOfficeId, Office, OfficeListener}
+import pl.newicom.dddd.office.{LocalOfficeId, OfficeRef, OfficeListener}
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.test.support.OfficeSpec.sys
 import pl.newicom.dddd.utils.UUIDSupport._
@@ -29,13 +29,13 @@ abstract class OfficeSpec[Event <: DomainEvent, A <: AggregateRoot[Event, _, A] 
 
   val logger: Logger = getLogger(getClass)
 
-  override def officeUnderTest: Office = {
+  override def officeUnderTest: OfficeRef = {
     implicit val _ = new OfficeListener[A]
     if (_officeUnderTest == null) _officeUnderTest = office[A]
     _officeUnderTest
   }
 
-  private var _officeUnderTest: Office = _
+  private var _officeUnderTest: OfficeRef = _
 
   implicit var _aggregateIdGen: Gen[EntityId] = _
 

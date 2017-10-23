@@ -3,7 +3,7 @@ package pl.newicom.dddd.test.dummy
 import akka.actor.Props
 import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.office.{LocalOfficeId, Office, RemoteOfficeId}
+import pl.newicom.dddd.office.{LocalOfficeId, OfficeRef, RemoteOfficeId}
 import pl.newicom.dddd.process._
 import pl.newicom.dddd.saga.{BusinessProcessId, ProcessConfig}
 import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyCreated, ValueChanged}
@@ -48,7 +48,7 @@ object DummySaga {
  */
 class DummySaga(val pc: PassivationConfig,
                 val officeId: LocalOfficeId[DummySaga],
-                dummyOffice: Option[Office]) extends ProcessManager[DummyState] {
+                dummyOffice: Option[OfficeRef]) extends ProcessManager[DummyState] {
 
   startWhen {
 
