@@ -1,8 +1,9 @@
 package pl.newicom.dddd.aggregate
 
+import akka.actor.Props
 import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
 import akka.persistence.journal.Tagged
-import pl.newicom.dddd.actor.BusinessEntityActorFactory
+import pl.newicom.dddd.actor.{BusinessEntityActorFactory, PassivationConfig}
 import pl.newicom.dddd.aggregate.AggregateRootSupport._
 import pl.newicom.dddd.aggregate.error._
 import pl.newicom.dddd.messaging.command.CommandMessage
@@ -13,6 +14,13 @@ import pl.newicom.dddd.persistence.SaveSnapshotRequest
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
+
+object AggregateRootActorFactory {
+  def apply[A <: AggregateRoot[_, _, A]: LocalOfficeId](f: (PassivationConfig => Props)): AggregateRootActorFactory[A] =
+    new AggregateRootActorFactory[A] {
+      def props(pc: PassivationConfig): Props = f(pc)
+    }
+}
 
 abstract class AggregateRootActorFactory[A <: AggregateRoot[_, _, A]: LocalOfficeId] extends BusinessEntityActorFactory[A] {
   def inactivityTimeout: Duration = 1.minute

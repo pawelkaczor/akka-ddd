@@ -26,12 +26,8 @@ object SagaIntegrationSpec {
 
   case object GetNumberOfUnconfirmed
 
-  implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
-    new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(DummyConfig(pc)))
-      override def inactivityTimeout: Duration = it
-    }
-
+  implicit def actorFactory: AggregateRootActorFactory[DummyAggregateRoot] =
+    AggregateRootActorFactory[DummyAggregateRoot](pc => Props(new DummyAggregateRoot(DummyConfig(pc))))
 }
 
 /**
@@ -43,7 +39,7 @@ class SagaIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Som
 
   def dummyId: EntityId = aggregateId
 
-  implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
+  implicit lazy val testSagaConfig: DummySagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
   implicit lazy val receptorActorFactory: ReceptorActorFactory[DummySaga] = new ReceptorActorFactory[DummySaga] {
     override def receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {
@@ -60,7 +56,7 @@ class SagaIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Som
 
   var receptor: ActorRef = _
 
-  implicit lazy val officeListener = new CoordinationOfficeListener[DummySaga] {
+  implicit lazy val officeListener: CoordinationOfficeListener[DummySaga] = new CoordinationOfficeListener[DummySaga] {
     override def officeStarted(office: CoordinationOffice[DummySaga], receptorRef: ActorRef): Unit = {
       receptor = receptorRef
     }

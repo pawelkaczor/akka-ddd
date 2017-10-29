@@ -1,7 +1,6 @@
 package pl.newicom.dddd.test.dummy
 
 import akka.actor.Props
-import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitialized, CommandHandlerNotDefined, DomainException}
 import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, AggregateRootLogger, EntityId}
 import pl.newicom.dddd.office.OfficeRef
@@ -11,18 +10,12 @@ import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 
-import scala.concurrent.duration.{Duration, _}
-
 object DummyOfficeSpec {
 
-  implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
-    new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(
-        new DummyAggregateRoot(DummyConfig(pc, valueGenerator = () => -1)) with AggregateRootLogger[DummyEvent]
-      )
-      override def inactivityTimeout: Duration = it
-
-    }
+  implicit def actorFactory: AggregateRootActorFactory[DummyAggregateRoot] =
+    AggregateRootActorFactory[DummyAggregateRoot](pc => Props(
+      new DummyAggregateRoot(DummyConfig(pc, valueGenerator = () => -1)) with AggregateRootLogger[DummyEvent]
+    ))
 }
 
 class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {

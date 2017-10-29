@@ -2,7 +2,6 @@ package pl.newicom.dddd.process
 
 import akka.actor._
 import akka.testkit.TestProbe
-import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.coordination.ReceptorConfig
 import pl.newicom.dddd.delivery.protocol.Processed
@@ -27,12 +26,8 @@ object ReceptorStressIntegrationSpec {
 
   case object GetNumberOfUnconfirmed
 
-  implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
-    new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(DummyConfig(pc)))
-      override def inactivityTimeout: Duration = it
-    }
-
+  implicit def actorFactory: AggregateRootActorFactory[DummyAggregateRoot] =
+    AggregateRootActorFactory(pc => Props(new DummyAggregateRoot(DummyConfig(pc))))
 }
 
 /**
@@ -42,9 +37,9 @@ class ReceptorStressIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregat
 
   def dummyId: EntityId = aggregateId
 
-  implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
+  implicit lazy val testSagaConfig: DummySagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
-  implicit lazy val officeListener = new OfficeListener[DummySaga]
+  implicit lazy val officeListener: OfficeListener[DummySaga] = new OfficeListener[DummySaga]
 
   implicit lazy val receptorActorFactory: ReceptorActorFactory[DummySaga] = new ReceptorActorFactory[DummySaga] {
     override def receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {

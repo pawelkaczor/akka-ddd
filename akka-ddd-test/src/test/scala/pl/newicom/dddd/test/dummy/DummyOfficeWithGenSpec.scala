@@ -2,7 +2,6 @@ package pl.newicom.dddd.test.dummy
 
 import akka.actor.Props
 import org.scalacheck.Gen
-import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, EntityId}
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.support.OfficeSpec
@@ -12,15 +11,10 @@ import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 
-import scala.concurrent.duration.{Duration, _}
-
 object DummyOfficeWithGenSpec {
 
-  implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
-    new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(DummyConfig(pc)))
-      override def inactivityTimeout: Duration = it
-    }
+  implicit def actorFactory: AggregateRootActorFactory[DummyAggregateRoot] =
+    AggregateRootActorFactory[DummyAggregateRoot](pc => Props(new DummyAggregateRoot(DummyConfig(pc))))
 }
 
 class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
