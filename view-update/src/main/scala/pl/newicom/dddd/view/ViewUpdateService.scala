@@ -25,8 +25,8 @@ object ViewUpdateService {
 
   case class ViewUpdateConfigured(viewUpdate: ViewUpdate)
 
-  case class ViewUpdate(office: BusinessEntity, lastEventNr: Option[Long], runnable: RunnableGraph[Future[Done]]) {
-    override def toString =  s"ViewUpdate(officeId = ${office.id}, lastEventNr = $lastEventNr)"
+  case class ViewUpdate(eventSource: BusinessEntity, lastEventNr: Option[Long], runnable: RunnableGraph[Future[Done]]) {
+    override def toString =  s"ViewUpdate(officeId = ${eventSource.id}, lastEventNr = $lastEventNr)"
   }
 
 }
@@ -36,7 +36,7 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
 
   type VUConfig <: ViewUpdateConfig
 
-  implicit val actorMaterializer = ActorMaterializer()
+  implicit val actorMaterializer: ActorMaterializer = ActorMaterializer()
 
   implicit val ec: ExecutionContext = context.dispatcher
 
@@ -105,10 +105,10 @@ abstract class ViewUpdateService extends Actor with ActorLogging {
 
   def viewUpdate(eventStore: EventStore, vuConfig: VUConfig): Future[ViewUpdate] = {
     val handler = viewHandler(vuConfig)
-    val office = vuConfig.office
+    val observable = vuConfig.eventSource
     handler.lastEventNumber.map { lastEvtNrOpt =>
-      ViewUpdate(office, lastEvtNrOpt,
-        eventSource(eventStore, office, lastEvtNrOpt)
+      ViewUpdate(observable, lastEvtNrOpt,
+        eventSource(eventStore, observable, lastEvtNrOpt)
           .mapAsync(1) {
             msgRecord => handler.handle(msgRecord.msg, msgRecord.position)
           }.toMat(Sink.ignore)(Keep.right)

@@ -4,5 +4,5 @@ import pl.newicom.dddd.aggregate.BusinessEntity
 
 abstract class ViewUpdateConfig {
   def viewName: String
-  def office: BusinessEntity
+  def eventSource: BusinessEntity
 }

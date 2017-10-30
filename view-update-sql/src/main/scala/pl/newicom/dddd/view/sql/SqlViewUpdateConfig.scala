@@ -5,6 +5,6 @@ import pl.newicom.dddd.view.ViewUpdateConfig
 
 case class SqlViewUpdateConfig(
                                 override val viewName: String,
-                                override val office: BusinessEntity,
+                                override val eventSource: BusinessEntity,
                                 projections: Projection*)
   extends ViewUpdateConfig
