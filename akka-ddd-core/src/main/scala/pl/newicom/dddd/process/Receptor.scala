@@ -31,7 +31,7 @@ abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySuppo
   def deadLetters: ActorPath = context.system.deadLetters.path
 
   def destination(msg: Message): ActorPath =
-    config.receiverResolver.applyOrElse(msg, (any: Message) => {
+    config.receiverResolver.applyOrElse(msg, (_: Message) => {
       log.warning("No destination provided")
       deadLetters
     })
@@ -48,7 +48,7 @@ abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySuppo
         demandConfig = DemandConfig(
                          subscriberCapacity = config.capacity,
                          initialDemand = config.capacity - unconfirmedNumber)))
-    log.info(s"Receptor $persistenceId subscribed to '${config.stimuliSource.id}' event stream " +
+    log.info(s"Receptor $persistenceId subscribed to '${config.stimuliSource.streamName}' event stream " +
       s"from position: ${lastSentDeliveryId.getOrElse(0)}. " +
       s"Receptor's capacity: ${config.capacity}")
   }

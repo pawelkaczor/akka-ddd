@@ -6,7 +6,7 @@ import akka.event.LoggingAdapter
 import akka.persistence.query.{Offset, PersistenceQuery}
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.scaladsl.Source
-import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.Eventsourced
 import pl.newicom.dddd.office.CaseRef
 
 trait EventSourceProvider extends EventStoreProvider {
@@ -22,13 +22,13 @@ trait EventSourceProvider extends EventStoreProvider {
 
   lazy val readJournal: ReadJournal = PersistenceQuery(system).readJournalFor(readJournalId)
 
-  def eventSource(eventStore: EventStore, observable: BusinessEntity, fromPosExcl: Option[Long]): EventSource = {
+  def eventSource(eventStore: EventStore, observable: Eventsourced, fromPosExcl: Option[Long]): EventSource = {
 
-    log.debug(s"Subscribing to ${observable.id} from position $fromPosExcl (exclusive)")
+    log.debug(s"Subscribing to ${observable.streamName} from position $fromPosExcl (exclusive)")
 
     val offset = fromPosExcl.map(Offset.sequence).getOrElse(Offset.noOffset)
 
-    readJournal.eventsByTag(observable.id, offset).map { envelop =>
+    readJournal.eventsByTag(observable.streamName, offset).map { envelop =>
 
       envelop.event match {
 

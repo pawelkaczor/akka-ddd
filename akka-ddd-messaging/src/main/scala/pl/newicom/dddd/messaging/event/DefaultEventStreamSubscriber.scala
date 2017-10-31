@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.actor._
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategy}
-import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.Eventsourced
 import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{DemandCallback, DemandConfig}
 
 trait Trigger
@@ -26,9 +26,9 @@ class DemandController(triggerActor: ActorRef, initialDemand: Int) extends Deman
 trait DefaultEventStreamSubscriber extends EventStreamSubscriber {
   this: Actor with EventSourceProvider =>
 
-  implicit val actorMaterializer = ActorMaterializer()
+  implicit val actorMaterializer: ActorMaterializer = ActorMaterializer()
 
-  override def subscribe(observable: BusinessEntity, fromPosExcl: Option[Long], demandConfig: DemandConfig): DemandCallback = {
+  override def subscribe(observable: Eventsourced, fromPosExcl: Option[Long], demandConfig: DemandConfig): DemandCallback = {
     subscribe(eventSource(eventStore, observable, fromPosExcl), demandConfig)
   }
 

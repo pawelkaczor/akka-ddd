@@ -1,18 +1,18 @@
 package pl.newicom.dddd.saga
 
-import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.{BusinessEntity, Eventsourced}
 import pl.newicom.dddd.aggregate.{DomainEvent, EntityId}
 import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.saga.ProcessConfig._
 
 import scala.reflect.ClassTag
 
-case class BusinessProcessDomain(id: EntityId, department: String) extends BusinessEntity
+case class BusinessProcessDomain(id: EntityId, department: String) extends BusinessEntity with Eventsourced
 
-case class BusinessProcessId(processDomain: String, processId: EntityId, department: String = null) extends BusinessEntity {
+case class BusinessProcessId(processDomain: String, processId: EntityId, department: String = null) extends BusinessEntity with Eventsourced {
   def id: EntityId = processId
 
-  val domain: BusinessEntity = BusinessProcessDomain(processDomain, department)
+  val domain: Eventsourced = BusinessProcessDomain(processDomain, department)
 }
 
 object ProcessConfig {

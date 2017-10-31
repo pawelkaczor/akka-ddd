@@ -1,7 +1,7 @@
 package pl.newicom.dddd.coordination
 
 import akka.actor.ActorPath
-import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.Eventsourced
 import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.coordination.ReceptorConfig.{ReceiverResolver, StimuliSource, Transduction}
 import pl.newicom.dddd.messaging.Message
@@ -11,7 +11,7 @@ import pl.newicom.dddd.office.LocalOfficeId
 object ReceptorConfig {
   type Transduction     = PartialFunction[EventMessage, Message]
   type ReceiverResolver = PartialFunction[Message, ActorPath]
-  type StimuliSource    = BusinessEntity
+  type StimuliSource    = Eventsourced
 }
 
 case class ReceptorConfig(
@@ -41,7 +41,7 @@ case class ReceptorBuilder(
   def reactTo[A: LocalOfficeId]: ReceptorBuilder =
     reactTo(implicitly[LocalOfficeId[A]])
 
-  def reactTo(observable: BusinessEntity): ReceptorBuilder =
+  def reactTo(observable: Eventsourced): ReceptorBuilder =
     copy(stimuliSource = observable)
 
   def applyTransduction(transduction: Transduction): ReceptorBuilder =

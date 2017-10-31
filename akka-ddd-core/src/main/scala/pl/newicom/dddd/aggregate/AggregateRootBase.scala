@@ -4,7 +4,7 @@ import akka.actor.ActorRef
 import akka.contrib.pattern.ReceivePipeline
 import akka.contrib.pattern.ReceivePipeline.Inner
 import akka.persistence.PersistentActor
-import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.{BusinessEntity, Eventsourced}
 import pl.newicom.dddd.actor.{GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
@@ -13,7 +13,7 @@ import pl.newicom.dddd.messaging.{AddressableMessage, Deduplication}
 import pl.newicom.dddd.office.{CaseRef, OfficeId}
 import pl.newicom.dddd.persistence.PersistentActorLogging
 
-trait AggregateRootBase extends BusinessEntity with GracefulPassivation with PersistentActor
+trait AggregateRootBase extends BusinessEntity with Eventsourced with GracefulPassivation with PersistentActor
     with EventHandler with EventMessageFactory with ReceivePipeline with Deduplication with PersistentActorLogging {
 
   type C <: Config

@@ -13,7 +13,7 @@ import pl.newicom.dddd.view.ViewUpdateService._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import akka.Done
-import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.Eventsourced
 
 object ViewUpdateService {
   object EnsureViewStoreAvailable
@@ -25,8 +25,8 @@ object ViewUpdateService {
 
   case class ViewUpdateConfigured(viewUpdate: ViewUpdate)
 
-  case class ViewUpdate(eventSource: BusinessEntity, lastEventNr: Option[Long], runnable: RunnableGraph[Future[Done]]) {
-    override def toString =  s"ViewUpdate(officeId = ${eventSource.id}, lastEventNr = $lastEventNr)"
+  case class ViewUpdate(eventSource: Eventsourced, lastEventNr: Option[Long], runnable: RunnableGraph[Future[Done]]) {
+    override def toString =  s"ViewUpdate(eventSource = ${eventSource.streamName}, lastEventNr = $lastEventNr)"
   }
 
 }

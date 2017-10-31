@@ -1,8 +1,8 @@
 package pl.newicom.dddd.view
 
-import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.Eventsourced
 
 abstract class ViewUpdateConfig {
   def viewName: String
-  def eventSource: BusinessEntity
+  def eventSource: Eventsourced
 }

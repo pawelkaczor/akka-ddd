@@ -16,7 +16,7 @@ class SqlViewHandler(val viewStore: SqlViewStore, override val vuConfig: SqlView
 
   private lazy val viewMetadataDao = new ViewMetadataDao
 
-  def viewMetadataId = ViewMetadataId(viewName, vuConfig.eventSource.id)
+  def viewMetadataId = ViewMetadataId(viewName, vuConfig.eventSource.streamName)
 
   def handle(eventMessage: OfficeEventMessage, eventNumber: Long): Future[Done] =
     viewStore.run {
