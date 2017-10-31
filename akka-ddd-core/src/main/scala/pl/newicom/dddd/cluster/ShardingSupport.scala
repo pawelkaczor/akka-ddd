@@ -4,8 +4,8 @@ import akka.actor._
 import akka.cluster.client.ClusterClientReceptionist
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import akka.cluster.sharding.ShardRegion.Passivate
+import pl.newicom.dddd.BusinessEntity
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, PassivationConfig}
-import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.office.{LocalOfficeId, OfficeFactory, OfficeId}
 
 trait ShardingSupport {

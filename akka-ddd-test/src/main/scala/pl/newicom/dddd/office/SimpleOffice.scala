@@ -1,8 +1,9 @@
 package pl.newicom.dddd.office
 
 import akka.actor._
-import pl.newicom.dddd.actor.{Supervisor, BusinessEntityActorFactory, Passivate, PassivationConfig}
-import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId, Query}
+import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.actor.{BusinessEntityActorFactory, Passivate, PassivationConfig, Supervisor}
+import pl.newicom.dddd.aggregate.{Command, EntityId, Query}
 import pl.newicom.dddd.messaging.AddressableMessage
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.correlation.AggregateIdResolution

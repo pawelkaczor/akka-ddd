@@ -1,6 +1,7 @@
 package pl.newicom.dddd.office
 
-import pl.newicom.dddd.aggregate.{BusinessEntity, Command, EntityId}
+import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.aggregate.{Command, EntityId}
 import pl.newicom.dddd.cluster.DefaultDistributionStrategy
 
 import scala.reflect.ClassTag

@@ -4,6 +4,7 @@ import akka.actor.ActorRef
 import akka.contrib.pattern.ReceivePipeline
 import akka.contrib.pattern.ReceivePipeline.Inner
 import akka.persistence.PersistentActor
+import pl.newicom.dddd.BusinessEntity
 import pl.newicom.dddd.actor.{GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage

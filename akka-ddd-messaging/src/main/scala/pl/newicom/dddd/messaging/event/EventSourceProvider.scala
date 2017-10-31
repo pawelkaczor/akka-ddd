@@ -6,7 +6,7 @@ import akka.event.LoggingAdapter
 import akka.persistence.query.{Offset, PersistenceQuery}
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.scaladsl.Source
-import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.BusinessEntity
 import pl.newicom.dddd.office.CaseRef
 
 trait EventSourceProvider extends EventStoreProvider {

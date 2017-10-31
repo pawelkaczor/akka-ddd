@@ -2,8 +2,7 @@ package pl.newicom.dddd.office
 
 import akka.actor.{ActorRef, ActorSystem}
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
-import pl.newicom.dddd.aggregate.BusinessEntity
-import pl.newicom.dddd.cluster
+import pl.newicom.dddd.{BusinessEntity, cluster}
 import pl.newicom.dddd.process.{Saga, SagaActorFactory}
 import pl.newicom.dddd.saga.{CoordinationOffice, ProcessConfig}
 

@@ -1,7 +1,7 @@
 package pl.newicom.dddd.monitoring
 
 import akka.actor.Actor
-import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.BusinessEntity
 import pl.newicom.dddd.messaging.event.EventSourceProvider
 import pl.newicom.dddd.monitoring.Stage._
 

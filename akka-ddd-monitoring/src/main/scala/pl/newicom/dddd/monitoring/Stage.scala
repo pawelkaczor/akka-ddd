@@ -1,6 +1,6 @@
 package pl.newicom.dddd.monitoring
 
-import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.BusinessEntity
 import pl.newicom.dddd.messaging.AddressableMessage
 
 case class Stage(position: Integer, shortName: String) {

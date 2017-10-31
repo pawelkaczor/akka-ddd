@@ -1,7 +1,7 @@
 package pl.newicom.dddd.actor
 
 import akka.actor.Props
-import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.BusinessEntity
 
 import scala.annotation.implicitNotFound
 import scala.concurrent.duration.Duration

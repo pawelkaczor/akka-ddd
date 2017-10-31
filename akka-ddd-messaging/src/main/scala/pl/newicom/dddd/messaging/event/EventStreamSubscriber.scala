@@ -1,7 +1,7 @@
 package pl.newicom.dddd.messaging.event
 
 import akka.actor.Actor
-import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.BusinessEntity
 import pl.newicom.dddd.messaging.event.EventStreamSubscriber._
 
 object EventStreamSubscriber {

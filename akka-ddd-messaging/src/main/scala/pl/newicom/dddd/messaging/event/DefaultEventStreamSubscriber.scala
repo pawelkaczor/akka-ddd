@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.actor._
 import akka.stream.scaladsl._
 import akka.stream.{ActorMaterializer, FlowShape, OverflowStrategy}
-import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.BusinessEntity
 import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{DemandCallback, DemandConfig}
 
 trait Trigger

@@ -1,6 +1,7 @@
 package pl.newicom.dddd.saga
 
-import pl.newicom.dddd.aggregate.{BusinessEntity, DomainEvent, EntityId}
+import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.aggregate.{DomainEvent, EntityId}
 import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.saga.ProcessConfig._
 

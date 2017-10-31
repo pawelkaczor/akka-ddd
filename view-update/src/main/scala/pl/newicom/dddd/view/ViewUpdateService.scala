@@ -3,17 +3,17 @@ package pl.newicom.dddd.view
 import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy._
 import akka.actor._
-import akka.pattern.{BackoffSupervisor, Backoff, pipe}
+import akka.pattern.{Backoff, BackoffSupervisor, pipe}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Keep, RunnableGraph, Sink}
 import pl.newicom.dddd.messaging.event.EventSourceProvider
-
-import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.view.ViewUpdateInitializer.ViewUpdateInitException
 import pl.newicom.dddd.view.ViewUpdateService._
+
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import akka.Done
+import pl.newicom.dddd.BusinessEntity
 
 object ViewUpdateService {
   object EnsureViewStoreAvailable

@@ -1,7 +1,8 @@
 package pl.newicom.dddd.coordination
 
 import akka.actor.ActorPath
-import pl.newicom.dddd.aggregate.{BusinessEntity, EntityId}
+import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.coordination.ReceptorConfig.{ReceiverResolver, StimuliSource, Transduction}
 import pl.newicom.dddd.messaging.Message
 import pl.newicom.dddd.messaging.event.EventMessage

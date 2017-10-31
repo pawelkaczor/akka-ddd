@@ -3,6 +3,7 @@ package pl.newicom.dddd.process
 import akka.actor.ActorPath
 import akka.contrib.pattern.ReceivePipeline
 import akka.persistence.{AtLeastOnceDelivery, PersistentActor}
+import pl.newicom.dddd.BusinessEntity
 import pl.newicom.dddd.actor.GracefulPassivation
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.event.EventMessage
