@@ -13,14 +13,16 @@ import scala.concurrent.duration._
 
 object DummyAggregateRoot extends AggregateRootSupport {
 
-  case class DummyConfig(pc: PassivationConfig,
-                         valueGenerator: () => Int = () => (Math.random() * 100).toInt - 50, //  -50 < v < 50,
-                         valueGeneration: Reaction[DummyEvent] = reject("value generation not defined"))
-      extends Config {
+  val defaultValueGenerator: () => Int =
+    () => (Math.random() * 100).toInt - 50 //  -50 < v < 50
+
+  case class DummyConfig(pc: PassivationConfig, valueGenerator: () => Int = defaultValueGenerator)
+
+  case class DummyRuntimeConfig(pc: PassivationConfig, valueGeneration: Reaction[DummyEvent]) extends Config {
     def respondingPolicy: RespondingPolicy = ReplyWithEvents
   }
 
-  sealed trait Dummy extends Behavior[DummyEvent, Dummy, DummyConfig] {
+  sealed trait Dummy extends Behavior[DummyEvent, Dummy, DummyRuntimeConfig] {
     def isActive = false
 
     def rejectInvalid(value: Int): RejectConditionally =
@@ -87,7 +89,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
       }.handleEvent {
           case ValueChanged(_, newValue, newVersion) =>
             Active(value = newValue, version = newVersion)
-        }
+      }
 
   }
 }
@@ -96,9 +98,9 @@ import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 
 class DummyAggregateRoot(cfg: DummyConfig)
     extends AggregateRoot[DummyEvent, Dummy, DummyAggregateRoot] with AggregateRootLogger[DummyEvent] with RegularSnapshotting
-    with ConfigClass[DummyConfig] {
+    with ConfigClass[DummyRuntimeConfig] {
 
-  val config: DummyConfig = cfg.copy(valueGeneration = valueGeneration)
+  val config = DummyRuntimeConfig(cfg.pc, valueGeneration)
 
   lazy val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(cfg.valueGenerator))
 
