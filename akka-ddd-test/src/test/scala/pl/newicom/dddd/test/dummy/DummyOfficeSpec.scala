@@ -28,10 +28,10 @@ class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(te
 
     "create Dummy" in {
       when {
-        CreateDummy(dummyId, "dummy name", "dummy description", 100)
+        CreateDummy(dummyId, "dummy name", "dummy description", Value(100))
       }
       .expect { c =>
-        DummyCreated(c.id, c.name, c.description, c.value)
+        DummyCreated(c.id, c.name, c.description, c.value.value)
       }
     }
 
@@ -45,17 +45,17 @@ class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(te
     "reject CreateDummy if Dummy already exists" in {
       val dId = dummyId
       given {
-        CreateDummy(dId, "dummy name", "dummy description", 100)
+        CreateDummy(dId, "dummy name", "dummy description", Value(100))
       }
       when {
-        CreateDummy(dId, "dummy name", "dummy description", 100)
+        CreateDummy(dId, "dummy name", "dummy description", Value(100))
       }
       .expectException[CommandHandlerNotDefined]()
     }
 
     "update Dummy's name" in {
       given {
-        CreateDummy(dummyId, "dummy name", "dummy description", 100)
+        CreateDummy(dummyId, "dummy name", "dummy description", Value(100))
       }
       .when {
         ChangeName(dummyId, "some other dummy name")
@@ -67,7 +67,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(te
 
     "handle subsequent Update command" in {
       given {
-        CreateDummy(dummyId, "dummy name", "dummy description", 100) &
+        CreateDummy(dummyId, "dummy name", "dummy description", Value(100)) &
         ChangeName(dummyId, "some other dummy name")
       }
       .when {
@@ -80,14 +80,14 @@ class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(te
 
     "reject negative value" in {
       when {
-        CreateDummy(dummyId, "dummy name", "dummy description", value = -1)
+        CreateDummy(dummyId, "dummy name", "dummy description", value = Value(-1))
       }
       .expectException[DomainException]("negative value not allowed")
     }
 
     "change value and name on reset" in {
       given {
-        CreateDummy(dummyId, "dummy name", "dummy description", 100)
+        CreateDummy(dummyId, "dummy name", "dummy description", Value(100))
       }
       .when {
         Reset(dummyId, "new dummy name")

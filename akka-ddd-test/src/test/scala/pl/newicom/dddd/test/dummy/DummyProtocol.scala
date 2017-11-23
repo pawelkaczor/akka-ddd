@@ -18,7 +18,7 @@ object DummyProtocol {
   }
   sealed trait UpdateCommand extends Command
 
-  case class CreateDummy(id: DummyId, name: String, description: String, value: Int) extends Command
+  case class CreateDummy(id: DummyId, name: String, description: String, value: Value) extends Command
 
   case class ChangeName(id: DummyId, name: String)                                   extends UpdateCommand
   case class ChangeDescription(id: DummyId, description: String)                     extends UpdateCommand
@@ -41,4 +41,5 @@ object DummyProtocol {
 
   case class CandidateValue(value: Int, confirmationToken: UUID)
 
+  case class Value(value: Int) extends AnyVal
 }

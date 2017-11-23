@@ -27,12 +27,10 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](
   //
   // Command generators
   //
-  implicit def create: A[CreateDummy] = Arbitrary { for {
-    name <- Gen.alphaStr
-    description <- Gen.alphaStr
+  implicit def aValue: A[Value] = Arbitrary { for {
     value <- Gen.choose(1, 1000)
   } yield {
-    CreateDummy(dummyId, name, description, value)
+    Value(value)
   }}
 
   "Dummy office" should {
@@ -49,7 +47,7 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](
         a [CreateDummy]
       }
       .expect { c =>
-        DummyCreated(c.id, c.name, c.description, c.value)
+        DummyCreated(c.id, c.name, c.description, c.value.value)
       }
     }
 
@@ -120,7 +118,7 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](
      */
     "reject negative value" in {
       when {
-        a[CreateDummy].copy(value = -1)
+        a[CreateDummy].copy(value = Value(-1))
       }
       .expectException[DomainException]("negative value not allowed")
     }

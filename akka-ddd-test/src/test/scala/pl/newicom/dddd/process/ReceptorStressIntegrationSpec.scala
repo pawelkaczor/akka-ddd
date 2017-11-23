@@ -76,7 +76,7 @@ class ReceptorStressIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregat
 
       given {
         List(
-          CreateDummy(dummyId, "name", "description", 0),
+          CreateDummy(dummyId, "name", "description", Value(0)),
           ChangeValue(dummyId, 1)
         )
       }

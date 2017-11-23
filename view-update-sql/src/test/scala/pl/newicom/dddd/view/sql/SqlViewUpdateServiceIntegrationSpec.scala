@@ -7,7 +7,7 @@ import com.typesafe.config.Config
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
-import pl.newicom.dddd.test.dummy.DummyProtocol.{CreateDummy, DummyCreated, DummyEvent}
+import pl.newicom.dddd.test.dummy.DummyProtocol.{CreateDummy, DummyCreated, DummyEvent, Value}
 import pl.newicom.dddd.test.dummy._
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
 import pl.newicom.dddd.test.support.OfficeSpec
@@ -78,11 +78,11 @@ class SqlViewUpdateServiceIntegrationSpec
 
       // When
       when {
-        CreateDummy(aggregateId, "name", "description", 100)
+        CreateDummy(aggregateId, "name", "description", Value(100))
       }
       // Then
       .expect { c =>
-        DummyCreated(c.id, c.name, c.description, c.value)
+        DummyCreated(c.id, c.name, c.description, c.value.value)
       }
       probe.expectMsg(ViewUpdated(DummyCreated(aggregateId, "name", "description", 100)))
 

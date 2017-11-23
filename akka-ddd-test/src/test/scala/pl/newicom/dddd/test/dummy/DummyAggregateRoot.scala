@@ -34,8 +34,8 @@ object DummyAggregateRoot extends AggregateRootSupport {
     def actions: Actions =
       handleCommand {
         case CreateDummy(id, name, description, value) =>
-          rejectInvalid(value) orElse
-            DummyCreated(id, name, description, value)
+          rejectInvalid(value.value) orElse
+            DummyCreated(id, name, description, value.value)
       }.handleEvent {
           case DummyCreated(_, _, _, value) =>
             Active(value, 0)

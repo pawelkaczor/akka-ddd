@@ -73,7 +73,7 @@ class SagaIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Som
     "confirm accepted event" in {
       // given
       given {
-        CreateDummy(dummyId, "name", "description", 0)
+        CreateDummy(dummyId, "name", "description", Value(0))
       }
       .when {
         ChangeValue(dummyId, 1)
