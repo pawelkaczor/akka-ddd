@@ -5,7 +5,7 @@ import java.net.URL
 
 name := "akka-ddd"
 
-version      in ThisBuild := "1.7.5-SNAPSHOT"
+version      in ThisBuild := "1.7.5"
 organization in ThisBuild := "pl.newicom.dddd"
 scalaVersion in ThisBuild := "2.12.4"
 
