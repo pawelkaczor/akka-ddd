@@ -25,13 +25,9 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](
   def dummyId: DummyId = aggregateId
 
   //
-  // Command generators
+  // Custom generators
   //
-  implicit def aValue: A[Value] = Arbitrary { for {
-    value <- Gen.choose(1, 1000)
-  } yield {
-    Value(value)
-  }}
+  implicit def aValue: A[Value] = Arbitrary { Gen.choose(1, 1000).map(Value) }
 
   "Dummy office" should {
     /**
