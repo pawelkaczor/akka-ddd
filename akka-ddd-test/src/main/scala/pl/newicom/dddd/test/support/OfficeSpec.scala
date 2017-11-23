@@ -44,7 +44,7 @@ abstract class OfficeSpec[Event <: DomainEvent, AR <: AggregateRoot[Event, _, AR
   val testSuiteId: String = uuid10
 
   before {
-    _aggregateIdGen = Gen.const[String](if (shareAggregateRoot) testSuiteId else uuid10).map(s => new AggregateId(s))
+    _aggregateIdGen = Gen.const[String](if (shareAggregateRoot) testSuiteId else uuid10).map(s => AggregateId(s))
   }
 
   after {

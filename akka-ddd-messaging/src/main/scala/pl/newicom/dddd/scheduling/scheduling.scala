@@ -8,7 +8,7 @@ import pl.newicom.dddd.aggregate.{AggregateId, Command, DomainEvent}
   // Commands
   //
   case class ScheduleEvent(businessUnit: String, target: ActorPath, deadline: DateTime, event: DomainEvent) extends Command {
-    def aggregateId: AggregateId = new AggregateId(businessUnit)
+    def aggregateId: AggregateId = AggregateId(businessUnit)
   }
 
   // 

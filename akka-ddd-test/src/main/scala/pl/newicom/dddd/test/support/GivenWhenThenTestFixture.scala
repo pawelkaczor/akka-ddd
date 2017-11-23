@@ -42,7 +42,7 @@ case class Given(cs: Seq[Command] = Seq.empty)(implicit s: ActorSystem, ch: Comm
   }
 
   private def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(Seq(new Command {
-    override def aggregateId: AggregateId = new AggregateId(uuid)
+    override def aggregateId: AggregateId = AggregateId(uuid)
   }), pastEvents)
 
 }
