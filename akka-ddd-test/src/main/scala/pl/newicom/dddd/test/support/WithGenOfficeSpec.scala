@@ -1,25 +1,25 @@
 package pl.newicom.dddd.test.support
 
-import org.scalacheck.Gen
+import com.danielasfregola.randomdatagenerator.RandomDataGenerator
+import org.scalacheck.{Arbitrary, Gen}
 import pl.newicom.dddd.aggregate.Command
 
-import scala.annotation.tailrec
+trait DefaultGenerators {
 
-trait WithGenOfficeSpec {
+  implicit val arbitraryString: Arbitrary[String] = Arbitrary(Gen.alphaStr)
+}
 
-  @tailrec
-  implicit final def arbitraryToSample[C <: Command](g: Gen[C]): C = {
-    g.sample match {
-      case Some(x) => x
-      case _ => arbitraryToSample(g)
-    }
-  }
+trait WithGenOfficeSpec extends DefaultGenerators {
 
-  def a[C <: Command](implicit g: Gen[C]): Gen[C] = g
+  type A[T] = Arbitrary[T]
 
-  def a_list_of[C1 <: Command, C2 <: Command, C3 <: Command](implicit g1: Gen[C1], g2: Gen[C2], g3: Gen[C3]): List[Command] = List(g1, g2, g3)
-  def a_list_of[C1 <: Command, C2 <: Command, C3 <: Command, C4 <: Command](implicit g1: Gen[C1], g2: Gen[C2], g3: Gen[C3], g4: Gen[C4]): List[Command] = List(g1, g2, g3, g4)
-  def a_list_of[C1 <: Command, C2 <: Command](implicit g1: Gen[C1], g2: Gen[C2]): List[Command] = List(g1, g2)
+  implicit final def arbitraryToSample[C <: Command](a: A[C]): C =
+    RandomDataGenerator.random(a)
 
-  def arbitraryOf[C <: Command](adjust: (C) => C = {x: C => x})(implicit g: Gen[C]): C = adjust(g)
+  def a[C <: Command](implicit a: A[C]): A[C] = a
+
+  def a_list_of[C1 <: Command, C2 <: Command, C3 <: Command](implicit g1: A[C1], g2: A[C2], g3: A[C3]): List[Command] = List(g1, g2, g3)
+  def a_list_of[C1 <: Command, C2 <: Command, C3 <: Command, C4 <: Command](implicit g1: A[C1], g2: A[C2], g3: A[C3], g4: A[C4]): List[Command] = List(g1, g2, g3, g4)
+  def a_list_of[C1 <: Command, C2 <: Command](implicit g1: A[C1], g2: A[C2]): List[Command] = List(g1, g2)
+
 }

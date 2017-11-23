@@ -10,7 +10,7 @@ case class CommandMessage(command: Command, metadata: MetaData = MetaData.initia
   type MessageImpl = CommandMessage
 
   override def destination: Option[EntityId] =
-    Some(command.aggregateId)
+    Some(command.aggregateId.value)
 
   override def payload: Any = command
 

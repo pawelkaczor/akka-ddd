@@ -109,7 +109,7 @@ class DummyAggregateRoot(cfg: DummyConfig)
     (valueGeneratorActor !< GenerateRandom) {
       case ValueGeneratorActor.ValueGenerated(value) =>
         state.rejectInvalid(value) orElse
-          ValueGenerated(id, value, confirmationToken = uuidObj) match {
+          ValueGenerated(new DummyId(id), value, confirmationToken = uuidObj) match {
           case Reject(_) => valueGeneration
           case r         => r
         }

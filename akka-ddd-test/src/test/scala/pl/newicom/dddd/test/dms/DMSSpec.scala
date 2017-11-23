@@ -1,10 +1,10 @@
 package pl.newicom.dddd.test.dms
 
 import akka.actor.Props
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig, EntityId}
+import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig}
 import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.test.dms.DMSProtocol.VersionUpdate.{creation, noVU}
-import pl.newicom.dddd.test.dms.DMSProtocol.{ChangeContent, ContentChanged, Create, Created, DMSEvent, GetPublishedRevisions, GetPublishedVersions, Publish, Published, PublishedRevisions, PublishedVersions, Revision, Version, VersionUpdate}
+import pl.newicom.dddd.test.dms.DMSProtocol.{ChangeContent, ContentChanged, Create, Created, DMSEvent, DocId, GetPublishedRevisions, GetPublishedVersions, Publish, Published, PublishedRevisions, PublishedVersions, Revision, Version, VersionUpdate}
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 import DMSSpec._
@@ -26,7 +26,7 @@ class DMSSpec extends OfficeSpec[DMSEvent, DocumentAR](Some(testSystem), shareAg
 
   def cmsOffice: OfficeRef = officeUnderTest
 
-  def docId: EntityId = aggregateId
+  def docId: DocId = aggregateId
   implicit def toRevision(version: Version): Revision = Revision(docId, version)
 
   "CMS office" should {

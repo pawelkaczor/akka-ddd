@@ -28,7 +28,7 @@ lazy val root = (project in file("."))
 lazy val `akka-ddd-protocol` = project
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(Akka.actor, Enum.enumeratum, scalaTest % "test") ++ Json.`4s`
+    libraryDependencies ++= Seq(Akka.actor, Enum.enumeratum, scalaTagging, scalaTest % "test") ++ Json.`4s`
   )
 
 lazy val `akka-ddd-messaging` = project
@@ -91,7 +91,7 @@ lazy val `akka-ddd-test` = project
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
     parallelExecution in IntegrationTest := false,
     libraryDependencies ++= Seq(
-      Akka.testkit, Akka.multiNodeTestkit, scalaCheck, scalaTest, commonIO, logbackClassic % "test"
+      Akka.testkit, Akka.multiNodeTestkit, scalaCheck, randomDataGen, scalaTest, commonIO, logbackClassic % "test"
     ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence` % "test->compile")
 

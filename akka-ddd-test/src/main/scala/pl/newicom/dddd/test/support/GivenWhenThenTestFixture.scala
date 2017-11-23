@@ -3,9 +3,10 @@ package pl.newicom.dddd.test.support
 import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
-import org.scalacheck.Gen
+import com.danielasfregola.randomdatagenerator.RandomDataGenerator
+import org.scalacheck.Arbitrary
 import pl.newicom.dddd.aggregate.error.CommandRejected
-import pl.newicom.dddd.aggregate.{Command, DomainEvent}
+import pl.newicom.dddd.aggregate.{AggregateId, Command, DomainEvent}
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.command.CommandMessage
@@ -15,7 +16,6 @@ import pl.newicom.dddd.office.SimpleOffice.Batch
 import pl.newicom.dddd.test.support.GivenWhenThenTestFixture.{Commands, CommandsHandler, ExpectedEvents, PastEvents, WhenContext, testProbe}
 import pl.newicom.dddd.utils.UUIDSupport.uuid
 
-import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
@@ -42,7 +42,7 @@ case class Given(cs: Seq[Command] = Seq.empty)(implicit s: ActorSystem, ch: Comm
   }
 
   private def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(Seq(new Command {
-    override def aggregateId: String = uuid
+    override def aggregateId: AggregateId = new AggregateId(uuid)
   }), pastEvents)
 
 }
@@ -170,16 +170,11 @@ object GivenWhenThenTestFixture {
   implicit def commandsToWhenContext[C <: Command](cs: Commands[C]): WhenContext[C] = WhenContext[C](cs.commands)
 
 
-  @tailrec
-  implicit final def commandGenToWhenContext[C <: Command](cGen: Gen[C]): WhenContext[C] = {
-    cGen.sample match {
-      case Some(x) => commandToWhenContext(x)
-      case _ => commandGenToWhenContext[C](cGen)
-    }
-  }
+  implicit final def aCmdToWhenContext[C <: Command](cmd: Arbitrary[C]): WhenContext[C] =
+    commandToWhenContext(RandomDataGenerator.random(cmd))
 
-  implicit def commandGenWithParamToWhenContext[C <: Command](cGen: Gen[(C, Any)]): WhenContext[C] = {
-    val (c, param1) = cGen.sample.get
+  implicit def aCmdWithParamToWhenContext[C <: Command](cmd: Arbitrary[(C, Any)]): WhenContext[C] = {
+    val (c, param1) = RandomDataGenerator.random(cmd)
     WhenContext(Seq(c), PastEvents(), List(param1))
   }
 

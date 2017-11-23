@@ -6,7 +6,7 @@ import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.office.{LocalOfficeId, OfficeRef, RemoteOfficeId}
 import pl.newicom.dddd.process._
 import pl.newicom.dddd.saga.{BusinessProcessId, ProcessConfig}
-import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyCreated, ValueChanged}
+import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyCreated, DummyId, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyState, EventApplied, Poison}
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
@@ -19,8 +19,8 @@ object DummySaga {
     override val id: EntityId = bpsName
 
     def correlationIdResolver: PartialFunction[DomainEvent, EntityId] = {
-      case ValueChanged(pId, _, _) => pId
-      case DummyCreated(pId, _, _, _) => pId
+      case ValueChanged(pId, _, _) => pId.value
+      case DummyCreated(pId, _, _, _) => pId.value
       case other => throw new scala.RuntimeException(s"unknown event: ${other.getClass.getName}")
     }
   }
@@ -31,8 +31,8 @@ object DummySaga {
     }
   }
 
-  case class DummyCommand(processId: EntityId, value: Int) extends Command {
-    override def aggregateId: String = processId
+  case class DummyCommand(processId: DummyId, value: Int) extends Command {
+    override def aggregateId: DummyId = processId
   }
 
   case class EventApplied(e: DomainEvent)

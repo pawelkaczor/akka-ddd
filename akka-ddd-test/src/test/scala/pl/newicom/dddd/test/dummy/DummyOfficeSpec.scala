@@ -2,7 +2,7 @@ package pl.newicom.dddd.test.dummy
 
 import akka.actor.Props
 import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitialized, CommandHandlerNotDefined, DomainException}
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, AggregateRootLogger, EntityId}
+import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, AggregateRootLogger}
 import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 import pl.newicom.dddd.test.dummy.DummyOfficeSpec._
@@ -22,7 +22,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(te
 
   def dummyOffice: OfficeRef = officeUnderTest
 
-  def dummyId: EntityId = aggregateId
+  def dummyId: DummyId = aggregateId
 
   "Dummy office" should {
 

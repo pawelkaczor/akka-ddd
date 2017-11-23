@@ -20,10 +20,12 @@ object Deps {
     // monitoring
     val Kamon = "0.6.6"
 
+    val ScalaTagging = "2.2.0"
+
     // test
     val ScalaTest  = "3.0.1"
     val ScalaCheck = "1.13.4"
-
+    val RandomDataGen = "2.2"
     val LogbackClassic = "1.1.7"
     val nScalaTime     = "2.16.0"
   }
@@ -88,10 +90,13 @@ object Deps {
   object TestFrameworks {
     val scalaTest  = "org.scalatest"  %% "scalatest"  % Version.ScalaTest
     val scalaCheck = "org.scalacheck" %% "scalacheck" % Version.ScalaCheck
+    val randomDataGen = "com.danielasfregola" %% "random-data-generator" % Version.RandomDataGen
   }
 
   val levelDB        = Seq("org.iq80.leveldb" % "leveldb" % "0.7", "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8")
   val commonIO       = "commons-io" % "commons-io" % "2.4"
   val logbackClassic = "ch.qos.logback" % "logback-classic" % Version.LogbackClassic
   val nscalaTime     = "com.github.nscala-time" %% "nscala-time" % Version.nScalaTime
+
+  val scalaTagging   = "com.softwaremill.common" %% "tagging" % Version.ScalaTagging
 }

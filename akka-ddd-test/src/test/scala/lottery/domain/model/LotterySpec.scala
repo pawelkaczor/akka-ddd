@@ -1,5 +1,7 @@
 package lottery.domain.model
 
+import org.scalacheck.ScalacheckShapeless._
+import com.softwaremill.tagging.@@
 import lottery.domain.model.LotteryProtocol._
 import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.office.OfficeRef
@@ -12,7 +14,7 @@ class LotterySpec extends LotterySpecSupport {
 
     "run" in {
       given {
-        a_list_of [CreateLottery, AddParticipant, AddParticipant]
+        a_list_of [CreateLottery, AddParticipant @@ Paul, AddParticipant @@ John]
       }
       .when {
         a [Run]
@@ -24,7 +26,7 @@ class LotterySpec extends LotterySpecSupport {
 
     "not run twice" in {
       given {
-        a_list_of[CreateLottery, AddParticipant, AddParticipant, Run]
+        a_list_of[CreateLottery, AddParticipant @@ Paul, AddParticipant @@ John, Run]
       }
       .when {
         a [Run]
@@ -43,22 +45,18 @@ class LotterySpec extends LotterySpecSupport {
     }
 
     "not add twice the same participant" in {
-      var participant: String = null
-
       given {
-        a_list_of [CreateLottery, AddParticipant]
+        a_list_of [CreateLottery, AddParticipant @@ John]
       }
-      .when { implicit hist =>
-        participant = past[ParticipantAdded].name
-
-        AddParticipant(lotteryId, participant)
+      .when {
+        a [AddParticipant @@ John]
       }
-      .expectException[DomainException](s"Participant $participant already added!")
+      .expectException[DomainException](s"Participant John already added!")
     }
 
     "reset" in {
       given {
-        a_list_of [CreateLottery, AddParticipant, AddParticipant]
+        a_list_of [CreateLottery, AddParticipant @@ John, AddParticipant @@ Paul]
       }
       .when {
         a [RemoveAllParticipants]
@@ -71,7 +69,7 @@ class LotterySpec extends LotterySpecSupport {
 
     "not reset if has a winner" in {
       given {
-        a_list_of [CreateLottery, AddParticipant, AddParticipant, Run]
+        a_list_of [CreateLottery, AddParticipant @@ John, AddParticipant @@ Paul, Run]
       }
       .when {
         a [RemoveAllParticipants]
@@ -81,10 +79,10 @@ class LotterySpec extends LotterySpecSupport {
 
     "not add participant if has a winner" in {
       given {
-        a_list_of [CreateLottery, AddParticipant, AddParticipant, Run]
+        a_list_of [CreateLottery, AddParticipant @@ John, AddParticipant @@ Paul, Run]
       }
       .when {
-        a [AddParticipant]
+        a [AddParticipant @@ John]
       }
       .expectException[LotteryHasAlreadyAWinner]()
     }

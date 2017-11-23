@@ -1,10 +1,12 @@
 package lottery.domain.model
 
+import com.softwaremill.tagging._
 import akka.actor.Props
+import com.softwaremill.tagging.@@
 import lottery.domain.model.LotteryBehaviour.LotteryId
 import lottery.domain.model.LotteryProtocol._
 import lottery.domain.model.LotterySpecSupport._
-import org.scalacheck.Gen
+import org.scalacheck.{Arbitrary, Gen}
 import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig}
 import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
@@ -18,23 +20,20 @@ class LotterySpecSupport extends OfficeSpec[LotteryEvent, LotteryAggregateRoot](
 
   def lotteryId: LotteryId = aggregateId
 
-  var generatedParticipants: Set[String] = Set()
+  // participants
+  trait Paul
+  trait John
 
-  override def ensureOfficeTerminated(): Unit = {
-    generatedParticipants = Set()
-    super.ensureOfficeTerminated()
+  implicit def AddPaulParticipant: A[AddParticipant @@ Paul] = Arbitrary {
+    for {name <- Gen.const("Paul")} yield {
+      AddParticipant(lotteryId, name).taggedWith[Paul]
+    }
   }
 
-  implicit def genCreate: Gen[CreateLottery] = Gen.const(CreateLottery(lotteryId))
-
-  implicit def genRun: Gen[Run] = Gen.const(Run(lotteryId))
-
-  implicit def genAddParticipant: Gen[AddParticipant] = for {
-    name <- Gen.oneOf("Paul", "John").suchThat(p => !generatedParticipants.contains(p))
-  } yield {
-    generatedParticipants = generatedParticipants + name
-    AddParticipant(lotteryId, name)
+  implicit def AddJohnParticipant: A[AddParticipant @@ John] = Arbitrary {
+    for {name <- Gen.const("John")} yield {
+      AddParticipant(lotteryId, name).taggedWith[John]
+    }
   }
 
-  implicit def genRemoveAll: Gen[RemoveAllParticipants] = Gen.const(RemoveAllParticipants(lotteryId))
 }

@@ -49,7 +49,7 @@ object DocumentAR extends AggregateRootSupport {
       }
       .handleQuery[GetPublishedRevisions] { q =>
         reply(PublishedRevisions(docsByVersion.map {
-          case (a, b) => Revision("a", a, b.epoch)
+          case (a, b) => Revision(new DocId("a"), a, b.epoch)
         }.toSet))
       }
 

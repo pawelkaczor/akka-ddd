@@ -2,14 +2,14 @@ package pl.newicom.dddd.test.support
 
 import akka.actor._
 import akka.testkit.TestKit
-import org.scalacheck.Gen
+import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, WordSpecLike}
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
-import pl.newicom.dddd.actor.{BusinessEntityActorFactory, ActorFactory}
+import pl.newicom.dddd.actor.{ActorFactory, BusinessEntityActorFactory}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.office.SimpleOffice._
-import pl.newicom.dddd.office.{LocalOfficeId, OfficeRef, OfficeListener}
+import pl.newicom.dddd.office.{LocalOfficeId, OfficeListener, OfficeRef}
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.test.support.OfficeSpec.sys
 import pl.newicom.dddd.utils.UUIDSupport._
@@ -24,25 +24,27 @@ object OfficeSpec {
 /**
  * @param shareAggregateRoot if set to true, the same AR instance will be used in all tests, default is false
  */
-abstract class OfficeSpec[Event <: DomainEvent, A <: AggregateRoot[Event, _, A] : BusinessEntityActorFactory : LocalOfficeId](_system: Option[ActorSystem] = None, val shareAggregateRoot: Boolean = false)(implicit arClassTag: ClassTag[A])
+abstract class OfficeSpec[Event <: DomainEvent, AR <: AggregateRoot[Event, _, AR] : BusinessEntityActorFactory : LocalOfficeId](_system: Option[ActorSystem] = None, val shareAggregateRoot: Boolean = false)(implicit arClassTag: ClassTag[AR])
   extends GivenWhenThenTestFixture[Event](_system.getOrElse(sys(arClassTag.runtimeClass))) with WithGenOfficeSpec with WordSpecLike with BeforeAndAfterAll with BeforeAndAfter {
 
   val logger: Logger = getLogger(getClass)
 
   override def officeUnderTest: OfficeRef = {
-    implicit val _ = new OfficeListener[A]
-    if (_officeUnderTest == null) _officeUnderTest = office[A]
+    implicit val _ = new OfficeListener[AR]
+    if (_officeUnderTest == null) _officeUnderTest = office[AR]
     _officeUnderTest
   }
 
   private var _officeUnderTest: OfficeRef = _
 
-  implicit var _aggregateIdGen: Gen[EntityId] = _
+  implicit var _aggregateIdGen: Gen[AggregateId] = _
+
+  implicit def aggregatedIdArb: Arbitrary[AggregateId] = Arbitrary(_aggregateIdGen)
 
   val testSuiteId: String = uuid10
 
   before {
-    _aggregateIdGen = Gen.const[EntityId](if (shareAggregateRoot) testSuiteId else uuid10)
+    _aggregateIdGen = Gen.const[String](if (shareAggregateRoot) testSuiteId else uuid10).map(s => new AggregateId(s))
   }
 
   after {
@@ -53,7 +55,7 @@ abstract class OfficeSpec[Event <: DomainEvent, A <: AggregateRoot[Event, _, A] 
     TestKit.shutdownActorSystem(system)
   }
 
-  def aggregateId(implicit aggregateIdGen: Gen[EntityId]): EntityId = aggregateIdGen.sample.get
+  def aggregateId(implicit aggregateIdGen: Gen[AggregateId]): AggregateId = aggregateIdGen.sample.get
 
   implicit def topLevelParent[T : LocalOfficeId](implicit system: ActorSystem): ActorFactory[T] = {
     new ActorFactory[T] {

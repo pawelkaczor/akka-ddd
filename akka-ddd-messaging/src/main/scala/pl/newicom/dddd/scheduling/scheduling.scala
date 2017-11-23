@@ -2,13 +2,13 @@ package pl.newicom.dddd.scheduling
 
 import akka.actor.ActorPath
 import org.joda.time.DateTime
-import pl.newicom.dddd.aggregate.{Command, DomainEvent, EntityId}
+import pl.newicom.dddd.aggregate.{AggregateId, Command, DomainEvent}
 
   //
   // Commands
   //
   case class ScheduleEvent(businessUnit: String, target: ActorPath, deadline: DateTime, event: DomainEvent) extends Command {
-    def aggregateId: EntityId = businessUnit
+    def aggregateId: AggregateId = new AggregateId(businessUnit)
   }
 
   // 

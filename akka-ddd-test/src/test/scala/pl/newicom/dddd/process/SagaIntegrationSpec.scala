@@ -2,7 +2,6 @@ package pl.newicom.dddd.process
 
 import akka.actor._
 import akka.testkit.TestProbe
-import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.coordination.ReceptorConfig
 import pl.newicom.dddd.delivery.protocol.Processed
@@ -37,7 +36,7 @@ class SagaIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Som
 
   override val shareAggregateRoot = true
 
-  def dummyId: EntityId = aggregateId
+  def dummyId: DummyId = aggregateId
 
   implicit lazy val testSagaConfig: DummySagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 

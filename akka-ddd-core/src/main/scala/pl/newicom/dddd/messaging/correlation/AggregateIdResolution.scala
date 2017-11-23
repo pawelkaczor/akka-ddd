@@ -7,7 +7,7 @@ class AggregateIdResolution extends EntityIdResolution {
 
   override def entityIdResolver: EntityIdResolver = {
     super.entityIdResolver.orElse {
-      case c: Command => c.aggregateId
+      case c: Command => c.aggregateId.value
     }
   }
 }

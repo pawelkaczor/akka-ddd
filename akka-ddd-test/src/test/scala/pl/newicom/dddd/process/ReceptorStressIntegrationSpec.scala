@@ -35,7 +35,7 @@ object ReceptorStressIntegrationSpec {
   */
 class ReceptorStressIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("ReceptorStressSpec"))) {
 
-  def dummyId: EntityId = aggregateId
+  def dummyId: AggregateId = aggregateId
 
   implicit lazy val testSagaConfig: DummySagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
