@@ -20,8 +20,6 @@ object DummyOfficeSpec {
 
 class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
 
-  def dummyOffice: OfficeRef = officeUnderTest
-
   def dummyId: DummyId = aggregateId
 
   "Dummy office" should {

@@ -7,14 +7,11 @@ import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.DeliveryHandler
 import pl.newicom.dddd.messaging.{Message, MetaData, MetaDataPropagationPolicy}
 import pl.newicom.dddd.messaging.command.CommandMessage
-import pl.newicom.dddd.office.OfficeFactory._
-import pl.newicom.dddd.office.{CommandHandlerResolver, OfficeRef, RemoteOfficeId}
+import pl.newicom.dddd.office._
 import pl.newicom.dddd.scheduling.ScheduleEvent
 
 trait SagaCollaboration {
   this: SagaBase =>
-
-  protected def processCollaborators: List[RemoteOfficeId[_]]
 
   protected def deliverMsg(target: ActorPath, msg: Message): Unit = {
     deliver(target)(msg.withDeliveryId(_))
@@ -40,8 +37,9 @@ trait SagaCollaboration {
   // DSL helpers
   //
 
-  def ⟶[C <: Command](command: C): Unit =
+  def ⟶[C <: Command](command: C): Unit = {
     handlerOf(command) !! command
+  }
 
   def ⟵(event: DomainEvent): ToBeScheduled = schedule(event)
 
@@ -69,8 +67,10 @@ trait SagaCollaboration {
 
   private implicit val as: ActorSystem = context.system
 
-  private val officeIdResolver = new CommandHandlerResolver(processCollaborators)
+  private val officeIdResolver = new CommandHandlerResolver
+  private val officeRegistry = OfficeRegistry(as)
 
-  private def handlerOf(command: Command)(implicit as: ActorSystem): OfficeRef = office(officeIdResolver(command))
+  private def handlerOf(command: Command): CommandHandler =
+    officeRegistry.officeRef(officeIdResolver(command).id)
 
 }

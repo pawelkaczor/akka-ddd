@@ -11,10 +11,10 @@ import scala.reflect.ClassTag
 object LocalOfficeId {
 
   implicit def fromRemoteId[E : ClassTag](remoteId: RemoteOfficeId[_]): LocalOfficeId[E] =
-    LocalOfficeId[E](remoteId.id, remoteId.department)
+    LocalOfficeId[E](remoteId.id, remoteId.department, Some(remoteId.commandClass))
 }
 
-case class LocalOfficeId[E : ClassTag](id: EntityId, department: String) extends OfficeId {
+case class LocalOfficeId[E : ClassTag](id: EntityId, department: String, messageClass: Option[Class[_]] = None) extends OfficeId {
 
   def caseClass: Class[E] =
     implicitly[ClassTag[E]].runtimeClass.asInstanceOf[Class[E]]
@@ -31,7 +31,11 @@ trait OfficeRefLike {
   def ?(query: Query)(implicit ex: ExecutionContext, t: Timeout, ct: ClassTag[query.R], sender: ActorRef): Future[query.R]
 }
 
-class OfficeRef(override val officeId: OfficeId, val actor: ActorRef) extends OfficeRefLike {
+trait CommandHandler {
+  def !!(msg: Any)(implicit dh: DeliveryHandler): Unit
+}
+
+class OfficeRef(override val officeId: OfficeId, val actor: ActorRef) extends OfficeRefLike with CommandHandler {
   import akka.pattern.ask
 
   def actorPath: ActorPath = actor.path

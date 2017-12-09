@@ -8,10 +8,15 @@ import scala.reflect.ClassTag
 
 trait OfficeId extends BusinessEntity with Eventsourced {
 
+  def messageClass: Option[Class[_]]
+
   def caseRef(caseLocalId: EntityId): CaseRef =
     CaseRef(s"$id-$caseLocalId", this, version = None)
 
   def distributionStrategy = new DefaultDistributionStrategy
+
+  def handles(command: Command): Boolean = messageClass.exists(_.isAssignableFrom(command.getClass))
+
 }
 
 case class CaseRef(id: EntityId, responsible: Eventsourced, version: Option[Long]) extends BusinessEntity with Eventsourced {
@@ -19,6 +24,7 @@ case class CaseRef(id: EntityId, responsible: Eventsourced, version: Option[Long
   def localId: EntityId = if (id.contains('-')) id.split('-').last else id
 }
 
-case class RemoteOfficeId[M: ClassTag](id: EntityId, department: String, messageClass: Class[M]) extends OfficeId {
-  def handles(command: Command): Boolean = messageClass.isAssignableFrom(command.getClass)
+case class RemoteOfficeId[M: ClassTag](id: EntityId, department: String, commandClass: Class[M]) extends OfficeId {
+  override def messageClass: Option[Class[_]] = Some(commandClass)
 }
+

@@ -6,7 +6,8 @@ import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.office.LocalOfficeId
 
 package object model {
-  implicit val lotteryOfficeId = new LocalOfficeId[LotteryAggregateRoot](classOf[LotteryAggregateRoot].getSimpleName, "lottery")
+  implicit val lotteryOfficeId: LocalOfficeId[LotteryAggregateRoot] =
+    new LocalOfficeId[LotteryAggregateRoot](classOf[LotteryAggregateRoot].getSimpleName, "lottery")
 
   class LotteryAggregateRoot(val config: Config) extends AggregateRoot[LotteryEvent, Lottery, LotteryAggregateRoot]
     with ConfigClass[Config]

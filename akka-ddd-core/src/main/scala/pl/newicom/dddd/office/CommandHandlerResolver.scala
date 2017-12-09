@@ -1,11 +1,14 @@
 package pl.newicom.dddd.office
 
+import akka.actor.ActorSystem
 import pl.newicom.dddd.aggregate.Command
 
-class CommandHandlerResolver(officeIDs: List[RemoteOfficeId[_]]) extends Function[Command, RemoteOfficeId[_]] {
+class CommandHandlerResolver()(implicit as: ActorSystem) extends Function[Command, OfficeId] {
 
-  override def apply(command: Command): RemoteOfficeId[_] = {
-    val handlerOpt = officeIDs.find(_.handles(command))
+  val officeRegistry = OfficeRegistry(as)
+
+  override def apply(command: Command): OfficeId = {
+    val handlerOpt = officeRegistry.inClusterOffices.find(_.handles(command))
     if (handlerOpt.isDefined)
       handlerOpt.get
     else
