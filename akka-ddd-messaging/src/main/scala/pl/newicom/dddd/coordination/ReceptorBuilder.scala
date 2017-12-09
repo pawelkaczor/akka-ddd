@@ -5,6 +5,7 @@ import pl.newicom.dddd.Eventsourced
 import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.coordination.ReceptorConfig.{ReceiverResolver, StimuliSource, Transduction}
 import pl.newicom.dddd.messaging.Message
+import pl.newicom.dddd.messaging.MetaAttribute.Target
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.LocalOfficeId
 
@@ -46,6 +47,11 @@ case class ReceptorBuilder(
 
   def applyTransduction(transduction: Transduction): ReceptorBuilder =
     copy(transduction = transduction)
+
+  def autoRoute: ReceptorConfig = route {
+    case msg: Message =>
+      ActorPath.fromString(msg.getMetaAttribute(Target))
+  }
 
   def route(receiverResolver: ReceiverResolver): ReceptorConfig =
     ReceptorConfig(id, stimuliSource, transduction, receiverResolver, capacity)
