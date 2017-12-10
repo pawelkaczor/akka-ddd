@@ -38,7 +38,8 @@ trait SagaCollaboration {
   //
 
   def ⟶[C <: Command](command: C): Unit = {
-    handlerOf(command) !! command
+    val dc = deliverableCommand(command)
+    handlerOf(dc) !! dc
   }
 
   def ⟵(event: DomainEvent): ToBeScheduled = schedule(event)
@@ -65,12 +66,21 @@ trait SagaCollaboration {
   // Private members
   //
 
-  private implicit val as: ActorSystem = context.system
+  private implicit lazy val as: ActorSystem = context.system
 
-  private val officeIdResolver = new CommandHandlerResolver
-  private val officeRegistry = OfficeRegistry(as)
+  private lazy val commandHandlerResolver = new CommandHandlerResolver()
+  private lazy val officeRegistry = OfficeRegistry(as)
+
+  private def deliverableCommand(command: Command): Command = {
+    val officeId = commandHandlerResolver(command)
+    if (officeRegistry.isOfficeAvailableInCluster(officeId.id)) {
+      command
+    } else {
+      EnqueueCommand(command, officeId.id, officeId.department)
+    }
+  }
 
   private def handlerOf(command: Command): CommandHandler =
-    officeRegistry.officeRef(officeIdResolver(command).id)
+    officeRegistry.officeRef(commandHandlerResolver(command).id)
 
 }

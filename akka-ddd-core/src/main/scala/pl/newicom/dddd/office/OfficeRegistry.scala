@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
-
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 class OfficeRegistryImpl(implicit as: ActorSystem) extends Extension {
@@ -52,8 +51,13 @@ class OfficeRegistryImpl(implicit as: ActorSystem) extends Extension {
     ref
   }
 
-  def inClusterOffices: Set[OfficeId] =
-    _inClusterOffices.values().asScala.toSet.map((o: OfficeRef) => o.officeId)
+  def find(p: OfficeId => Boolean): Option[OfficeId] =
+    offices.find(p)
+
+  private def offices: Set[OfficeId] =
+  _inClusterOffices.values().asScala.toSet.map((o: OfficeRef) => o.officeId) ++
+    _externalOffices.values().asScala.toSet
+
 }
 
 object OfficeRegistry extends ExtensionId[OfficeRegistryImpl] with ExtensionIdProvider {

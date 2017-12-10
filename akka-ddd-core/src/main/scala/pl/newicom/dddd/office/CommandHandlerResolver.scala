@@ -8,7 +8,7 @@ class CommandHandlerResolver()(implicit as: ActorSystem) extends Function[Comman
   val officeRegistry = OfficeRegistry(as)
 
   override def apply(command: Command): OfficeId = {
-    val handlerOpt = officeRegistry.inClusterOffices.find(_.handles(command))
+    val handlerOpt = officeRegistry.find(_.handles(command))
     if (handlerOpt.isDefined)
       handlerOpt.get
     else

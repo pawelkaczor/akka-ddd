@@ -12,9 +12,11 @@ import org.json4s.JsonAST._
 import org.json4s.ext.EnumNameSerializer
 import org.json4s.native.Serialization.{read, write}
 import org.json4s.{CustomSerializer, Formats, FullTypeHints, JValue, Serializer, TypeInfo}
+import pl.newicom.dddd.aggregate.Command
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.delivery.protocol.alod.{Processed => AlodProcessed}
 import pl.newicom.dddd.messaging.{MetaData, PublisherTypeValue}
+import pl.newicom.dddd.process.CommandEnqueued
 import pl.newicom.dddd.scheduling.{EventScheduled, ScheduledEventMetadata}
 import pl.newicom.dddd.serialization.{JsonExtraSerHints, JsonSerHints}
 import pl.newicom.dddd.serialization.JsonSerHints._
@@ -31,9 +33,9 @@ class JsonSerializerExtensionImpl(system: ExtendedActorSystem) extends Extension
   val extraHints = JsonExtraSerHints(
     typeHints =
       FullTypeHints(
-        List(classOf[MetaData], classOf[Processed], classOf[AlodProcessed], classOf[PersistentRepr], classOf[EventScheduled])),
+        List(classOf[MetaData], classOf[Processed], classOf[AlodProcessed], classOf[PersistentRepr], classOf[EventScheduled], classOf[CommandEnqueued])),
     serializers =
-      List(ActorRefSerializer, ActorPathSerializer, new ScheduledEventSerializer, SnapshotJsonSerializer(system), new EnumNameSerializer(PublisherTypeValue))
+      List(ActorRefSerializer, ActorPathSerializer, new ScheduledEventSerializer, new EnqueuedCommandSerializer, SnapshotJsonSerializer(system), new EnumNameSerializer(PublisherTypeValue))
   )
 
   val UTF8: Charset = Charset.forName("UTF-8")
@@ -100,6 +102,32 @@ class ScheduledEventSerializer extends Serializer[EventScheduled] {
         "metadata"    -> decompose(metadata),
         "eventClass"  -> JString(event.getClass.getName),
         "event"       -> decompose(event)
+      )
+  }
+}
+
+class EnqueuedCommandSerializer extends Serializer[CommandEnqueued] {
+  val Clazz: Class[CommandEnqueued] = classOf[CommandEnqueued]
+
+  def deserialize(implicit formats: Formats): PartialFunction[(TypeInfo, JValue), CommandEnqueued] = {
+    case (TypeInfo(Clazz, _), JObject(List(
+    JField("officeId", JString(officeId)),
+    JField("department", JString(department)),
+    JField("commandClass", JString(commandClassName)),
+    JField("command", command)))) =>
+      val commandClass = Class.forName(commandClassName)
+      val commandObj = command.extract[Command](formats, Manifest.classType(commandClass))
+      CommandEnqueued(commandObj, officeId, department)
+  }
+
+  def serialize(implicit formats: Formats): PartialFunction[Any, JObject] = {
+    case CommandEnqueued(command, officeId, department) =>
+      JObject(
+        "jsonClass"     -> JString(classOf[CommandEnqueued].getName),
+        "officeId"      -> JString(officeId),
+        "department"    -> JString(department),
+        "commandClass"  -> JString(command.getClass.getName),
+        "command"       -> decompose(command)
       )
   }
 }
