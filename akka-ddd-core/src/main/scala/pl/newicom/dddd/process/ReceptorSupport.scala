@@ -12,13 +12,12 @@ object ReceptorSupport {
 
 object CommandReceptorSupport {
 
+  def receptor[A <: CommandReception : LocalOfficeId : ReceptorActorFactory](implicit as: ActorSystem): ActorRef =
+    ReceptorSupport.receptor[A](CommandQueueReceptor(implicitly[LocalOfficeId[A]].department)(OfficeRegistry(as)))
+
   case class CommandReception(department: String) {
-    implicit def commandReceptionOfficeId: LocalOfficeId[CommandReception] =
-      new LocalOfficeId[CommandReception]("command-reception", department)
-
-    def receptor[A <: CommandReception : ReceptorActorFactory](implicit as: ActorSystem): ActorRef =
-      ReceptorSupport.receptor[A](CommandQueueReceptor(department)(OfficeRegistry(as)))
-
+    def apply(f: LocalOfficeId[CommandReception] => ActorRef): ActorRef =
+      f(new LocalOfficeId[CommandReception]("command-reception", department))
   }
 
 }
