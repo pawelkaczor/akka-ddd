@@ -4,13 +4,13 @@ import akka.actor.Props
 import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitialized, CommandHandlerNotDefined, DomainException}
 import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, AggregateRootLogger}
 import pl.newicom.dddd.office.OfficeRef
+import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
-import pl.newicom.dddd.test.dummy.DummyOfficeSpec._
+import pl.newicom.dddd.test.dummy.DummySpec._
 import pl.newicom.dddd.test.dummy.DummyProtocol._
-import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 
-object DummyOfficeSpec {
+object DummySpec {
 
   implicit def actorFactory: AggregateRootActorFactory[DummyAggregateRoot] =
     AggregateRootActorFactory[DummyAggregateRoot](pc => Props(
@@ -18,7 +18,7 @@ object DummyOfficeSpec {
     ))
 }
 
-class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
+class DummySpec extends ARSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
 
   def dummyId: DummyId = aggregateId
 

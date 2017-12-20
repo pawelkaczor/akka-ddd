@@ -1,4 +1,4 @@
-package pl.newicom.dddd.test.support
+package pl.newicom.dddd.test.ar
 
 import com.danielasfregola.randomdatagenerator.RandomDataGenerator
 import org.scalacheck.{Arbitrary, Gen}
@@ -9,7 +9,7 @@ trait DefaultGenerators {
   implicit val arbitraryString: Arbitrary[String] = Arbitrary(Gen.alphaStr)
 }
 
-trait WithGenOfficeSpec extends DefaultGenerators {
+trait WithGenARSpec extends DefaultGenerators {
 
   type A[T] = Arbitrary[T]
 

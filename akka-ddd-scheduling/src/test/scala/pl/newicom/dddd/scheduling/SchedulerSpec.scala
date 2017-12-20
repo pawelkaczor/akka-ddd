@@ -3,10 +3,10 @@ package pl.newicom.dddd.scheduling
 import akka.actor.Props
 import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig}
-import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 import SchedulerSpec._
 import pl.newicom.dddd.office.LocalOfficeId
+import pl.newicom.dddd.test.ar.ARSpec
 
 object SchedulerSpec {
   val businessUnit = "test"
@@ -18,7 +18,7 @@ object SchedulerSpec {
 
 }
 
-class SchedulerSpec extends OfficeSpec[SchedulerEvent, Scheduler](Some(testSystem)) {
+class SchedulerSpec extends ARSpec[SchedulerEvent, Scheduler](Some(testSystem)) {
 
   "Scheduling office" should {
     "schedule event" in {

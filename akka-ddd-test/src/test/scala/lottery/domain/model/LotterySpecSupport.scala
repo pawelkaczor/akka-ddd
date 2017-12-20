@@ -8,7 +8,7 @@ import lottery.domain.model.LotteryProtocol._
 import lottery.domain.model.LotterySpecSupport._
 import org.scalacheck.{Arbitrary, Gen}
 import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig}
-import pl.newicom.dddd.test.support.OfficeSpec
+import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 
 object LotterySpecSupport {
@@ -16,7 +16,7 @@ object LotterySpecSupport {
     AggregateRootActorFactory(pc => Props(new LotteryAggregateRoot(DefaultConfig(pc))))
 }
 
-class LotterySpecSupport extends OfficeSpec[LotteryEvent, LotteryAggregateRoot](Some(testSystem)) {
+class LotterySpecSupport extends ARSpec[LotteryEvent, LotteryAggregateRoot](Some(testSystem)) {
 
   def lotteryId: LotteryId = aggregateId
 

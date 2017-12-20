@@ -5,20 +5,20 @@ import akka.actor.Props
 import org.scalacheck.{Arbitrary, Gen}
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.test.dummy.DummyProtocol._
-import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig._
-import DummyOfficeWithGenSpec._
+import DummyWithGenSpec._
 import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.office.OfficeRef
+import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 
-object DummyOfficeWithGenSpec {
+object DummyWithGenSpec {
 
   implicit def actorFactory: AggregateRootActorFactory[DummyAggregateRoot] =
     AggregateRootActorFactory[DummyAggregateRoot](pc => Props(new DummyAggregateRoot(DummyConfig(pc))))
 }
 
-class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
+class DummyWithGenSpec extends ARSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
 
   def dummyOffice: OfficeRef = officeUnderTest
 

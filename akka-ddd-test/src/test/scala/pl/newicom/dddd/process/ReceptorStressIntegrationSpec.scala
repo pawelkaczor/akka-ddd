@@ -12,12 +12,12 @@ import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.SagaIntegrationSpec._
 import pl.newicom.dddd.persistence.{RegularSnapshottingConfig, SaveSnapshotRequest}
 import pl.newicom.dddd.saga.CoordinationOffice
+import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga, dummyOfficeId}
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
-import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.eventstore.EventstoreSubscriber
 
 import scala.concurrent.duration._
@@ -33,7 +33,7 @@ object ReceptorStressIntegrationSpec {
 /**
   * Requires EventStore to be running on localhost!
   */
-class ReceptorStressIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("ReceptorStressSpec"))) {
+class ReceptorStressIntegrationSpec extends ARSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("ReceptorStressSpec"))) {
 
   def dummyId: AggregateId = aggregateId
 

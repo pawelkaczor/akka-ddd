@@ -6,11 +6,11 @@ import akka.testkit.TestProbe
 import com.typesafe.config.Config
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
+import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 import pl.newicom.dddd.test.dummy.DummyProtocol.{CreateDummy, DummyCreated, DummyEvent, Value}
 import pl.newicom.dddd.test.dummy._
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
-import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.view.sql.Projection.ProjectionAction
 import pl.newicom.dddd.view.sql.SqlViewUpdateServiceIntegrationSpec._
 import pl.newicom.eventstore.EventSourceProvider
@@ -41,7 +41,7 @@ object SqlViewUpdateServiceIntegrationSpec {
  * Requires Event Store to be up and running.
  */
 class SqlViewUpdateServiceIntegrationSpec
-  extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("SqlViewUpdateServiceIntegrationSpec")))
+  extends ARSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("SqlViewUpdateServiceIntegrationSpec")))
   with SqlViewStoreTestSupport {
 
   override def viewStore = new SqlViewStore(config)

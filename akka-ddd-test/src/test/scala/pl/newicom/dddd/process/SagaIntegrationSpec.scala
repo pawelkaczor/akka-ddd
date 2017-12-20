@@ -11,12 +11,12 @@ import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.SagaIntegrationSpec._
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
 import pl.newicom.dddd.saga.CoordinationOffice
+import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied, Poison}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga, dummyOfficeId}
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
-import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.eventstore.EventstoreSubscriber
 
 import scala.concurrent.duration._
@@ -32,7 +32,7 @@ object SagaIntegrationSpec {
 /**
  * Requires EventStore to be running on localhost!
  */
-class SagaIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("ReceptorIntegrationSpec"))) {
+class SagaIntegrationSpec extends ARSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("ReceptorIntegrationSpec"))) {
 
   override val shareAggregateRoot = true
 
