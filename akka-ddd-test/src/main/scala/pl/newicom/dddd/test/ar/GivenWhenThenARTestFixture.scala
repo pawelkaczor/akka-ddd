@@ -13,7 +13,7 @@ import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
 import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.office.SimpleOffice.Batch
-import pl.newicom.dddd.test.ar.GivenWhenThenARTestFixture.{Commands, CommandsHandler, ExpectedEvents, PastEvents, WhenContext, testProbe}
+import pl.newicom.dddd.test.ar.GivenWhenThenARTestFixture.{Commands, CommandsHandler, ExpectedEvents, PastEvents, WhenContext}
 import pl.newicom.dddd.utils.UUIDSupport.uuid
 
 import scala.concurrent.duration._
@@ -53,7 +53,7 @@ case class Given(cs: Seq[Command] = Seq.empty)(implicit s: ActorSystem, ch: Comm
 case class When[E <: DomainEvent, C <: Command](wc: WhenContext[C], whenFun: () => Unit)(implicit s: ActorSystem, timeout: FiniteDuration) {
 
   def expectEvents(events: E*): Unit = {
-    val probe = testProbe(whenFun)
+    val probe = testProbe
     events.foreach { _ =>
       probe.expectMsgAnyOf[DomainEvent](timeout, events.map(Success(_)): _*)
     }
@@ -81,13 +81,13 @@ case class When[E <: DomainEvent, C <: Command](wc: WhenContext[C], whenFun: () 
   }
 
   def expectCommandRejected: Unit = {
-    testProbe(whenFun).expectMsgPF[Boolean](timeout) {
+    testProbe.expectMsgPF[Boolean](timeout) {
       case Failure(_: CommandRejected)  => true
     }
   }
 
   def expectException[CR <: CommandRejected](message: String = null)(implicit t: ClassTag[CR]): Unit = {
-    testProbe(whenFun).expectMsgPF[Boolean](timeout, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
+    testProbe.expectMsgPF[Boolean](timeout, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
       case Failure(ex) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
     }
   }
@@ -97,10 +97,30 @@ case class When[E <: DomainEvent, C <: Command](wc: WhenContext[C], whenFun: () 
   }
 
   def expectEventMatching(matcher: PartialFunction[Any, Any], hint: String = ""): Any = {
-    testProbe(whenFun).expectMsgPF[Any](timeout, hint) {
+    testProbe.expectMsgPF[Any](timeout, hint) {
       case Success(result) if matcher.isDefinedAt(result) => result
     }
   }
+
+  def testProbe: TestProbe = {
+    new TestProbe(s) {
+      var initialized = false
+
+      def initialize(): Unit = {
+        system.eventStream.subscribe(this.ref, classOf[Success[_]])
+        system.eventStream.subscribe(this.ref, classOf[Failure[_]])
+        whenFun()
+      }
+
+      override def receiveOne(max: Duration): AnyRef = {
+        if (!initialized) {
+          initialize(); initialized = true
+        }
+        super.receiveOne(max)
+      }
+    }
+  }
+
 }
 
 /**
@@ -138,25 +158,6 @@ object GivenWhenThenARTestFixture {
 
   case class ExpectedEvents[E](events: Seq[E]) {
     def &(e: E): ExpectedEvents[E] = ExpectedEvents(events :+ e)
-  }
-
-  def testProbe(f: () => Unit)(implicit system: ActorSystem): TestProbe = {
-    new TestProbe(system) {
-      var initialized = false
-
-      def initialize(): Unit = {
-        system.eventStream.subscribe(this.ref, classOf[Success[_]])
-        system.eventStream.subscribe(this.ref, classOf[Failure[_]])
-        f()
-      }
-
-      override def receiveOne(max: Duration): AnyRef = {
-        if (!initialized) {
-          initialize(); initialized = true
-        }
-        super.receiveOne(max)
-      }
-    }
   }
 
   implicit def whenContextToCommand[C <: Command](wc: WhenContext[C]): C = wc.command

@@ -1,30 +1,59 @@
 package pl.newicom.dddd.test.pm
 
-import akka.actor.ActorSystem
+import java.util.concurrent.atomic.AtomicBoolean
+
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
+import org.joda.time.DateTime
 import pl.newicom.dddd.aggregate.{Command, DomainEvent}
 import pl.newicom.dddd.delivery.protocol.alod.Processed
 import pl.newicom.dddd.messaging.MetaData
+import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
-import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.office.SimpleOffice.Batch
-import pl.newicom.dddd.test.pm.GivenWhenThenPMTestFixture.{EventsHandler, ExpectedEvents, PastEvents, WhenContext, testProbe}
+import pl.newicom.dddd.office.{OfficeRef, OfficeRegistry, RemoteOfficeId}
+import pl.newicom.dddd.scheduling.ScheduleEvent
+import pl.newicom.dddd.test.pm.GivenWhenThenPMTestFixture.{Events, EventsHandler, PastEvents, WhenContext}
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.Success
+import akka.pattern.ask
+
+import scala.concurrent.Await
+
+object TestCommandOfficeId extends RemoteOfficeId[Command]("Default Command Office", "tests", classOf[Command])
+case object Init
 
 /**
   * Given
   */
 case class Given(es: Seq[DomainEvent] = Seq.empty)(implicit s: ActorSystem, eh: EventsHandler, timeout: FiniteDuration) {
+
+  private val commandListener = s.actorOf(Props(new Actor {
+    def receive: Receive = {
+      case Init =>
+        context.become(ready)
+        sender() ! "Ack"
+      case _ => // ignore
+    }
+
+    def ready: Receive = {
+      case CommandMessage(c, _) => s.eventStream.publish(c)
+    }
+  }))
+
+  OfficeRegistry(s).registerOffice(new OfficeRef(TestCommandOfficeId, commandListener))
+
   val pastEvents: PastEvents = PastEvents(eh(es).toList)
 
   def when[E <: DomainEvent](f: (WhenContext[_]) => WhenContext[E]): When[E] =
     when(f(fakeWhenContext(pastEvents)))
 
   def when[E <: DomainEvent](wc: WhenContext[E]): When[E] = when(wc, () => {
+    implicit val t: Timeout = Timeout(timeout)
+    Await.ready(commandListener ? Init, timeout)
     eh(Seq(wc.event)).map(_.payload).map(Success(_)).foreach(s.eventStream.publish)
   })
 
@@ -32,7 +61,8 @@ case class Given(es: Seq[DomainEvent] = Seq.empty)(implicit s: ActorSystem, eh: 
     When(wc.copy(pastEvents = pastEvents), whenFun)
   }
 
-  private def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(Seq(new DomainEvent), pastEvents)
+  private def fakeWhenContext(pastEvents: PastEvents = PastEvents()) =
+    WhenContext(Seq(new DomainEvent), pastEvents)
 
 }
 
@@ -40,37 +70,91 @@ case class Given(es: Seq[DomainEvent] = Seq.empty)(implicit s: ActorSystem, eh: 
   * When
   */
 case class When[E <: DomainEvent](wc: WhenContext[E], whenFun: () => Unit)(implicit s: ActorSystem, timeout: FiniteDuration) {
+  private val whenExecuted = new AtomicBoolean(false)
+  private val commandTestProbe = testProbe(classOf[Command])
+  private val eventTestProbe = testProbe(classOf[Success[_]])
 
-  def expectEvents(events: DomainEvent*): Unit = {
-    val probe = testProbe(whenFun)
+  def expectEvents(events: DomainEvent*): AfterWhen[E] = {
+    val probe = eventTestProbe
     events.foreach { _ =>
       probe.expectMsgAnyOf[DomainEvent](timeout, events.map(Success(_)): _*)
     }
+    AfterWhen(wc, commandTestProbe)
   }
 
-  def expectEvent(e: DomainEvent): Unit = {
+  def expectEvent(e: DomainEvent): AfterWhen[E] = {
     expectEventMatching(
       matcher = {
         case actual if actual == e => e
       },
       s"Success($e)"
     )
+    AfterWhen(wc, commandTestProbe)
   }
 
-  def expect(f: (WhenContext[E]) => ExpectedEvents): Unit =
-    f(wc) match {
-      case ExpectedEvents(Seq(e)) =>
-        expectEvent(e)
-      case ExpectedEvents(events) =>
-        expectEvents(events :_*)
-    }
-
   def expectEventMatching(matcher: PartialFunction[Any, Any], hint: String = ""): Any = {
-    testProbe(whenFun).expectMsgPF[Any](timeout, hint) {
+    eventTestProbe.expectMsgPF[Any](timeout, hint) {
       case Success(result) if matcher.isDefinedAt(result) => result
     }
   }
+
+  def expectReceivedEvent: AfterWhen[E] =
+    expectEvent(wc.event)
+
+  def expect(f: (WhenContext[E]) => Events): AfterWhen[E] =
+    f(wc) match {
+      case Events(Seq(e)) =>
+        expectEvent(e)
+      case Events(events) =>
+        expectEvents(events :_*)
+    }
+
+  private def testProbe(channel: Class[_]): TestProbe = {
+    new TestProbe(s) {
+
+      system.eventStream.subscribe(this.ref, channel)
+
+      override def receiveOne(max: Duration): AnyRef = {
+        if (whenExecuted.compareAndSet(false, true)) {
+          whenFun()
+        }
+        super.receiveOne(max)
+      }
+    }
+  }
 }
+
+case class AfterWhen[E <: DomainEvent](wc: WhenContext[E], testProbe: TestProbe)(implicit s: ActorSystem, timeout: FiniteDuration) {
+
+  def expectCommand(c: Command): AfterWhen[E] = {
+    testProbe.expectMsg(timeout, c)
+    this
+  }
+
+  def expect(f: (WhenContext[E]) => Command): AfterWhen[E] = {
+    expectCommand(f(wc))
+    this
+  }
+
+  def expectScheduled(deadline: DateTime)(f: (WhenContext[E]) => DomainEvent): Unit =
+    expectEventScheduled(deadline)(f(wc))
+
+  def expectEventScheduled(deadline: DateTime)(e: DomainEvent): Unit =
+    expectCommandMatching(
+      matcher = {
+        case ScheduleEvent(_, _, actualDeadline, actualEvent)  if actualDeadline == deadline && e == actualEvent => true
+      },
+      s"ScheduleEvent(_, _, $deadline, $e)"
+    )
+
+  def expectCommandMatching(matcher: PartialFunction[Command, Any], hint: String = ""): Command = {
+    testProbe.expectMsgPF[Command](timeout, hint) {
+      case c: Command if matcher.isDefinedAt(c) => c
+    }
+  }
+
+}
+
 
 /**
   * Fixture
@@ -79,8 +163,8 @@ object GivenWhenThenPMTestFixture {
 
   type EventsHandler = Seq[DomainEvent] => Seq[EventMessage]
 
-  case class Commands[C <: Command](commands: Seq[C]) {
-    def &(c: C): Commands[C] = Commands[C](commands :+ c)
+  case class Events(events: Seq[DomainEvent]) {
+    def &(c: DomainEvent): Events = Events(events :+ c)
   }
 
   case class WhenContext[E <: DomainEvent](
@@ -98,28 +182,6 @@ object GivenWhenThenPMTestFixture {
 
     def first[E](implicit ct: ClassTag[E]): E = event[E](_.head)
     def last[E](implicit ct: ClassTag[E]): E = event[E](_.last)
-  }
-
-  case class ExpectedEvents(events: Seq[DomainEvent]) {
-    def &(e: DomainEvent): ExpectedEvents = ExpectedEvents(events :+ e)
-  }
-
-  def testProbe(f: () => Unit)(implicit system: ActorSystem): TestProbe = {
-    new TestProbe(system) {
-      var initialized = false
-
-      def initialize(): Unit = {
-        system.eventStream.subscribe(this.ref, classOf[Success[_]])
-        f()
-      }
-
-      override def receiveOne(max: Duration): AnyRef = {
-        if (!initialized) {
-          initialize(); initialized = true
-        }
-        super.receiveOne(max)
-      }
-    }
   }
 
   implicit def whenContextToEvent[E <: DomainEvent](wc: WhenContext[E]): E = wc.event
@@ -142,6 +204,8 @@ abstract class GivenWhenThenPMTestFixture(_system: ActorSystem) extends TestKit(
 
   def given(es: List[DomainEvent]): Given = given(es :_*)
 
+  def given(es: Events): Given = Given(es.events)
+
   def given(es: DomainEvent*): Given = Given(es)
 
   def when[E <: DomainEvent](wc: WhenContext[E]): When[E] = Given().when(wc)
@@ -156,9 +220,8 @@ abstract class GivenWhenThenPMTestFixture(_system: ActorSystem) extends TestKit(
 
   protected def eventMetaDataProvider(e: DomainEvent): MetaData
 
-  implicit def toExpectedEvents(e: DomainEvent): ExpectedEvents =
-    ExpectedEvents(Seq(e))
-
+  implicit def toEvents(e: DomainEvent): Events =
+    Events(Seq(e))
 
   // Private methods
 
@@ -176,6 +239,6 @@ abstract class GivenWhenThenPMTestFixture(_system: ActorSystem) extends TestKit(
         officeUnderTest.actor ! batch
         expectMsgAllClassOf(timeout, es.map(_ => classOf[Processed]): _*).flatMap(_ => batch.msgs)
       }
-  }.andThen(r => { if (r.nonEmpty) { ensureOfficeTerminated() }; r})
+  }
 
 }

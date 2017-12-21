@@ -8,7 +8,7 @@ import pl.newicom.dddd.test.support.TestConfig.testSystem
 
 class DummySagaSpec extends PMSpec[DummySaga](Some(testSystem)) {
 
-  def dummyId: DummyId = AggregateId(pmId)
+  val dummyId: DummyId = AggregateId(uuid10)
 
   "Dummy Saga" should {
 
