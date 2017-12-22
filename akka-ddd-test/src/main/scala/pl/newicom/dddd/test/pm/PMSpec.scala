@@ -39,9 +39,18 @@ abstract class PMSpec[PM <: Saga : SagaActorFactory : LocalOfficeId : ProcessCon
 
   private var _officeUnderTest: OfficeRef = _
 
+  private var _testId: EntityId = _
+  val testSuiteId: EntityId = uuid10
+
+  before {
+    _testId = uuid10
+  }
+
   after {
     ensureOfficeTerminated() //will nullify _officeUnderTest
   }
+
+  def testId: EntityId = _testId
 
   override def afterAll() {
     TestKit.shutdownActorSystem(system)
