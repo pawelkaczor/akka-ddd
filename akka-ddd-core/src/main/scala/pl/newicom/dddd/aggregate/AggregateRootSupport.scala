@@ -9,6 +9,7 @@ object AggregateRootSupport {
 
   case class AcceptC[E <: DomainEvent](events: Seq[E]) extends Reaction[E] {
     def &(next: E): AcceptC[E] = AcceptC(events :+ next)
+    def &(next: Seq[E]): AcceptC[E] = AcceptC(events ++ next)
   }
 
   case class AcceptQ[R](response: R) extends Reaction[R]
