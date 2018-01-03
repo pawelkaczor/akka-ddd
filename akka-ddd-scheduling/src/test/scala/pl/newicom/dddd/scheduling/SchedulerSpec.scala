@@ -2,9 +2,10 @@ package pl.newicom.dddd.scheduling
 
 import akka.actor.Props
 import org.joda.time.DateTime
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig}
+import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 import SchedulerSpec._
+import pl.newicom.dddd.actor.DefaultConfig
 import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.test.ar.ARSpec
 

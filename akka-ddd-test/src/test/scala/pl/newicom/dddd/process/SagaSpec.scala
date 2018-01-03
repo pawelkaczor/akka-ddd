@@ -3,7 +3,7 @@ package pl.newicom.dddd.process
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
-import pl.newicom.dddd.actor.PassivationConfig
+import pl.newicom.dddd.actor.{DefaultConfig, PassivationConfig}
 import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaAttribute.{Correlation_Id, Delivery_Id}
@@ -33,7 +33,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
 
   implicit object TestSagaActorFactory extends SagaActorFactory[DummySaga] {
     override def props(pc: PassivationConfig): Props =
-      Props(new DummySaga(pc, officeId, None))
+      Props(new DummySaga(DefaultConfig(pc, replyWithEvents = false), None))
   }
 
   def processId: EntityId = uuid10

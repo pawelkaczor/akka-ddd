@@ -1,7 +1,7 @@
 package pl.newicom.dddd.test.dummy
 
 import akka.actor.ActorRef
-import pl.newicom.dddd.actor.PassivationConfig
+import pl.newicom.dddd.actor._
 import pl.newicom.dddd.aggregate.AggregateRootSupport.{Reaction, Reject, RejectConditionally}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.persistence.{RegularSnapshotting, RegularSnapshottingConfig}

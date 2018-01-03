@@ -4,6 +4,7 @@ import java.time.OffsetDateTime
 
 import lottery.domain.model.LotteryBehaviour.LotteryId
 import lottery.domain.model.LotteryProtocol._
+import pl.newicom.dddd.actor.Config
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.aggregate.error.DomainException
 

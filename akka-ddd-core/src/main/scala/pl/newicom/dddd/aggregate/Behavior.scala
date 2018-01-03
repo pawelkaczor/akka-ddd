@@ -1,5 +1,6 @@
 package pl.newicom.dddd.aggregate
 
+import pl.newicom.dddd.actor.Config
 import pl.newicom.dddd.aggregate.AggregateRootSupport.{AcceptC, AcceptQ, Reaction, Reject}
 import pl.newicom.dddd.aggregate.error.CommandHandlerNotDefined
 

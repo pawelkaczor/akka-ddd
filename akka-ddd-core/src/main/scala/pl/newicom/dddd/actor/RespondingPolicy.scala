@@ -1,9 +1,9 @@
-package pl.newicom.dddd.aggregate
+package pl.newicom.dddd.actor
 
-import pl.newicom.dddd.messaging.event.OfficeEventMessage
+import pl.newicom.dddd.messaging.event.EventMessage
 
 trait RespondingPolicy {
-  type SuccessMapper = (Seq[OfficeEventMessage]) => Any
+  type SuccessMapper = (Seq[EventMessage]) => Any
   def successMapper: SuccessMapper
 }
 

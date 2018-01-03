@@ -237,7 +237,12 @@ abstract class GivenWhenThenPMTestFixture(_system: ActorSystem) extends TestKit(
       } else {
         val batch = Batch(es.map(e => em(e, es.indexOf(e) + 1)))
         officeUnderTest.actor ! batch
-        expectMsgAllClassOf(timeout, es.map(_ => classOf[Processed]): _*).flatMap(_ => batch.msgs)
+        es.foreach { e =>
+          expectMsgPF(timeout, e.toString) {
+            case Processed(_, Success(actual)) if actual.asInstanceOf[List[EventMessage]].map(_.event).contains(e) => true
+          }
+        }
+        batch.msgs
       }
   }
 

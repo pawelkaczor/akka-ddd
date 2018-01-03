@@ -1,11 +1,11 @@
 package pl.newicom.dddd.test.dummy
 
 import akka.actor.Props
-import pl.newicom.dddd.actor.PassivationConfig
+import pl.newicom.dddd.actor.{Config, DefaultConfig, PassivationConfig}
 import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.office.{LocalOfficeId, OfficeRef}
+import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.process._
-import pl.newicom.dddd.saga.{BusinessProcessId, ProcessConfig}
+import pl.newicom.dddd.saga.BusinessProcessId
 import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyCreated, DummyId, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyState, EventApplied, Poison}
 import pl.newicom.dddd.utils.UUIDSupport.uuid7
@@ -23,11 +23,12 @@ object DummySaga {
       case DummyCreated(pId, _, _, _) => pId.value
       case other => throw new scala.RuntimeException(s"unknown event: ${other.getClass.getName}")
     }
+
   }
 
   implicit object DummySagaActorFactory extends SagaActorFactory[DummySaga] {
     override def props(pc: PassivationConfig): Props = {
-      Props(new DummySaga(pc, officeId, None))
+      Props(new DummySaga(DefaultConfig(pc), None))
     }
   }
 
@@ -46,9 +47,7 @@ object DummySaga {
  * <code>DummyEvent</code> is received containing <code>value</code> equal to <code>counter + 1</code>
  * <code>DummySaga</code> publishes all applied events to local actor system bus.
  */
-class DummySaga(val pc: PassivationConfig,
-                val officeId: LocalOfficeId[DummySaga],
-                dummyOffice: Option[OfficeRef]) extends ProcessManager[DummyState] {
+class DummySaga(val config: Config, dummyOffice: Option[OfficeRef]) extends ProcessManager[DummyState, DummySaga] {
 
   startWhen {
 

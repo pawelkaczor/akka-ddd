@@ -2,6 +2,7 @@ package pl.newicom.dddd.test.dms
 
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
+import pl.newicom.dddd.actor.{Config, ConfigClass}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.test.dms.DocumentAR.DMSActionsRoot
 import pl.newicom.dddd.test.dms.DMSProtocol.VersionUpdate.creation

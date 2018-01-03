@@ -1,5 +1,6 @@
 package pl.newicom.dddd.aggregate
 
+import pl.newicom.dddd.actor.Config
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.office.CaseRef
 

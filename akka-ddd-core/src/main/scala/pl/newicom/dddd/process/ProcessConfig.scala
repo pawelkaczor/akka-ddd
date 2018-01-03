@@ -1,8 +1,9 @@
-package pl.newicom.dddd.saga
+package pl.newicom.dddd.process
 
 import pl.newicom.dddd.aggregate.{DomainEvent, EntityId}
 import pl.newicom.dddd.office.LocalOfficeId
-import pl.newicom.dddd.saga.ProcessConfig._
+import pl.newicom.dddd.process.ProcessConfig.CorrelationIdResolver
+import pl.newicom.dddd.saga.BusinessProcessId
 
 import scala.reflect.ClassTag
 

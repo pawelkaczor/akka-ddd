@@ -7,7 +7,8 @@ import lottery.domain.model.LotteryBehaviour.LotteryId
 import lottery.domain.model.LotteryProtocol._
 import lottery.domain.model.LotterySpecSupport._
 import org.scalacheck.{Arbitrary, Gen}
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig}
+import pl.newicom.dddd.actor.DefaultConfig
+import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 

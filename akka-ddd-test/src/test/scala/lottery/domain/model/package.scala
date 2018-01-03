@@ -2,6 +2,7 @@ package lottery.domain
 
 import lottery.domain.model.LotteryBehaviour.Lottery
 import lottery.domain.model.LotteryProtocol.LotteryEvent
+import pl.newicom.dddd.actor.{Config, ConfigClass}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.office.LocalOfficeId
 

@@ -1,10 +1,11 @@
-package pl.newicom.dddd.saga
+package pl.newicom.dddd.process
+
 
 import akka.actor.ActorRef
 import pl.newicom.dddd.coordination.{ReceptorBuilder, ReceptorConfig}
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.OfficeRef
-import pl.newicom.dddd.saga.ProcessConfig.CorrelationIdResolver
+import pl.newicom.dddd.process.ProcessConfig.CorrelationIdResolver
 
 import scala.reflect.ClassTag
 

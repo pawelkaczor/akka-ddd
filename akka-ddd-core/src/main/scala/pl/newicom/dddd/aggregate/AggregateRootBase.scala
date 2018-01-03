@@ -5,7 +5,7 @@ import akka.contrib.pattern.ReceivePipeline
 import akka.contrib.pattern.ReceivePipeline.Inner
 import akka.persistence.PersistentActor
 import pl.newicom.dddd.{BusinessEntity, Eventsourced}
-import pl.newicom.dddd.actor.{GracefulPassivation, PassivationConfig}
+import pl.newicom.dddd.actor.{Config, GracefulPassivation, PassivationConfig}
 import pl.newicom.dddd.eventhandling.EventHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}

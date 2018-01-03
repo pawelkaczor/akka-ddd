@@ -1,7 +1,7 @@
 package pl.newicom.dddd.test.dms
 
 import akka.actor.Props
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig}
+import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.test.dms.DMSProtocol.VersionUpdate.{creation, noVU}
 import pl.newicom.dddd.test.dms.DMSProtocol.{ChangeContent, ContentChanged, Create, Created, DMSEvent, DocId, GetPublishedRevisions, GetPublishedVersions, Publish, Published, PublishedRevisions, PublishedVersions, Revision, Version, VersionUpdate}
@@ -9,6 +9,7 @@ import pl.newicom.dddd.test.support.TestConfig.testSystem
 import DMSSpec._
 import akka.util.Timeout
 import org.scalatest.Matchers
+import pl.newicom.dddd.actor.DefaultConfig
 import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.test.ar.ARSpec
 

@@ -1,6 +1,7 @@
 package pl.newicom.dddd.process
 
 import akka.persistence.Recovery
+import pl.newicom.dddd.actor.{Config, ConfigClass}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage

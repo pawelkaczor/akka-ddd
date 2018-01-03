@@ -3,8 +3,7 @@ package pl.newicom.dddd.office
 import akka.actor.{ActorRef, ActorSystem}
 import pl.newicom.dddd.BusinessEntity
 import pl.newicom.dddd.actor.BusinessEntityActorFactory
-import pl.newicom.dddd.process.{Saga, SagaActorFactory}
-import pl.newicom.dddd.saga.{CoordinationOffice, ProcessConfig}
+import pl.newicom.dddd.process.{CoordinationOffice, ProcessConfig, Saga, SagaActorFactory}
 
 import scala.reflect.ClassTag
 

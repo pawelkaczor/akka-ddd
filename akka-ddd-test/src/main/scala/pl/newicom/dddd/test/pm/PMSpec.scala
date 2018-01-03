@@ -14,8 +14,7 @@ import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.{LocalOfficeId, OfficeListener, OfficeRef}
-import pl.newicom.dddd.process.{Saga, SagaActorFactory}
-import pl.newicom.dddd.saga.ProcessConfig
+import pl.newicom.dddd.process.{ProcessConfig, Saga, SagaActorFactory}
 import pl.newicom.dddd.test.ar.ARSpec.sys
 import pl.newicom.dddd.utils.UUIDSupport
 

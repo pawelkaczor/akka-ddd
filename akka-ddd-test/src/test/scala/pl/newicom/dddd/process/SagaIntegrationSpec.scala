@@ -10,7 +10,6 @@ import pl.newicom.dddd.office.OfficeFactory.coordinationOffice
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.SagaIntegrationSpec._
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
-import pl.newicom.dddd.saga.CoordinationOffice
 import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 import pl.newicom.dddd.test.dummy.DummyProtocol._
