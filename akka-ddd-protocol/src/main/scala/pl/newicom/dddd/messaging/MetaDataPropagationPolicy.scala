@@ -1,11 +1,13 @@
 package pl.newicom.dddd.messaging
 
+import org.joda.time.DateTime.now
 import pl.newicom.dddd.messaging.MetaAttribute._
+import pl.newicom.dddd.utils.UUIDSupport.uuid
 
 object MetaDataPropagationPolicy {
-  val onCommandAccepted: OnCommandAcceptedByAR.type     = OnCommandAcceptedByAR
-  val onCommandSentByPM: OnCommandDeliveryRequestedByPM.type     = OnCommandDeliveryRequestedByPM
-  val onEventAcceptedByPM: OnEventAcceptedByPM.type = OnEventAcceptedByPM
+  val onCommandAccepted: OnCommandAcceptedByAR.type          = OnCommandAcceptedByAR
+  val onCommandSentByPM: OnCommandDeliveryRequestedByPM.type = OnCommandDeliveryRequestedByPM
+  val onEventAcceptedByPM: OnEventAcceptedByPM.type          = OnEventAcceptedByPM
 }
 
 sealed trait MetaDataPropagationPolicy {
@@ -33,10 +35,12 @@ case object OnEventAcceptedByPM extends MetaDataPropagationPolicy {
 }
 
 case object OnCommandDeliveryRequestedByPM extends MetaDataPropagationPolicy {
-  override def apply(event: MetaData, command: MetaData): MetaData = {
+  override def apply(event: MetaData, command: MetaData = MetaData.empty): MetaData = {
     command
+      .withAttr(Id, uuid(event.get(Id)))
       .withAttr(Causation_Id, event.get(Id))
       .withOptionalAttr(Correlation_Id, event.tryGet(Correlation_Id))
       .withAttr(Tags, Tags.merge(event, command))
+      .withAttr(Timestamp, now)
   }
 }
