@@ -6,9 +6,10 @@ import org.joda.time.{DateTime, Period}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.delivery.protocol.DeliveryHandler
 import pl.newicom.dddd.messaging.command.CommandMessage
-import pl.newicom.dddd.messaging.{Message, MetaDataPropagationPolicy}
+import pl.newicom.dddd.messaging.{Message, MetaData, MetaDataPropagationPolicy}
 import pl.newicom.dddd.office._
 import pl.newicom.dddd.scheduling.ScheduleEvent
+import pl.newicom.dddd.utils.UUIDSupport.uuid
 
 trait SagaCollaboration {
   this: SagaBase =>
@@ -25,7 +26,7 @@ trait SagaCollaboration {
   protected def schedule(event: DomainEvent, deadline: DateTime, correlationId: EntityId = sagaId): Unit = {
     val command = ScheduleEvent("global", officePath, deadline, event)
     handlerOf(command) !! {
-      CommandMessage(command)
+      CommandMessage(command, MetaData.initial(uuid(currentEventMsg.id)))
         .withCorrelationId(correlationId)
         .withTag(officeId.id)
     }
