@@ -44,8 +44,8 @@ trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends Ag
       Actions(ctx => cHandler(ctx).orElse(other.cHandler(ctx)), qHandler.orElse(other.qHandler), eventHandler.orElse(other.eventHandler))
   }
 
-  def orElse[SS <: S](other: Behavior[E, S, C], f: SS => S = (a: SS) => a): Actions =
-    actions.orElse(other)
+  def orElse[SS <: S, B <: Behavior[E, S, C]](other: Behavior[E, S, C]): B#Actions =
+    actions.orElse(other).asInstanceOf[B#Actions]
 
   def commandHandlerNoCtx: HandleCommand =
     commandHandler(null)
