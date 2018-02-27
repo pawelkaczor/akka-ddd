@@ -2,7 +2,7 @@ package pl.newicom.dddd.aggregate
 
 import akka.actor.ActorRef
 import akka.contrib.pattern.ReceivePipeline.Inner
-import pl.newicom.dddd.aggregate.AggregateRootSupport.{AcceptC, AcceptQ, Reaction, Reject}
+import pl.newicom.dddd.aggregate.AggregateRootSupport._
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
 import pl.newicom.dddd.messaging.query.QueryMessage
@@ -23,7 +23,7 @@ trait AggregateRootLogger[E <: DomainEvent] extends AggregateRootBase with Colla
       Inner(msg)
   }
 
-  abstract override def execute(reaction: Reaction[_]): Unit = {
+  abstract override def execute(reaction: AbstractReaction[_]): Unit = {
     super.execute(reaction)
     if (isCommandMsgReceived) {
       reaction match {

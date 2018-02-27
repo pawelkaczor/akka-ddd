@@ -38,15 +38,15 @@ trait Uninitialized[S <: AggregateState[S]] { this: AggregateState[S] =>
 }
 
 trait ReactionInterpreter {
-  def execute(reaction: Reaction[_]): Unit
+  def execute(reaction: AbstractReaction[_]): Unit
 }
 
 abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Uninitialized, A <: AggregateRoot[Event, S, A]: LocalOfficeId]
     extends AggregateRootBase with CollaborationSupport[Event] with ReactionInterpreter {
 
-  type HandlePayload = PartialFunction[Any, Reaction[_]]
+  type HandlePayload = PartialFunction[Any, AbstractReaction[_]]
   type HandleCommand = CommandHandlerContext[C] => PartialFunction[Command, Reaction[Event]]
-  type HandleQuery   = PartialFunction[Query, Reaction[_]]
+  type HandleQuery   = PartialFunction[Query, AbstractReaction[_]]
 
   def commandHandlerContext(cm: CommandMessage) = CommandHandlerContext(caseRef, config, cm.metadata)
 
@@ -70,7 +70,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     case Tagged(em @ EventMessage(_, _), _) =>
       sm(em)
 
-    case SnapshotOffer(metadata, state) =>
+    case SnapshotOffer(_, state) =>
       sm.reset(state.asInstanceOf[S])
       log.debug(s"Snapshot restored: $state")
 
@@ -90,7 +90,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     case SaveSnapshotSuccess(metadata) =>
       log.debug("Snapshot saved successfully with metadata: {}", metadata)
 
-    case f @ SaveSnapshotFailure(metadata, reason) =>
+    case f @ SaveSnapshotFailure(_, reason) =>
       log.error(s"$f")
       throw reason
 
@@ -124,7 +124,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
       )
   }
 
-  override def execute(r: Reaction[_]): Unit =
+  override def execute(r: AbstractReaction[_]): Unit =
     if (isCommandMsgReceived) {
       executeC(r.asInstanceOf[Reaction[Event]])
     } else {
@@ -135,11 +135,6 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     case AcceptC(events)  => raise(events)
     case c: Collaboration => c.execute(execute)
     case Reject(ex)       => reply(Failure(ex))
-  }
-
-  private def executeQ(r: Reaction[_]): Unit = r match {
-    case AcceptQ(response) => msgSender ! response
-    case Reject(ex)        => msgSender ! Failure(ex)
   }
 
   private def raise(events: Seq[Event]): Unit = {
@@ -157,6 +152,11 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
       }
 
     persistAll(eventMessages.toList)(e => safely(handler(e)))
+  }
+
+  private def executeQ(r: AbstractReaction[_]): Unit = r match {
+    case AcceptQ(response) => msgSender ! response
+    case Reject(ex)        => msgSender ! Failure(ex)
   }
 
   private def reply(result: Try[Seq[OfficeEventMessage]], cm: CommandMessage = commandMsgReceived) {

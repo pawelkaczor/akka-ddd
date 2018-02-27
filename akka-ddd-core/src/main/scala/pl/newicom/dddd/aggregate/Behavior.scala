@@ -1,7 +1,7 @@
 package pl.newicom.dddd.aggregate
 
 import pl.newicom.dddd.actor.Config
-import pl.newicom.dddd.aggregate.AggregateRootSupport.{AcceptC, AcceptQ, Reaction, Reject}
+import pl.newicom.dddd.aggregate.AggregateRootSupport._
 import pl.newicom.dddd.aggregate.error.CommandHandlerNotDefined
 
 import scala.PartialFunction.empty
@@ -9,7 +9,7 @@ import scala.reflect.ClassTag
 
 trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends AggregateState[S] with BehaviorSupport[E]  {
 
-  type HandleQuery              = PartialFunction[Query, Reaction[_]]
+  type HandleQuery              = PartialFunction[Query, AbstractReaction[_]]
   type HandleCommand            = PartialFunction[Command, Reaction[E]]
   type HandleCommandWithContext = CommandHandlerContext[C] => HandleCommand
 
@@ -22,7 +22,7 @@ trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends Ag
     def handleEvent(eh: StateMachine): Actions =
       copy(eventHandler = eh)
 
-    def handleQuery[Q <: Query: ClassTag](hq: Function[Q, Reaction[Q#R]]): Actions = {
+    def handleQuery[Q <: Query: ClassTag](hq: Function[Q, AbstractReaction[Q#R]]): Actions = {
       val pf: HandleQuery = { case x: Q => hq(x) }
       copy(qHandler = qHandler.orElse(pf))
     }
@@ -43,6 +43,9 @@ trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends Ag
     def orElse(other: Actions): Actions =
       Actions(ctx => cHandler(ctx).orElse(other.cHandler(ctx)), qHandler.orElse(other.qHandler), eventHandler.orElse(other.eventHandler))
   }
+
+  def orElse[SS <: S](other: Behavior[E, S, C], f: SS => S = (a: SS) => a): Actions =
+    actions.orElse(other)
 
   def commandHandlerNoCtx: HandleCommand =
     commandHandler(null)

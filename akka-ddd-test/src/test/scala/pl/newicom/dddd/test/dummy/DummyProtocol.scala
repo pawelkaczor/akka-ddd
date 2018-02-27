@@ -38,6 +38,7 @@ object DummyProtocol {
   case class DescriptionChanged(id: DummyId, description: String)                     extends DummyEvent
   case class ValueChanged(id: DummyId, value: Int, dummyVersion: Long)                extends DummyEvent
   case class ValueGenerated(id: DummyId, value: Int, confirmationToken: UUID)         extends DummyEvent
+  case class ValueGeneratedSuccessfully(id: DummyId)         extends DummyEvent
 
   case class CandidateValue(value: Int, confirmationToken: UUID)
 
