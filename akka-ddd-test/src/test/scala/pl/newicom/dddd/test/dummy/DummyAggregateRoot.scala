@@ -2,7 +2,7 @@ package pl.newicom.dddd.test.dummy
 
 import akka.actor.ActorRef
 import pl.newicom.dddd.actor._
-import pl.newicom.dddd.aggregate.AggregateRootSupport.{Reaction, RejectConditionally}
+import pl.newicom.dddd.aggregate.AggregateRootSupport.{NoReaction, Reaction, RejectConditionally}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.persistence.{RegularSnapshotting, RegularSnapshottingConfig}
 import pl.newicom.dddd.test.dummy.DummyProtocol._
@@ -65,8 +65,8 @@ object DummyAggregateRoot extends AggregateRootSupport {
           case GenerateValue(_) =>
             ctx.config.generateRandom
               .flatMapMatching {
-                case e @ ValueGenerated(_, value, _) =>
-                  rejectInvalid(value) orElse e
+                case ValueGenerated(_, value, _) =>
+                  rejectInvalid(value) orElse NoReaction
               }
               .recoverWith(() => ctx.config.generateEventuallyValid)
 

@@ -44,7 +44,7 @@ object AggregateRootSupport {
 
     def flatMap[B](f: Seq[E] => Reaction[B]): Reaction[B] = {
       (f(events).asInstanceOf[Reaction[E]] match {
-        case AcceptC(es) if es.headOption == events.headOption =>
+        case NoReaction =>
           this
         case AcceptC(es) =>
           AcceptC(events ++ es)
@@ -94,6 +94,15 @@ object AggregateRootSupport {
     def isAccepted: Boolean = condition
   }
 
+  case object NoReaction extends Reaction[Nothing] {
+    def flatMap[B](f: Seq[Nothing] => Reaction[B]): Reaction[B] =
+      f(Seq())
+
+    def recoverWith[B](f: () => Reaction[B]): Reaction[B] =
+      f()
+
+    def reversed: Reaction[Nothing] = this
+  }
 
 }
 
