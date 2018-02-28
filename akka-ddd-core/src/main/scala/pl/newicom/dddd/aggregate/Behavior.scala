@@ -42,6 +42,12 @@ trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends Ag
 
     def orElse(other: Actions): Actions =
       Actions(ctx => cHandler(ctx).orElse(other.cHandler(ctx)), qHandler.orElse(other.qHandler), eventHandler.orElse(other.eventHandler))
+
+    def isDefinedAt(e: E): Boolean =
+      eventHandler.isDefinedAt(e)
+
+    def isDefinedAt(c: Command): Boolean =
+      cHandler(null).isDefinedAt(c)
   }
 
   def orElse[SS <: S, B <: Behavior[E, S, C]](other: Behavior[E, S, C]): B#Actions =
