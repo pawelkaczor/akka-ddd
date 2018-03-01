@@ -1,8 +1,8 @@
 package pl.newicom.dddd.aggregate
 
 import akka.actor.Props
-import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
 import akka.persistence.journal.Tagged
+import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, PassivationConfig}
 import pl.newicom.dddd.aggregate.AggregateRootSupport._
 import pl.newicom.dddd.aggregate.error._
@@ -70,9 +70,10 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     case Tagged(em @ EventMessage(_, _), _) =>
       sm(em)
 
-    case SnapshotOffer(_, state) =>
+    case SnapshotOffer(_, AggregateSnapshot(state, receivedMsgIds)) =>
       sm.reset(state.asInstanceOf[S])
-      log.debug(s"Snapshot restored: $state")
+      resetReceivedMsgIds(receivedMsgIds)
+      log.debug(s"AR Snapshot restored: $state")
 
     case RecoveryCompleted => // ignore
   }
@@ -84,7 +85,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
       }
 
     case SaveSnapshotRequest =>
-      val snapshot = state
+      val snapshot = AggregateSnapshot(state, receivedMsgIds)
       saveSnapshot(snapshot)
 
     case SaveSnapshotSuccess(metadata) =>
