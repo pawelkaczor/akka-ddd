@@ -24,7 +24,7 @@ object AggregateRootSupport {
           this.asInstanceOf[Reaction[B]]
       }
 
-    def recoverWith[B](f: () => Reaction[B]): Reaction[B]
+    def recoverWith[B](f: => Reaction[B]): Reaction[B]
 
     def reversed: Reaction[E] = this
   }
@@ -33,8 +33,8 @@ object AggregateRootSupport {
     def flatMap[B](f: Seq[Nothing] => Reaction[B]): Reaction[B] =
       f(Seq())
 
-    def recoverWith[B](f: () => Reaction[B]): Reaction[B] =
-      f()
+    def recoverWith[B](f: => Reaction[B]): Reaction[B] =
+      f
   }
 
   trait Collaborate[E] extends Reaction[E] {
@@ -62,7 +62,7 @@ object AggregateRootSupport {
       }).asInstanceOf[Reaction[B]]
     }
 
-    def recoverWith[B](f: () => Reaction[B]): Reaction[B] =
+    def recoverWith[B](f: => Reaction[B]): Reaction[B] =
       this.asInstanceOf[Reaction[B]]
 
   }
@@ -76,7 +76,7 @@ object AggregateRootSupport {
 
   class Reject private[aggregate] (val reason: Throwable) extends Reaction[Nothing] {
     def flatMap[B](f: Seq[Nothing] => Reaction[B]): Reaction[B] = this
-    def recoverWith[B](f: () => Reaction[B]): Reaction[B] = f()
+    def recoverWith[B](f: => Reaction[B]): Reaction[B] = f
   }
 
   class RejectConditionally(condition: Boolean, reject: => Reject) {

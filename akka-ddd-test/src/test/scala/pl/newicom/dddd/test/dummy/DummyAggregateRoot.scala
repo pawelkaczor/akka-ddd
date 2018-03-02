@@ -68,7 +68,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
                 case ValueGenerated(_, value, _) =>
                   rejectInvalid(value) orElse NoReaction
               }
-              .recoverWith(() => ctx.config.generateEventuallyValid)
+              .recoverWith(ctx.config.generateEventuallyValid)
 
         }
       }.handleEvent {
@@ -123,9 +123,9 @@ class DummyAggregateRoot(cfg: DummyConfig)
       case ValueGeneratorActor.ValueGenerated(value) =>
         state.rejectInvalid(value) orElse
           ValueGenerated(new DummyId(id), value, confirmationToken = uuidObj)
-    }.recoverWith(
-      () => generateEventuallyValid
-    )
+    }.recoverWith {
+      generateEventuallyValid
+    }
   }
 
   def snapshottingConfig = RegularSnapshottingConfig(receiveCommand, interval = 1)

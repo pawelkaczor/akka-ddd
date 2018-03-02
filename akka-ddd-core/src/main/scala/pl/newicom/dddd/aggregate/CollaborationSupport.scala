@@ -29,7 +29,7 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash with Timers {
                             receive: HandleResponse = PartialFunction.empty,
                             timeout: FiniteDuration = 3.seconds,
                             mapper: Option[Seq[Event] => Reaction[Event]] = None,
-                            recovery: Option[() => Reaction[Event]] = None,
+                            recovery: () => Reaction[Event] = () => NoReaction,
                             reverse: Boolean = false)
     extends Collaborate[Event] {
 
@@ -42,12 +42,13 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash with Timers {
     def execute(callback: Reaction[Event] => Unit): Unit = {
       target ! msg
       internalExpectOnce(target, receive, r => callback {
-
-        def complete(r: Reaction[Event]) =  {
-          val rr: Reaction[Event] = if (recovery.isDefined) r.recoverWith(recovery.get) else r
-          if (reverse) rr.reversed else rr
-        }
-        complete(mapper.map(r.flatMap).getOrElse(r))
+        Some {
+          mapper.map(r.flatMap).getOrElse(r)
+            .recoverWith(recovery())
+        }.map {
+          case rr if reverse => rr.reversed
+          case rr => rr
+        }.get
       })(timeout)
     }
 
@@ -56,14 +57,8 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash with Timers {
       copy(mapper = Some(mapper.map(m => (es: Seq[Event]) => m(es).flatMap(ff)).getOrElse(ff))).asInstanceOf[Reaction[B]]
     }
 
-    def recoverWith[B](f: () => Reaction[B]): Reaction[B] = {
-      def ff = f.asInstanceOf[() => Reaction[Event]]
-      if (recovery.isDefined) {
-        Reject(new UnsupportedOperationException("Nested recoveryWith combinator is not supported."))
-      } else {
-        copy(recovery = Some(ff))
-      }.asInstanceOf[Reaction[B]]
-    }
+    def recoverWith[B](f: => Reaction[B]): Reaction[B] =
+      copy(recovery = () => f.asInstanceOf[Reaction[Event]]).asInstanceOf[Reaction[B]]
 
     override def reversed: Reaction[Event] =
       copy(reverse = true)
