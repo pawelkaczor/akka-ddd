@@ -1,7 +1,7 @@
 package pl.newicom.dddd.aggregate
 
 import akka.actor.{ActorRef, Stash}
-import pl.newicom.dddd.aggregate.AggregateRootSupport.{AcceptC, Collaborate, Reaction, Reject}
+import pl.newicom.dddd.aggregate.AggregateRootSupport._
 import pl.newicom.dddd.aggregate.error.{NoResponseReceived, UnexpectedResponseReceived}
 import akka.actor.Timers
 
@@ -28,7 +28,7 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash with Timers {
                             msg: Any,
                             receive: HandleResponse = PartialFunction.empty,
                             timeout: FiniteDuration = 3.seconds,
-                            mapper: List[Seq[Event] => Reaction[Event]] = List.empty,
+                            mapper: Option[Seq[Event] => Reaction[Event]] = None,
                             recovery: Option[() => Reaction[Event]] = None,
                             reverse: Boolean = false)
     extends Collaborate[Event] {
@@ -47,21 +47,13 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash with Timers {
           val rr: Reaction[Event] = if (recovery.isDefined) r.recoverWith(recovery.get) else r
           if (reverse) rr.reversed else rr
         }
-
-        mapper match {
-          case Nil        =>
-            complete(r)
-          case m :: Nil   =>
-            complete(r.flatMap(es => m(es)))
-          case m :: rest  =>
-            r.flatMap(es => m(es).flatMap(_ => copy(mapper = rest)))
-        }
+        complete(mapper.map(r.flatMap).getOrElse(r))
       })(timeout)
     }
 
     def flatMap[B](f: Seq[Event] => Reaction[B]): Reaction[B] = {
       def ff = f.andThen(_.asInstanceOf[Reaction[Event]])
-      copy(mapper = mapper :+ ff).asInstanceOf[Reaction[B]]
+      copy(mapper = Some(mapper.map(m => (es: Seq[Event]) => m(es).flatMap(ff)).getOrElse(ff))).asInstanceOf[Reaction[B]]
     }
 
     def recoverWith[B](f: () => Reaction[B]): Reaction[B] = {
@@ -73,7 +65,7 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash with Timers {
       }.asInstanceOf[Reaction[B]]
     }
 
-    def reversed: Reaction[Event] =
+    override def reversed: Reaction[Event] =
       copy(reverse = true)
   }
 
@@ -81,11 +73,11 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash with Timers {
     timers.startSingleTimer(TimeoutKey, ReceiveTimeout, timeout)
 
     context.become(
-      receive.andThen { es =>
+      receive.andThen { reaction =>
         timers.cancel(TimeoutKey)
         unstashAll()
         context.unbecome()
-        callback(es)
+        callback(reaction)
       } orElse {
         case ReceiveTimeout =>
           throw NoResponseReceived(timeout)

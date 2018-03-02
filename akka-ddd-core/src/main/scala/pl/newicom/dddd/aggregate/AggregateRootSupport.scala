@@ -26,7 +26,15 @@ object AggregateRootSupport {
 
     def recoverWith[B](f: () => Reaction[B]): Reaction[B]
 
-    def reversed: Reaction[E]
+    def reversed: Reaction[E] = this
+  }
+
+  case object NoReaction extends Reaction[Nothing] {
+    def flatMap[B](f: Seq[Nothing] => Reaction[B]): Reaction[B] =
+      f(Seq())
+
+    def recoverWith[B](f: () => Reaction[B]): Reaction[B] =
+      f()
   }
 
   trait Collaborate[E] extends Reaction[E] {
@@ -39,19 +47,17 @@ object AggregateRootSupport {
     def &(next: E): AcceptC[E] = AcceptC(events :+ next)
     def &(next: Seq[E]): AcceptC[E] = AcceptC(events ++ next)
 
-    def reversed: Reaction[E] =
+    override def reversed: Reaction[E] =
       copy(events.reverse)
 
     def flatMap[B](f: Seq[E] => Reaction[B]): Reaction[B] = {
       (f(events).asInstanceOf[Reaction[E]] match {
-        case NoReaction =>
-          this
         case AcceptC(es) =>
           AcceptC(events ++ es)
         case c: Collaborate[E] =>
           c.flatMap(_ => this).reversed
-        case r: Reject =>
-          r
+        case r =>
+          r.flatMap(_ => this)
 
       }).asInstanceOf[Reaction[B]]
     }
@@ -71,7 +77,6 @@ object AggregateRootSupport {
   class Reject private[aggregate] (val reason: Throwable) extends Reaction[Nothing] {
     def flatMap[B](f: Seq[Nothing] => Reaction[B]): Reaction[B] = this
     def recoverWith[B](f: () => Reaction[B]): Reaction[B] = f()
-    def reversed: Reaction[Nothing] = this
   }
 
   class RejectConditionally(condition: Boolean, reject: => Reject) {
@@ -92,16 +97,6 @@ object AggregateRootSupport {
       if (condition) reaction else Reject(rejectionReason)
 
     def isAccepted: Boolean = condition
-  }
-
-  case object NoReaction extends Reaction[Nothing] {
-    def flatMap[B](f: Seq[Nothing] => Reaction[B]): Reaction[B] =
-      f(Seq())
-
-    def recoverWith[B](f: () => Reaction[B]): Reaction[B] =
-      f()
-
-    def reversed: Reaction[Nothing] = this
   }
 
 }

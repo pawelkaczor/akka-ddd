@@ -1,5 +1,5 @@
 import Deps._
-import Deps.TestFrameworks._
+import Deps.TestFrameworks.{scalaTest, _}
 import sbt.Keys._
 import java.net.URL
 
@@ -43,8 +43,9 @@ lazy val `akka-ddd-core` = project
     commonSettings,
     publishArtifact in Test := true,
     libraryDependencies ++= Seq(
-      Akka.clusterTools, Akka.clusterSharding, Akka.persistence, Akka.contributions, Akka.slf4j
-    ))
+      Akka.clusterTools, Akka.clusterSharding, Akka.persistence, Akka.contributions, Akka.slf4j,
+      scalaTest % "test", Akka.testkit % "test", logbackClassic % "test", scalaCheck % "test"
+  ))
   .dependsOn(`akka-ddd-messaging`)
 
 
