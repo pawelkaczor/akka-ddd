@@ -12,8 +12,9 @@ Otherwise the receiver should obtain the identifier of the received message and 
 <p>Akka-DDD provides the <a href="https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/messaging/Deduplication.scala">Deduplication</a> trait that implements the logic of the deduplication as described above. The trait is mixed in by the <a href="https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/aggregate/AggregateRootBase.scala">AggregateRootBase</a> and the <a href="https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/process/SagaBase.scala">SagaBase</a> traits.</p>
 
 <hr />
-<p>Akka-DDD guarantees that a message is not processed twice by an Aggregate Root or a Process Manager.
-***</p>
+<p>Akka-DDD guarantees that a message is not processed twice by an Aggregate Root or a Process Manager.</p>
+
+<hr />
 
 <h3 id="processing-messages-in-proper-order">Processing messages in proper order</h3>
 
@@ -22,8 +23,9 @@ Otherwise the receiver should obtain the identifier of the received message and 
 <p>The sender should maintain the <code class="highlighter-rouge">lastSentMsgIdPerReceiver</code> map (of type: Map[EntityId, String]) as part of its <a href="https://github.com/pawelkaczor/akka-ddd/blob/74c750189c5f200e6349804cbf49c2cc0835d95b/akka-ddd-messaging/src/main/scala/pl/newicom/dddd/delivery/DeliveryState.scala#L57">DeliveryInProgressState</a>. Using this map, when sending a message to a receiver, the sender should obtain the ID of the last message that was sent to the receiver, and attach it to the message being sent as the <code class="highlighter-rouge">MustFollow</code> meta-attribute. Assuming, the receiver knows the IDs of the messages received/processed in the past (see: Deduplication), it should recognize an incoming message as an out-of-order, if no message was received/processed in the past whose ID was equal to the value of the <code class="highlighter-rouge">MustFollow</code> meta-attribute of the incoming message.</p>
 
 <hr />
-<p>Akka-DDD guarantees that the Process Manager processes the events in the order they were written to the aggregated business process journal.
-***</p>
+<p>Akka-DDD guarantees that the Process Manager processes the events in the order they were written to the aggregated business process journal.</p>
+
+<hr />
 
 <h4 id="process-manager--aggregate-root">Process Manager ⟶ Aggregate Root</h4>
 
