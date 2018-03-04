@@ -2,6 +2,7 @@
 layout: docs
 title: Process Manager
 permalink: /docs/process-manager
+position: 3
 ---
 ## Process Manager
 

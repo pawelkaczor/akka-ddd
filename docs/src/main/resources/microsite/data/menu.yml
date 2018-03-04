@@ -1,6 +1,4 @@
 options:
-  - title: Introduction
-    url: index.html
 
   - title: Getting Started
     url: docs/getting-started.html

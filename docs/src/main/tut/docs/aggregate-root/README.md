@@ -2,6 +2,7 @@
 layout: docs
 title: Aggregate Root
 permalink: /docs/aggregate-root
+position: 2
 ---
 ## Aggregate Root
 

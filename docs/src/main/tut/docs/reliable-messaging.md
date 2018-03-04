@@ -1,6 +1,7 @@
 ---
 layout: docs
 title: Reliable messaging
+position: 4
 ---
 
 ## Reliable delivery

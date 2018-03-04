@@ -1,3 +1,5 @@
+import microsites._
+
 lazy val micrositeSettings = Seq(
   micrositeName := "Akka-DDD",
   micrositeDescription := "Scala CQRS/ES framework",
@@ -7,6 +9,14 @@ lazy val micrositeSettings = Seq(
   micrositeGithubRepo := "akka-ddd",
   micrositeAuthor := "Paweł Kaczor",
   micrositeHighlightTheme := "github",
+  ghpagesNoJekyll := false,
+  micrositeExtraMdFiles := Map(
+    file("README.md") -> ExtraMdFileConfig(
+      "index.md",
+      "home",
+      Map("title" -> "Home", "section" -> "home", "position" -> "0")
+    )
+  ),
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.md"
 )
 
