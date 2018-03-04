@@ -6,8 +6,9 @@ import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.coordination.ReceptorConfig.{ReceiverResolver, StimuliSource, Transduction}
 import pl.newicom.dddd.messaging.Message
 import pl.newicom.dddd.messaging.MetaAttribute.Target
+import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
-import pl.newicom.dddd.office.LocalOfficeId
+import pl.newicom.dddd.office.{LocalOfficeId, OfficeRegistryImpl}
 
 object ReceptorConfig {
   type Transduction     = PartialFunction[EventMessage, Message]
@@ -50,8 +51,31 @@ case class ReceptorBuilder(
 
   def autoRoute: ReceptorConfig = route {
     case msg: Message =>
-      ActorPath.fromString(msg.getMetaAttribute(Target))
+      msg.tryGetMetaAttribute(Target) match {
+        case Some(t) => ActorPath.fromString(t)
+        case _ => throw new RuntimeException("Resolving receiver failed")
+      }
   }
+
+  def autoRoute(officeRegistry: OfficeRegistryImpl): ReceptorConfig =
+    applyTransduction {
+      case em =>
+        transduction(em) match {
+          case cm @ CommandMessage(command, metadata) if !metadata.contains(Target) =>
+            cm.copy(command = new ToDeliverableCommandTransformation(officeRegistry)(command))
+          case msg => msg
+       }
+    }.route {
+      case msg: Message =>
+        msg.tryGetMetaAttribute(Target).map(ActorPath.fromString).getOrElse {
+          msg match {
+            case cm: CommandMessage =>
+              officeRegistry.commandHandler(cm.command).actorPath
+            case _ =>
+              throw new RuntimeException("Resolving receiver failed")
+          }
+        }
+    }
 
   def route(receiverResolver: ReceiverResolver): ReceptorConfig =
     ReceptorConfig(id, stimuliSource, transduction, receiverResolver, capacity)

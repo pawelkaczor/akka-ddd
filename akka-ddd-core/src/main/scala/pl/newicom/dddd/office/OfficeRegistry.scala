@@ -1,12 +1,13 @@
 package pl.newicom.dddd.office
 
 import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
-import pl.newicom.dddd.aggregate.EntityId
+import pl.newicom.dddd.aggregate.{Command, EntityId}
 import pl.newicom.dddd.cluster
 import java.util.concurrent.ConcurrentHashMap
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory.getLogger
+
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 class OfficeRegistryImpl(implicit as: ActorSystem) extends Extension {
@@ -53,6 +54,15 @@ class OfficeRegistryImpl(implicit as: ActorSystem) extends Extension {
 
   def find(p: OfficeId => Boolean): Option[OfficeId] =
     offices.find(p)
+
+  def commandHandlerId(command: Command): OfficeId =
+    find(_.handles(command)) match {
+      case Some(officeId) => officeId
+      case _ => throw new RuntimeException(s"No Office registered capable of handling ${command.getClass.getName}")
+  }
+
+  def commandHandler(command: Command): OfficeRef =
+    officeRef(commandHandlerId(command).id)
 
   private def offices: Set[OfficeId] =
   _inClusterOffices.values().asScala.toSet.map((o: OfficeRef) => o.officeId) ++

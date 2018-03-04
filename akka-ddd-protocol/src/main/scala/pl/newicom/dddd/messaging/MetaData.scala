@@ -36,6 +36,9 @@ case class MetaData(content: Map[String, Any]) extends Serializable {
   def contains(attrName: String): Boolean =
     content.contains(attrName)
 
+  def contains(attr: MetaAttribute[_]): Boolean =
+    tryGet(attr).isDefined
+
   def get[B](attrName: String): B =
     tryGet[B](attrName).get
 
