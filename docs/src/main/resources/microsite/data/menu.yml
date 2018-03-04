@@ -24,5 +24,27 @@ options:
       - title: Testing
         url: docs/aggregate-root/testing
 
+  - title: Process Manager
+    url: docs/process-manager.html
+
+    nested_options:
+      - title: Introduction
+        url: docs/process-manager/intro
+
+      - title: Implementation    
+        url: docs/process-manager/impl
+
+      - title: Saga Pattern
+        url: docs/process-manager/saga-pattern
+
+      - title: Configuration
+        url: docs/process-manager/configuration
+
+      - title: Testing
+        url: docs/process-manager/testing
+
   - title: Projections
     url: docs/projections.html
+
+  - title: Reliable messaging
+    url: docs/reliable-messaging.html
