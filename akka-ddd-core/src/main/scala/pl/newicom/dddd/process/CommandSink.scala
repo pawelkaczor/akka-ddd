@@ -47,6 +47,7 @@ class CommandSink(override val config: Config)(implicit val officeID: LocalOffic
   override def recovery = Recovery(toSequenceNr = 0L)
 
   // Disable automated recovery on restart
-  override def preRestart(reason: Throwable, message: Option[Any]): Unit = ()
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit =
+    log.error(reason, message.getOrElse("Unexpected").toString)
 
 }

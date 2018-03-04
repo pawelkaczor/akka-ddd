@@ -164,8 +164,10 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     msgSender ! cm.deliveryReceipt(result.map(config.respondingPolicy.successMapper))
   }
 
-  def handleDuplicated(msg: Message): Unit =
+  def handleDuplicated(msg: Message): Unit = {
+    log.warning("Duplicate message received: {}", msg)
     reply(Success(Seq.empty), msg.asInstanceOf[CommandMessage])
+  }
 
   private def safely(f: => Unit): Unit =
     try f catch {
