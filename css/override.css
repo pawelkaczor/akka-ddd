@@ -29,3 +29,7 @@ pre .hljs {
     font-size: 18px;
     line-height: 1.3;
 }
+
+.sidebar-nav > .sidebar-brand a .brand-wrapper {
+	width: 40px;
+}
