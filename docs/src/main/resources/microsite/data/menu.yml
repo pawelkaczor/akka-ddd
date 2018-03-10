@@ -46,3 +46,6 @@ options:
 
   - title: Reliable messaging
     url: docs/reliable-messaging.html
+
+  - title: Modules overview
+    url: docs/modules.html    
