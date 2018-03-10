@@ -2,7 +2,7 @@ import microsites._
 
 lazy val micrositeSettings = Seq(
   micrositeName := "Akka-DDD",
-  micrositeDescription := "Scala CQRS/ES framework",
+  micrositeDescription := "Akka-based framework following DDD/CQRS/ES principles",
   micrositeBaseUrl := "akka-ddd",
   micrositeDocumentationUrl := "docs/getting-started.html",
   micrositeGithubOwner := "pawelkaczor",
