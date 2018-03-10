@@ -20,8 +20,11 @@ Akka-DDD has been tested with the [EventStore](https://eventstore.org/) journal 
 ### Documentation
 
 Project [homepage](http://newicom.pl/akka-ddd/).
+
 [Documentation](http://newicom.pl/akka-ddd/docs/getting-started.html).
+
 Articles in [Reactive DDD with Akka](http://pkaczor.blogspot.com/search/label/Reactive-DDD) series.
+
 Demo [project](https://github.com/pawelkaczor/ddd-leaven-akka-v2).
 
 ### Modules overview
