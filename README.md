@@ -17,7 +17,14 @@ All of these are event-sourced actors that support reliable (effectively-once de
 
 Akka-DDD has been tested with the [EventStore](https://eventstore.org/) journal implementation. A [demo project](https://github.com/pawelkaczor/ddd-leaven-akka-v2) of an e-commerce system implemented using Akka-DDD is available on GitHub.
 
-#### Modules overview
+### Documentation
+
+Project [homepage](http://newicom.pl/akka-ddd/).
+[Documentation](http://newicom.pl/akka-ddd/docs/getting-started.html).
+Articles in [Reactive DDD with Akka](http://pkaczor.blogspot.com/search/label/Reactive-DDD) series.
+Demo [project](https://github.com/pawelkaczor/ddd-leaven-akka-v2).
+
+### Modules overview
 
 #### akka-ddd-core
 
