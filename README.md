@@ -9,11 +9,13 @@ The services are built as actor systems. Different services can be distributed i
 
 Akka-DDD offers concise APIs for implementing business logic of the following actor types:
 
-- Aggregate Root
-- Process Manager
-- Receptor
+- **Aggregate Root**
+- **Process Manager**
+- **Receptor**
 
-All of these are event-sourced actors that support reliable (effectively-once delivery) communication. 
+All of these are **event-sourced** actors that support **reliable** (effectively-once delivery) communication. Process Managers and Receptors are operating within non-blocking **back-pressured** event processing pipeline.
+
+Akka-DDD provides an extensible implementation of the View Update Service that is responsible for running running **Projections** on the read-side of the system. Implementation of SQL View Update Service is available out of the box.
 
 Akka-DDD has been tested with the [EventStore](https://eventstore.org/) journal implementation. A [demo project](https://github.com/pawelkaczor/ddd-leaven-akka-v2) of an e-commerce system implemented using Akka-DDD is available on GitHub.
 
