@@ -4,6 +4,7 @@ import akka.actor.{ActorPath, ActorRef}
 import akka.util.Timeout
 import pl.newicom.dddd.aggregate.{Command, EntityId, Query}
 import pl.newicom.dddd.delivery.protocol.{DeliveryHandler, Processed}
+import pl.newicom.dddd.utils.ImplicitUtils._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
@@ -17,7 +18,7 @@ object LocalOfficeId {
 case class LocalOfficeId[E : ClassTag](id: EntityId, department: String, messageClass: Option[Class[_]] = None) extends OfficeId {
 
   def caseClass: Class[E] =
-    implicitly[ClassTag[E]].runtimeClass.asInstanceOf[Class[E]]
+    implicitly[ClassTag[E]].runtimeClass.asParameterizedBy[E]
 
   def caseName: String = caseClass.getSimpleName
 }

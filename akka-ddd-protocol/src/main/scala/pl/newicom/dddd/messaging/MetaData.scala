@@ -4,6 +4,7 @@ import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import pl.newicom.dddd.messaging.MetaAttribute.{Id, Timestamp}
 import pl.newicom.dddd.utils.UUIDSupport.uuid
+import pl.newicom.dddd.utils.ImplicitUtils._
 
 object MetaData {
   def empty: MetaData =
@@ -46,7 +47,7 @@ case class MetaData(content: Map[String, Any]) extends Serializable {
     tryGet(attr).get
 
   def tryGet[B](attrName: String): Option[B] =
-    content.get(attrName).asInstanceOf[Option[B]]
+    content.get(attrName).asParameterizedBy[B]
 
   def tryGet[B](attr: MetaAttribute[B]): Option[B] =
     content.get(attr.entryName).map(attr.read)

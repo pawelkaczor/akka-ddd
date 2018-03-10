@@ -2,12 +2,11 @@ package pl.newicom.dddd.aggregate
 
 import pl.newicom.dddd.aggregate.error.DomainException
 import pl.newicom.dddd.office.{LocalOfficeId, OfficeListener}
+import pl.newicom.dddd.utils.ImplicitUtils._
 
 import scala.concurrent.duration.FiniteDuration
 
 object AggregateRootSupport {
-
-  trait Query
 
   sealed trait AbstractReaction[+R]
 
@@ -21,7 +20,7 @@ object AggregateRootSupport {
         case Seq(e, _*) if f.isDefinedAt(e) =>
           f(e)
         case _ =>
-          this.asInstanceOf[Reaction[B]]
+          this.asParameterizedBy[B]
       }
 
     def recoverWith[B](f: => Reaction[B]): Reaction[B]
@@ -51,7 +50,7 @@ object AggregateRootSupport {
       copy(events.reverse)
 
     def flatMap[B](f: Seq[E] => Reaction[B]): Reaction[B] = {
-      (f(events).asInstanceOf[Reaction[E]] match {
+      (f(events).asParameterizedBy[E] match {
         case AcceptC(es) =>
           AcceptC(events ++ es)
         case c: Collaborate[E] =>
@@ -59,11 +58,11 @@ object AggregateRootSupport {
         case r =>
           r.flatMap(_ => this)
 
-      }).asInstanceOf[Reaction[B]]
+      }).asParameterizedBy[B]
     }
 
     def recoverWith[B](f: => Reaction[B]): Reaction[B] =
-      this.asInstanceOf[Reaction[B]]
+      this.asParameterizedBy[B]
 
   }
 

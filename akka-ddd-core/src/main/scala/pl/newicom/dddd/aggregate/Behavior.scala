@@ -3,6 +3,7 @@ package pl.newicom.dddd.aggregate
 import pl.newicom.dddd.actor.Config
 import pl.newicom.dddd.aggregate.AggregateRootSupport._
 import pl.newicom.dddd.aggregate.error.CommandHandlerNotDefined
+import pl.newicom.dddd.utils.ImplicitUtils._
 
 import scala.PartialFunction.empty
 import scala.reflect.ClassTag
@@ -28,7 +29,7 @@ trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends Ag
     }
 
     def map[SS <: S](f: SS => S): Actions =
-      copy(eventHandler = eventHandler.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
+      copy(eventHandler = eventHandler.asParameterizedBy2[SS].andThen(f))
 
     def ++(other: Actions): Actions =
       Actions(ctx => cHandler(ctx).orElse(other.cHandler(ctx)), qHandler.orElse(other.qHandler), eventHandler.orElse(other.eventHandler))
@@ -37,7 +38,7 @@ trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends Ag
       Actions(
         ctx => cHandler(ctx).orElse(other.commandHandlerNoCtx),
         qHandler.orElse(other.qHandler),
-        eventHandler.orElse(other.eventHandler.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
+        eventHandler.orElse(other.eventHandler.asParameterizedBy2[SS].andThen(f))
       )
 
     def orElse(other: Actions): Actions =

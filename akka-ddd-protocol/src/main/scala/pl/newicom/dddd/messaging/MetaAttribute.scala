@@ -3,6 +3,7 @@ package pl.newicom.dddd.messaging
 import enumeratum.EnumEntry.LowerCamelcase
 import enumeratum._
 import org.joda.time.DateTime
+import pl.newicom.dddd.utils.ImplicitUtils._
 
 import scala.collection.immutable
 
@@ -52,7 +53,7 @@ object MetaAttribute extends Enum[MetaAttribute[_]] {
   }
 
   def apply(name: String): Option[MetaAttribute[Any]] =
-    withNameInsensitiveOption(name).asInstanceOf[Option[MetaAttribute[Any]]]
+    withNameInsensitiveOption(name).asParameterizedBy[MetaAttribute[Any]]
 
   val values: immutable.IndexedSeq[MetaAttribute[_]] = findValues
 

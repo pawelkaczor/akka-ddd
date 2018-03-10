@@ -3,6 +3,7 @@ package pl.newicom.dddd.aggregate
 import akka.actor.{ActorRef, Stash}
 import pl.newicom.dddd.aggregate.AggregateRootSupport._
 import pl.newicom.dddd.aggregate.error.{NoResponseReceived, UnexpectedResponseReceived}
+import pl.newicom.dddd.utils.ImplicitUtils._
 import akka.actor.Timers
 
 import scala.concurrent.duration._
@@ -53,12 +54,12 @@ trait CollaborationSupport[Event <: DomainEvent] extends Stash with Timers {
     }
 
     def flatMap[B](f: Seq[Event] => Reaction[B]): Reaction[B] = {
-      def ff = f.andThen(_.asInstanceOf[Reaction[Event]])
-      copy(mapper = Some(mapper.map(m => (es: Seq[Event]) => m(es).flatMap(ff)).getOrElse(ff))).asInstanceOf[Reaction[B]]
+      def ff = f.andThen(_.asParameterizedBy[Event])
+      copy(mapper = Some(mapper.map(m => (es: Seq[Event]) => m(es).flatMap(ff)).getOrElse(ff))).asParameterizedBy[B]
     }
 
     def recoverWith[B](f: => Reaction[B]): Reaction[B] =
-      copy(recovery = () => f.asInstanceOf[Reaction[Event]]).asInstanceOf[Reaction[B]]
+      copy(recovery = () => f.asParameterizedBy[Event]).asParameterizedBy[B]
 
     override def reversed: Reaction[Event] =
       copy(reverse = true)
