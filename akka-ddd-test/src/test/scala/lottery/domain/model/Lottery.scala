@@ -4,6 +4,7 @@ import java.time.OffsetDateTime
 
 import lottery.domain.model.LotteryBehaviour.LotteryId
 import lottery.domain.model.LotteryProtocol._
+import pl.newicom.dddd.actor.Config
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.aggregate.error.DomainException
 
@@ -140,7 +141,7 @@ object LotteryBehaviour {
     def actions = rejectAllCommands
   }
 
-  type LotteryId = String
+  type LotteryId = AggregateId
 }
 
 
@@ -150,7 +151,7 @@ object LotteryProtocol {
   // Commands ============================================================
   sealed trait LotteryCommand extends Command {
     def id: LotteryId
-    override def aggregateId: String = id
+    override def aggregateId: AggregateId = id
 
   }
   // Creation Command

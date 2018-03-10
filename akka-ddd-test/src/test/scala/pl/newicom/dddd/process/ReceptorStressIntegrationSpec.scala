@@ -2,7 +2,6 @@ package pl.newicom.dddd.process
 
 import akka.actor._
 import akka.testkit.TestProbe
-import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.coordination.ReceptorConfig
 import pl.newicom.dddd.delivery.protocol.Processed
@@ -12,13 +11,12 @@ import pl.newicom.dddd.office.OfficeListener
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.SagaIntegrationSpec._
 import pl.newicom.dddd.persistence.{RegularSnapshottingConfig, SaveSnapshotRequest}
-import pl.newicom.dddd.saga.CoordinationOffice
+import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga, dummyOfficeId}
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
-import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.eventstore.EventstoreSubscriber
 
 import scala.concurrent.duration._
@@ -27,24 +25,20 @@ object ReceptorStressIntegrationSpec {
 
   case object GetNumberOfUnconfirmed
 
-  implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
-    new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(DummyConfig(pc)))
-      override def inactivityTimeout: Duration = it
-    }
-
+  implicit def actorFactory: AggregateRootActorFactory[DummyAggregateRoot] =
+    AggregateRootActorFactory(pc => Props(new DummyAggregateRoot(DummyConfig(pc))))
 }
 
 /**
   * Requires EventStore to be running on localhost!
   */
-class ReceptorStressIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("ReceptorStressSpec"))) {
+class ReceptorStressIntegrationSpec extends ARSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("ReceptorStressSpec"))) {
 
-  def dummyId: EntityId = aggregateId
+  def dummyId: AggregateId = aggregateId
 
-  implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
+  implicit lazy val testSagaConfig: DummySagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
-  implicit lazy val officeListener = new OfficeListener[DummySaga]
+  implicit lazy val officeListener: OfficeListener[DummySaga] = new OfficeListener[DummySaga]
 
   implicit lazy val receptorActorFactory: ReceptorActorFactory[DummySaga] = new ReceptorActorFactory[DummySaga] {
     override def receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {
@@ -81,7 +75,7 @@ class ReceptorStressIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregat
 
       given {
         List(
-          CreateDummy(dummyId, "name", "description", 0),
+          CreateDummy(dummyId, "name", "description", Value(0)),
           ChangeValue(dummyId, 1)
         )
       }

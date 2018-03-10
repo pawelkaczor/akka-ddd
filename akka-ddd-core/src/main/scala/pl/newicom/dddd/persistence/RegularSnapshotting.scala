@@ -38,6 +38,6 @@ trait RegularSnapshotting {
   }
 
   def isMessageCounted(msg: Any): Boolean = {
-    snapshottingConfig.interest.isDefinedAt(msg)
+    !msg.isInstanceOf[SaveSnapshotRequest.type] && snapshottingConfig.interest.isDefinedAt(msg)
   }
 }

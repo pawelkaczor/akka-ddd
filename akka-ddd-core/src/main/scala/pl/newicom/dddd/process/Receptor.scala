@@ -21,7 +21,7 @@ trait ReceptorPersistence extends ReceivePipeline with RegularSnapshotting {
 abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySupport with ReceptorPersistence {
   this: EventStreamSubscriber =>
 
-  override def redeliverInterval = 30.seconds
+  override def redeliverInterval: FiniteDuration = 30.seconds
   override def warnAfterNumberOfUnconfirmedAttempts = 15
 
   val snapshottingConfig = RegularSnapshottingConfig(
@@ -31,13 +31,13 @@ abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySuppo
   def deadLetters: ActorPath = context.system.deadLetters.path
 
   def destination(msg: Message): ActorPath =
-    config.receiverResolver.applyOrElse(msg, (any: Message) => {
+    config.receiverResolver.applyOrElse(msg, (_: Message) => {
       log.warning("No destination provided")
       deadLetters
     })
 
   override lazy val persistenceId: String =
-    s"Receptor-${config.stimuliSource.id}-${self.path.hashCode}"
+    self.path.name
 
   var demandCallback: Option[DemandCallback] = None
 
@@ -48,7 +48,7 @@ abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySuppo
         demandConfig = DemandConfig(
                          subscriberCapacity = config.capacity,
                          initialDemand = config.capacity - unconfirmedNumber)))
-    log.info(s"Receptor $persistenceId subscribed to '${config.stimuliSource.id}' event stream " +
+    log.info(s"Receptor $persistenceId subscribed to '${config.stimuliSource.streamName}' event stream " +
       s"from position: ${lastSentDeliveryId.getOrElse(0)}. " +
       s"Receptor's capacity: ${config.capacity}")
   }
@@ -62,8 +62,11 @@ abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySuppo
 
   def receiveEvent: Receive = {
     case EventMessageEntry(em, position, _) =>
-      config.transduction.lift(em).foreach { msg =>
-        deliver(msg, deliveryId = position)
+      config.transduction.lift(em) match {
+        case Some(msg) =>
+          deliver(msg, deliveryId = position)
+        case None =>
+          demandCallback.foreach(_.onEventProcessed())
       }
   }
 

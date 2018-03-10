@@ -4,8 +4,8 @@ import akka.actor._
 import akka.cluster.client.ClusterClientReceptionist
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings}
 import akka.cluster.sharding.ShardRegion.Passivate
+import pl.newicom.dddd.BusinessEntity
 import pl.newicom.dddd.actor.{BusinessEntityActorFactory, PassivationConfig}
-import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.office.{LocalOfficeId, OfficeFactory, OfficeId}
 
 trait ShardingSupport {
@@ -65,11 +65,11 @@ trait ShardingSupport {
   private def shardResolution(officeId: OfficeId): ShardResolution =
     new ShardResolution(officeId.distributionStrategy)
 
-  private def startClusterClientReceptionist(officeId: OfficeId)(implicit as: ActorSystem): Unit = {
+  private def startClusterClientReceptionist(officeId: BusinessEntity)(implicit as: ActorSystem): Unit = {
     ClusterClientReceptionist(as).registerService(region(officeId).get)
   }
 
-  private def region(officeId: OfficeId)(implicit as: ActorSystem): Option[ActorRef] = {
+  private def region(officeId: BusinessEntity)(implicit as: ActorSystem): Option[ActorRef] = {
     try {
       Some(ClusterSharding(as).shardRegion(officeId.id))
     } catch {

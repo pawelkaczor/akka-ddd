@@ -1,6 +1,7 @@
 package pl.newicom.dddd.scheduling
 
 import akka.persistence.Recovery
+import pl.newicom.dddd.actor.{Config, ConfigClass}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.office.LocalOfficeId
 import pl.newicom.dddd.scheduling.Scheduler.SchedulerBehavior

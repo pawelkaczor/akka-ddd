@@ -2,31 +2,24 @@ package pl.newicom.dddd.scheduling
 
 import akka.actor.Props
 import org.joda.time.DateTime
-import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, DefaultConfig}
-import pl.newicom.dddd.test.support.OfficeSpec
+import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 import SchedulerSpec._
+import pl.newicom.dddd.actor.DefaultConfig
 import pl.newicom.dddd.office.LocalOfficeId
-
-import scala.concurrent.duration._
+import pl.newicom.dddd.test.ar.ARSpec
 
 object SchedulerSpec {
   val businessUnit = "test"
 
   implicit val schedulingOfficeID: LocalOfficeId[Scheduler] = schedulingLocalOfficeId("Scheduling")
 
-  implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[Scheduler] =
-    new AggregateRootActorFactory[Scheduler] {
-      override def props(pc: PassivationConfig): Props = Props(new Scheduler(DefaultConfig(pc)) {
-        override def id: String = businessUnit
-      })
-      override def inactivityTimeout: Duration = it
-    }
+  implicit def actorFactory: AggregateRootActorFactory[Scheduler] =
+    AggregateRootActorFactory[Scheduler](pc => Props(new Scheduler(DefaultConfig(pc))))
 
 }
 
-class SchedulerSpec extends OfficeSpec[SchedulerEvent, Scheduler](Some(testSystem)) {
+class SchedulerSpec extends ARSpec[SchedulerEvent, Scheduler](Some(testSystem)) {
 
   "Scheduling office" should {
     "schedule event" in {

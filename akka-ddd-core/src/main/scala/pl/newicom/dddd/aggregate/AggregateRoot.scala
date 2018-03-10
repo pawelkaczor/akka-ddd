@@ -1,17 +1,26 @@
 package pl.newicom.dddd.aggregate
 
-import akka.persistence.RecoveryCompleted
+import akka.actor.Props
 import akka.persistence.journal.Tagged
-import pl.newicom.dddd.actor.BusinessEntityActorFactory
+import akka.persistence.{RecoveryCompleted, SaveSnapshotFailure, SaveSnapshotSuccess, SnapshotOffer}
+import pl.newicom.dddd.actor.{BusinessEntityActorFactory, PassivationConfig}
 import pl.newicom.dddd.aggregate.AggregateRootSupport._
 import pl.newicom.dddd.aggregate.error._
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
 import pl.newicom.dddd.messaging.{AddressableMessage, Message}
 import pl.newicom.dddd.office.LocalOfficeId
+import pl.newicom.dddd.persistence.SaveSnapshotRequest
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
+
+object AggregateRootActorFactory {
+  def apply[A <: AggregateRoot[_, _, A]: LocalOfficeId](f: (PassivationConfig => Props)): AggregateRootActorFactory[A] =
+    new AggregateRootActorFactory[A] {
+      def props(pc: PassivationConfig): Props = f(pc)
+    }
+}
 
 abstract class AggregateRootActorFactory[A <: AggregateRoot[_, _, A]: LocalOfficeId] extends BusinessEntityActorFactory[A] {
   def inactivityTimeout: Duration = 1.minute
@@ -19,8 +28,8 @@ abstract class AggregateRootActorFactory[A <: AggregateRoot[_, _, A]: LocalOffic
 
 trait AggregateState[S <: AggregateState[S]] {
   type StateMachine = PartialFunction[DomainEvent, S]
-  def apply: StateMachine
-  def eventHandlerDefined(e: DomainEvent): Boolean = apply.isDefinedAt(e)
+  def eventHandler: StateMachine
+  def eventHandlerDefined(e: DomainEvent): Boolean = eventHandler.isDefinedAt(e)
   def initialized: Boolean                         = true
 }
 
@@ -29,15 +38,15 @@ trait Uninitialized[S <: AggregateState[S]] { this: AggregateState[S] =>
 }
 
 trait ReactionInterpreter {
-  def execute(reaction: Reaction[_]): Unit
+  def execute(reaction: AbstractReaction[_]): Unit
 }
 
 abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Uninitialized, A <: AggregateRoot[Event, S, A]: LocalOfficeId]
     extends AggregateRootBase with CollaborationSupport[Event] with ReactionInterpreter {
 
-  type HandlePayload = PartialFunction[Any, Reaction[_]]
+  type HandlePayload = PartialFunction[Any, AbstractReaction[_]]
   type HandleCommand = CommandHandlerContext[C] => PartialFunction[Command, Reaction[Event]]
-  type HandleQuery   = PartialFunction[Query, Reaction[_]]
+  type HandleQuery   = PartialFunction[Query, AbstractReaction[_]]
 
   def commandHandlerContext(cm: CommandMessage) = CommandHandlerContext(caseRef, config, cm.metadata)
 
@@ -57,9 +66,15 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
 
   override def receiveRecover: Receive = {
     case em: EventMessage =>
-      sm.apply(em)
+      sm(em)
     case Tagged(em @ EventMessage(_, _), _) =>
-      sm.apply(em)
+      sm(em)
+
+    case SnapshotOffer(_, AggregateSnapshot(state, receivedMsgIds)) =>
+      sm.reset(state.asInstanceOf[S])
+      resetReceivedMsgIds(receivedMsgIds)
+      log.debug(s"AR Snapshot restored: $state")
+
     case RecoveryCompleted => // ignore
   }
 
@@ -68,6 +83,18 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
       safely {
         handlePayload(msg).orElse(handleUnknown).andThen(execute)(msg.payload)
       }
+
+    case SaveSnapshotRequest =>
+      val snapshot = AggregateSnapshot(state, receivedMsgIds)
+      saveSnapshot(snapshot)
+
+    case SaveSnapshotSuccess(metadata) =>
+      log.debug("Snapshot saved successfully with metadata: {}", metadata)
+
+    case f @ SaveSnapshotFailure(_, reason) =>
+      log.error(s"$f")
+      throw reason
+
   }
 
   private def handlePayload(msg: AddressableMessage): HandlePayload = {
@@ -98,7 +125,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
       )
   }
 
-  override def execute(r: Reaction[_]): Unit =
+  override def execute(r: AbstractReaction[_]): Unit =
     if (isCommandMsgReceived) {
       executeC(r.asInstanceOf[Reaction[Event]])
     } else {
@@ -109,11 +136,6 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     case AcceptC(events)  => raise(events)
     case c: Collaboration => c.execute(execute)
     case Reject(ex)       => reply(Failure(ex))
-  }
-
-  private def executeQ(r: Reaction[_]): Unit = r match {
-    case AcceptQ(response) => msgSender ! response
-    case Reject(ex)        => msgSender ! Failure(ex)
   }
 
   private def raise(events: Seq[Event]): Unit = {
@@ -133,12 +155,19 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
     persistAll(eventMessages.toList)(e => safely(handler(e)))
   }
 
+  private def executeQ(r: AbstractReaction[_]): Unit = r match {
+    case AcceptQ(response) => msgSender ! response
+    case Reject(ex)        => msgSender ! Failure(ex)
+  }
+
   private def reply(result: Try[Seq[OfficeEventMessage]], cm: CommandMessage = commandMsgReceived) {
     msgSender ! cm.deliveryReceipt(result.map(config.respondingPolicy.successMapper))
   }
 
-  def handleDuplicated(msg: Message): Unit =
+  def handleDuplicated(msg: Message): Unit = {
+    log.warning("Duplicate message received: {}", msg)
     reply(Success(Seq.empty), msg.asInstanceOf[CommandMessage])
+  }
 
   private def safely(f: => Unit): Unit =
     try f catch {
@@ -150,9 +179,11 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
 
     def state: S = s
 
-    def apply(em: EventMessage): Unit = {
+    def reset(snapshot: S): Unit =
+      s = snapshot
+
+    def apply(em: EventMessage): Unit =
       apply(eventHandler, em)
-    }
 
     def eventMessageHandler: (EventMessage) => EventMessage = em => {
       apply(eventHandler, em)
@@ -170,7 +201,7 @@ abstract class AggregateRoot[Event <: DomainEvent, S <: AggregateState[S]: Unini
       def caseName    = officeId.caseName
       s match {
         case state if state.eventHandlerDefined(event) =>
-          state.apply(event)
+          state.eventHandler(event)
         case state if state.initialized =>
           throw new StateTransitionNotDefined(commandName, eventName)
         case _ =>

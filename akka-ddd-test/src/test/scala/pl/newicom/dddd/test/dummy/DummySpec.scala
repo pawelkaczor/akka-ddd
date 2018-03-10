@@ -1,44 +1,35 @@
 package pl.newicom.dddd.test.dummy
 
 import akka.actor.Props
-import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.error.{AggregateRootNotInitialized, CommandHandlerNotDefined, DomainException}
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, AggregateRootLogger, EntityId}
-import pl.newicom.dddd.office.Office
+import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, AggregateRootLogger}
+import pl.newicom.dddd.office.OfficeRef
+import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
-import pl.newicom.dddd.test.dummy.DummyOfficeSpec._
+import pl.newicom.dddd.test.dummy.DummySpec._
 import pl.newicom.dddd.test.dummy.DummyProtocol._
-import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig.testSystem
 
-import scala.concurrent.duration.{Duration, _}
+object DummySpec {
 
-object DummyOfficeSpec {
-
-  implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
-    new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(
-        new DummyAggregateRoot(DummyConfig(pc, valueGenerator = () => -1)) with AggregateRootLogger[DummyEvent]
-      )
-      override def inactivityTimeout: Duration = it
-
-    }
+  implicit def actorFactory: AggregateRootActorFactory[DummyAggregateRoot] =
+    AggregateRootActorFactory[DummyAggregateRoot](pc => Props(
+      new DummyAggregateRoot(DummyConfig(pc, valueGenerator = () => -1)) with AggregateRootLogger[DummyEvent]
+    ))
 }
 
-class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
+class DummySpec extends ARSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
 
-  def dummyOffice: Office = officeUnderTest
-
-  def dummyId: EntityId = aggregateId
+  def dummyId: DummyId = aggregateId
 
   "Dummy office" should {
 
     "create Dummy" in {
       when {
-        CreateDummy(dummyId, "dummy name", "dummy description", 100)
+        CreateDummy(dummyId, "dummy name", "dummy description", Value(100))
       }
       .expect { c =>
-        DummyCreated(c.id, c.name, c.description, c.value)
+        DummyCreated(c.id, c.name, c.description, c.value.value)
       }
     }
 
@@ -52,17 +43,17 @@ class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(te
     "reject CreateDummy if Dummy already exists" in {
       val dId = dummyId
       given {
-        CreateDummy(dId, "dummy name", "dummy description", 100)
+        CreateDummy(dId, "dummy name", "dummy description", Value(100))
       }
       when {
-        CreateDummy(dId, "dummy name", "dummy description", 100)
+        CreateDummy(dId, "dummy name", "dummy description", Value(100))
       }
       .expectException[CommandHandlerNotDefined]()
     }
 
     "update Dummy's name" in {
       given {
-        CreateDummy(dummyId, "dummy name", "dummy description", 100)
+        CreateDummy(dummyId, "dummy name", "dummy description", Value(100))
       }
       .when {
         ChangeName(dummyId, "some other dummy name")
@@ -74,7 +65,7 @@ class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(te
 
     "handle subsequent Update command" in {
       given {
-        CreateDummy(dummyId, "dummy name", "dummy description", 100) &
+        CreateDummy(dummyId, "dummy name", "dummy description", Value(100)) &
         ChangeName(dummyId, "some other dummy name")
       }
       .when {
@@ -87,14 +78,14 @@ class DummyOfficeSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(te
 
     "reject negative value" in {
       when {
-        CreateDummy(dummyId, "dummy name", "dummy description", value = -1)
+        CreateDummy(dummyId, "dummy name", "dummy description", value = Value(-1))
       }
       .expectException[DomainException]("negative value not allowed")
     }
 
     "change value and name on reset" in {
       given {
-        CreateDummy(dummyId, "dummy name", "dummy description", 100)
+        CreateDummy(dummyId, "dummy name", "dummy description", Value(100))
       }
       .when {
         Reset(dummyId, "new dummy name")

@@ -17,6 +17,7 @@ trait Deduplication {
   private val ids: mutable.Set[String] = mutable.Set.empty
 
   pipelineInner {
+
     case msg: Message =>
       if (wasReceived(msg)) {
         handleDuplicated(msg)
@@ -41,4 +42,10 @@ trait Deduplication {
     ids += msgId
   }
 
+  def receivedMsgIds: collection.immutable.Set[String] =
+    ids.toSet
+
+  def resetReceivedMsgIds(ids: collection.immutable.Set[String]) =
+    this.ids ++= ids
 }
+

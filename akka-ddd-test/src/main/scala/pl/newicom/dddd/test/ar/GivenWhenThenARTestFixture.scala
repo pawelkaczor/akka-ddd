@@ -1,21 +1,21 @@
-package pl.newicom.dddd.test.support
+package pl.newicom.dddd.test.ar
 
 import akka.actor.ActorSystem
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import akka.util.Timeout
-import org.scalacheck.Gen
+import com.danielasfregola.randomdatagenerator.RandomDataGenerator
+import org.scalacheck.Arbitrary
 import pl.newicom.dddd.aggregate.error.CommandRejected
-import pl.newicom.dddd.aggregate.{Command, DomainEvent}
+import pl.newicom.dddd.aggregate.{AggregateId, Command, DomainEvent}
 import pl.newicom.dddd.delivery.protocol.Processed
 import pl.newicom.dddd.messaging.MetaData
 import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
-import pl.newicom.dddd.office.Office
+import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.office.SimpleOffice.Batch
-import pl.newicom.dddd.test.support.GivenWhenThenTestFixture.{Commands, CommandsHandler, ExpectedEvents, PastEvents, WhenContext, testProbe}
+import pl.newicom.dddd.test.ar.GivenWhenThenARTestFixture.{Commands, CommandsHandler, ExpectedEvents, PastEvents, WhenContext}
 import pl.newicom.dddd.utils.UUIDSupport.uuid
 
-import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
@@ -42,7 +42,7 @@ case class Given(cs: Seq[Command] = Seq.empty)(implicit s: ActorSystem, ch: Comm
   }
 
   private def fakeWhenContext(pastEvents: PastEvents = PastEvents()) = WhenContext(Seq(new Command {
-    override def aggregateId: String = uuid
+    override def aggregateId: AggregateId = AggregateId(uuid)
   }), pastEvents)
 
 }
@@ -53,7 +53,7 @@ case class Given(cs: Seq[Command] = Seq.empty)(implicit s: ActorSystem, ch: Comm
 case class When[E <: DomainEvent, C <: Command](wc: WhenContext[C], whenFun: () => Unit)(implicit s: ActorSystem, timeout: FiniteDuration) {
 
   def expectEvents(events: E*): Unit = {
-    val probe = testProbe(whenFun)
+    val probe = testProbe
     events.foreach { _ =>
       probe.expectMsgAnyOf[DomainEvent](timeout, events.map(Success(_)): _*)
     }
@@ -81,13 +81,13 @@ case class When[E <: DomainEvent, C <: Command](wc: WhenContext[C], whenFun: () 
   }
 
   def expectCommandRejected: Unit = {
-    testProbe(whenFun).expectMsgPF[Boolean](timeout) {
+    testProbe.expectMsgPF[Boolean](timeout) {
       case Failure(_: CommandRejected)  => true
     }
   }
 
   def expectException[CR <: CommandRejected](message: String = null)(implicit t: ClassTag[CR]): Unit = {
-    testProbe(whenFun).expectMsgPF[Boolean](timeout, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
+    testProbe.expectMsgPF[Boolean](timeout, hint = s"Failure caused by ${t.runtimeClass.getName} with message $message") {
       case Failure(ex) if ex.getClass == t.runtimeClass && (message == null || message == ex.getMessage) => true
     }
   }
@@ -97,16 +97,36 @@ case class When[E <: DomainEvent, C <: Command](wc: WhenContext[C], whenFun: () 
   }
 
   def expectEventMatching(matcher: PartialFunction[Any, Any], hint: String = ""): Any = {
-    testProbe(whenFun).expectMsgPF[Any](timeout, hint) {
+    testProbe.expectMsgPF[Any](timeout, hint) {
       case Success(result) if matcher.isDefinedAt(result) => result
     }
   }
+
+  def testProbe: TestProbe = {
+    new TestProbe(s) {
+      var initialized = false
+
+      def initialize(): Unit = {
+        system.eventStream.subscribe(this.ref, classOf[Success[_]])
+        system.eventStream.subscribe(this.ref, classOf[Failure[_]])
+        whenFun()
+      }
+
+      override def receiveOne(max: Duration): AnyRef = {
+        if (!initialized) {
+          initialize(); initialized = true
+        }
+        super.receiveOne(max)
+      }
+    }
+  }
+
 }
 
 /**
   * Fixture
   */
-object GivenWhenThenTestFixture {
+object GivenWhenThenARTestFixture {
 
   type CommandsHandler = Seq[Command] => Seq[Processed]
 
@@ -140,25 +160,6 @@ object GivenWhenThenTestFixture {
     def &(e: E): ExpectedEvents[E] = ExpectedEvents(events :+ e)
   }
 
-  def testProbe(f: () => Unit)(implicit system: ActorSystem): TestProbe = {
-    new TestProbe(system) {
-      var initialized = false
-
-      def initialize(): Unit = {
-        system.eventStream.subscribe(this.ref, classOf[Success[_]])
-        system.eventStream.subscribe(this.ref, classOf[Failure[_]])
-        f()
-      }
-
-      override def receiveOne(max: Duration): AnyRef = {
-        if (!initialized) {
-          initialize(); initialized = true
-        }
-        super.receiveOne(max)
-      }
-    }
-  }
-
   implicit def whenContextToCommand[C <: Command](wc: WhenContext[C]): C = wc.command
 
   implicit def whenContextToPastEvents[C <: Command](wc: WhenContext[C]): PastEvents = wc.pastEvents
@@ -170,26 +171,21 @@ object GivenWhenThenTestFixture {
   implicit def commandsToWhenContext[C <: Command](cs: Commands[C]): WhenContext[C] = WhenContext[C](cs.commands)
 
 
-  @tailrec
-  implicit final def commandGenToWhenContext[C <: Command](cGen: Gen[C]): WhenContext[C] = {
-    cGen.sample match {
-      case Some(x) => commandToWhenContext(x)
-      case _ => commandGenToWhenContext[C](cGen)
-    }
-  }
+  implicit final def aCmdToWhenContext[C <: Command](cmd: Arbitrary[C]): WhenContext[C] =
+    commandToWhenContext(RandomDataGenerator.random(cmd))
 
-  implicit def commandGenWithParamToWhenContext[C <: Command](cGen: Gen[(C, Any)]): WhenContext[C] = {
-    val (c, param1) = cGen.sample.get
+  implicit def aCmdWithParamToWhenContext[C <: Command](cmd: Arbitrary[(C, Any)]): WhenContext[C] = {
+    val (c, param1) = RandomDataGenerator.random(cmd)
     WhenContext(Seq(c), PastEvents(), List(param1))
   }
 
 }
 
-abstract class GivenWhenThenTestFixture[Event <: DomainEvent](_system: ActorSystem) extends TestKit(_system) with ImplicitSender {
+abstract class GivenWhenThenARTestFixture[Event <: DomainEvent](_system: ActorSystem) extends TestKit(_system) with ImplicitSender {
 
   implicit val timeout: FiniteDuration = Timeout(5.seconds).duration
 
-  def officeUnderTest: Office
+  def officeUnderTest: OfficeRef
 
   def ensureOfficeTerminated(): Unit
 

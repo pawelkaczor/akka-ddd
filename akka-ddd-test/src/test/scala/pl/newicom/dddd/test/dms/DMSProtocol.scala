@@ -3,23 +3,24 @@ package pl.newicom.dddd.test.dms
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
 import pl.newicom.dddd.aggregate
-import pl.newicom.dddd.aggregate.{EntityId, Query}
+import pl.newicom.dddd.aggregate.{AggregateId, Query}
 
 import scala.math.Ordering
 
 object DMSProtocol {
 
+  type DocId = AggregateId
   //
   // Abstract Commands
   //
 
   sealed trait DMSCommand extends aggregate.Command {
-    def docId: EntityId
-    override def aggregateId: String = docId
+    def docId: DocId
+    override def aggregateId: DocId = docId
   }
 
   trait TargetingVersion { this: DMSCommand =>
-    def docId: EntityId
+    def docId: DocId
     def version: Version
   }
 
@@ -40,38 +41,38 @@ object DMSProtocol {
   // Commands
   //
 
-  case class Create(docId: EntityId, title: String, content: String)                  extends DMSCommand
-  case class Publish(docId: EntityId, version: Version, majorUpdate: Option[Boolean]) extends CreatesNewVersion with DMSCommand
-  case class ChangeContent(docId: EntityId, version: Version, content: String)        extends DMSCommand
+  case class Create(docId: DocId, title: String, content: String)                  extends DMSCommand
+  case class Publish(docId: DocId, version: Version, majorUpdate: Option[Boolean]) extends CreatesNewVersion with DMSCommand
+  case class ChangeContent(docId: DocId, version: Version, content: String)        extends DMSCommand
 
   //
   // Events
   //
 
   sealed trait DMSEvent {
-    def docId: EntityId
+    def docId: DocId
     def versionUpdate: VersionUpdate
     def targetRevision: Revision = Revision(docId, targetVersion)
     def targetVersion: Version   = versionUpdate.to
   }
 
-  case class Created(docId: EntityId, title: String, content: String, versionUpdate: VersionUpdate) extends DMSEvent
-  case class ContentChanged(docId: EntityId, content: String, versionUpdate: VersionUpdate)         extends DMSEvent
-  case class Published(docId: EntityId, versionUpdate: VersionUpdate)                               extends DMSEvent
+  case class Created(docId: DocId, title: String, content: String, versionUpdate: VersionUpdate) extends DMSEvent
+  case class ContentChanged(docId: DocId, content: String, versionUpdate: VersionUpdate)         extends DMSEvent
+  case class Published(docId: DocId, versionUpdate: VersionUpdate)                               extends DMSEvent
 
   //
   // Queries
   //
 
-  case class GetPublishedVersions(docId: EntityId) extends Query {
-    def aggregateId: String = docId
+  case class GetPublishedVersions(docId: DocId) extends Query {
+    def aggregateId: DocId = docId
     type R = PublishedVersions
   }
 
   case class PublishedVersions(versions: Set[Version])
 
-  case class GetPublishedRevisions(docId: EntityId) extends Query {
-    def aggregateId: String = docId
+  case class GetPublishedRevisions(docId: DocId) extends Query {
+    def aggregateId: DocId = docId
     type R = PublishedRevisions
   }
 
@@ -96,7 +97,7 @@ object DMSProtocol {
     override def toString  = s"v$major.$minor"
   }
 
-  case class Revision(docId: EntityId, version: Version, epoch: DateTime = now) {
+  case class Revision(docId: DocId, version: Version, epoch: DateTime = now) {
     def bumpMajor: Revision = copy(docId, version.bumpMajor, now)
     def bumpMinor: Revision = copy(docId, version.bumpMinor, now)
   }

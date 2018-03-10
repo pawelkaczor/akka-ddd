@@ -1,37 +1,39 @@
 package pl.newicom.dddd.test.dummy
 
 import akka.actor.Props
-import pl.newicom.dddd.actor.PassivationConfig
+import pl.newicom.dddd.actor.{Config, DefaultConfig, PassivationConfig}
 import pl.newicom.dddd.aggregate._
-import pl.newicom.dddd.office.{LocalOfficeId, Office, RemoteOfficeId}
+import pl.newicom.dddd.office.OfficeRef
 import pl.newicom.dddd.process._
-import pl.newicom.dddd.saga.ProcessConfig
-import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyCreated, ValueChanged}
+import pl.newicom.dddd.saga.BusinessProcessId
+import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyCreated, DummyId, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga.{DummyCommand, DummyState, EventApplied, Poison}
+import pl.newicom.dddd.utils.UUIDSupport.uuid7
 
 object DummySaga {
 
   val Poison: Int = 100
 
-  class DummySagaConfig(bpsName: String) extends ProcessConfig[DummySaga](bpsName) {
+  class DummySagaConfig(bpsName: String) extends ProcessConfig[DummySaga](BusinessProcessId(bpsName, uuid7)) {
 
     override val id: EntityId = bpsName
 
     def correlationIdResolver: PartialFunction[DomainEvent, EntityId] = {
-      case ValueChanged(pId, _, _) => pId
-      case DummyCreated(pId, _, _, _) => pId
+      case ValueChanged(pId, _, _) => pId.value
+      case DummyCreated(pId, _, _, _) => pId.value
       case other => throw new scala.RuntimeException(s"unknown event: ${other.getClass.getName}")
     }
+
   }
 
   implicit object DummySagaActorFactory extends SagaActorFactory[DummySaga] {
     override def props(pc: PassivationConfig): Props = {
-      Props(new DummySaga(pc, officeId, None))
+      Props(new DummySaga(DefaultConfig(pc), None))
     }
   }
 
-  case class DummyCommand(processId: EntityId, value: Int) extends Command {
-    override def aggregateId: String = processId
+  case class DummyCommand(processId: DummyId, value: Int) extends Command {
+    override def aggregateId: DummyId = processId
   }
 
   case class EventApplied(e: DomainEvent)
@@ -45,9 +47,7 @@ object DummySaga {
  * <code>DummyEvent</code> is received containing <code>value</code> equal to <code>counter + 1</code>
  * <code>DummySaga</code> publishes all applied events to local actor system bus.
  */
-class DummySaga(val pc: PassivationConfig,
-                val officeId: LocalOfficeId[DummySaga],
-                dummyOffice: Option[Office]) extends ProcessManager[DummyState] {
+class DummySaga(val config: Config, dummyOffice: Option[OfficeRef]) extends ProcessManager[DummyState, DummySaga] {
 
   startWhen {
 
@@ -76,5 +76,4 @@ class DummySaga(val pc: PassivationConfig,
 
   }
 
-  override def processCollaborators: List[RemoteOfficeId[_]] = List()
 }

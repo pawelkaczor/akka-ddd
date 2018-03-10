@@ -4,33 +4,28 @@ import akka.actor.Props
 import akka.event.EventStream
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
-import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.messaging.event.OfficeEventMessage
+import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
-import pl.newicom.dddd.test.dummy.DummyProtocol.{CreateDummy, DummyCreated, DummyEvent}
+import pl.newicom.dddd.test.dummy.DummyProtocol.{CreateDummy, DummyCreated, DummyEvent, Value}
 import pl.newicom.dddd.test.dummy._
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
-import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.view.sql.Projection.ProjectionAction
 import pl.newicom.dddd.view.sql.SqlViewUpdateServiceIntegrationSpec._
 import pl.newicom.eventstore.EventSourceProvider
 import slick.basic.BasicBackend
-import slick.dbio._
 import slick.dbio.DBIOAction.{failed, successful}
 import slick.dbio.Effect.All
+import slick.dbio._
 import slick.util.DumpInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 
 object SqlViewUpdateServiceIntegrationSpec {
 
-  implicit def dummyFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
-    new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(DummyConfig(pc)))
-      override def inactivityTimeout: Duration = it
-    }
+  implicit def dummyFactory: AggregateRootActorFactory[DummyAggregateRoot] =
+    AggregateRootActorFactory(pc => Props(new DummyAggregateRoot(DummyConfig(pc))))
 
   case class ViewUpdated(event: DummyEvent)
 
@@ -46,7 +41,7 @@ object SqlViewUpdateServiceIntegrationSpec {
  * Requires Event Store to be up and running.
  */
 class SqlViewUpdateServiceIntegrationSpec
-  extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("SqlViewUpdateServiceIntegrationSpec")))
+  extends ARSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("SqlViewUpdateServiceIntegrationSpec")))
   with SqlViewStoreTestSupport {
 
   override def viewStore = new SqlViewStore(config)
@@ -83,11 +78,11 @@ class SqlViewUpdateServiceIntegrationSpec
 
       // When
       when {
-        CreateDummy(aggregateId, "name", "description", 100)
+        CreateDummy(aggregateId, "name", "description", Value(100))
       }
       // Then
       .expect { c =>
-        DummyCreated(c.id, c.name, c.description, c.value)
+        DummyCreated(c.id, c.name, c.description, c.value.value)
       }
       probe.expectMsg(ViewUpdated(DummyCreated(aggregateId, "name", "description", 100)))
 

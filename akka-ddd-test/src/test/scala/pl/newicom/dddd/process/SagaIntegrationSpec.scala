@@ -2,7 +2,6 @@ package pl.newicom.dddd.process
 
 import akka.actor._
 import akka.testkit.TestProbe
-import pl.newicom.dddd.actor.PassivationConfig
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.coordination.ReceptorConfig
 import pl.newicom.dddd.delivery.protocol.Processed
@@ -11,13 +10,12 @@ import pl.newicom.dddd.office.OfficeFactory.coordinationOffice
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.process.SagaIntegrationSpec._
 import pl.newicom.dddd.persistence.SaveSnapshotRequest
-import pl.newicom.dddd.saga.CoordinationOffice
+import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaActorFactory, DummySagaConfig, EventApplied, Poison}
 import pl.newicom.dddd.test.dummy.{DummyAggregateRoot, DummySaga, dummyOfficeId}
 import pl.newicom.dddd.test.support.IntegrationTestConfig.integrationTestSystem
-import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.eventstore.EventstoreSubscriber
 
 import scala.concurrent.duration._
@@ -26,24 +24,20 @@ object SagaIntegrationSpec {
 
   case object GetNumberOfUnconfirmed
 
-  implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
-    new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(DummyConfig(pc)))
-      override def inactivityTimeout: Duration = it
-    }
-
+  implicit def actorFactory: AggregateRootActorFactory[DummyAggregateRoot] =
+    AggregateRootActorFactory[DummyAggregateRoot](pc => Props(new DummyAggregateRoot(DummyConfig(pc))))
 }
 
 /**
  * Requires EventStore to be running on localhost!
  */
-class SagaIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("ReceptorIntegrationSpec"))) {
+class SagaIntegrationSpec extends ARSpec[DummyEvent, DummyAggregateRoot](Some(integrationTestSystem("ReceptorIntegrationSpec"))) {
 
   override val shareAggregateRoot = true
 
-  def dummyId: EntityId = aggregateId
+  def dummyId: DummyId = aggregateId
 
-  implicit lazy val testSagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
+  implicit lazy val testSagaConfig: DummySagaConfig = new DummySagaConfig(s"${dummyOfficeId.id}-$dummyId")
 
   implicit lazy val receptorActorFactory: ReceptorActorFactory[DummySaga] = new ReceptorActorFactory[DummySaga] {
     override def receptorFactory: ReceptorFactory = (config: ReceptorConfig) => {
@@ -60,7 +54,7 @@ class SagaIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Som
 
   var receptor: ActorRef = _
 
-  implicit lazy val officeListener = new CoordinationOfficeListener[DummySaga] {
+  implicit lazy val officeListener: CoordinationOfficeListener[DummySaga] = new CoordinationOfficeListener[DummySaga] {
     override def officeStarted(office: CoordinationOffice[DummySaga], receptorRef: ActorRef): Unit = {
       receptor = receptorRef
     }
@@ -78,7 +72,7 @@ class SagaIntegrationSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Som
     "confirm accepted event" in {
       // given
       given {
-        CreateDummy(dummyId, "name", "description", 0)
+        CreateDummy(dummyId, "name", "description", Value(0))
       }
       .when {
         ChangeValue(dummyId, 1)

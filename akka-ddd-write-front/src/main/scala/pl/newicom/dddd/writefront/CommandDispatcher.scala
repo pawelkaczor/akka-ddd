@@ -37,7 +37,7 @@ trait CommandDispatcher extends GlobalOfficeClientSupport {
 
   private def officeRepresentative(msg: CommandMessage): Option[ActorRef] =
     offices.find(
-      _.messageClass.isAssignableFrom(msg.command.getClass)
+      _.commandClass.isAssignableFrom(msg.command.getClass)
     ).map(
       officeActor
     )

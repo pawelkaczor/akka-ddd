@@ -1,50 +1,37 @@
 package pl.newicom.dddd.test.dummy
 
+import org.scalacheck.ScalacheckShapeless._
 import akka.actor.Props
-import org.scalacheck.Gen
-import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.{AggregateRootActorFactory, EntityId}
+import org.scalacheck.{Arbitrary, Gen}
+import pl.newicom.dddd.aggregate.AggregateRootActorFactory
 import pl.newicom.dddd.test.dummy.DummyProtocol._
-import pl.newicom.dddd.test.support.OfficeSpec
 import pl.newicom.dddd.test.support.TestConfig._
-import DummyOfficeWithGenSpec._
+import DummyWithGenSpec._
 import pl.newicom.dddd.aggregate.error.DomainException
-import pl.newicom.dddd.office.Office
+import pl.newicom.dddd.office.OfficeRef
+import pl.newicom.dddd.test.ar.ARSpec
 import pl.newicom.dddd.test.dummy.DummyAggregateRoot.DummyConfig
 
-import scala.concurrent.duration.{Duration, _}
+object DummyWithGenSpec {
 
-object DummyOfficeWithGenSpec {
-
-  implicit def actorFactory(implicit it: Duration = 1.minute): AggregateRootActorFactory[DummyAggregateRoot] =
-    new AggregateRootActorFactory[DummyAggregateRoot] {
-      override def props(pc: PassivationConfig): Props = Props(new DummyAggregateRoot(DummyConfig(pc)))
-      override def inactivityTimeout: Duration = it
-    }
+  implicit def actorFactory: AggregateRootActorFactory[DummyAggregateRoot] =
+    AggregateRootActorFactory[DummyAggregateRoot](pc => Props(new DummyAggregateRoot(DummyConfig(pc))))
 }
 
-class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
+class DummyWithGenSpec extends ARSpec[DummyEvent, DummyAggregateRoot](Some(testSystem)) {
 
-  def dummyOffice: Office = officeUnderTest
+  def dummyOffice: OfficeRef = officeUnderTest
 
-  def dummyId: EntityId = aggregateId
+  def dummyId: DummyId = aggregateId
 
   //
-  // Command generators
+  // Custom generators
   //
-  implicit def create: Gen[CreateDummy] = for {
-    name <- Gen.alphaStr
-    description <- Gen.alphaStr
-    value <- Gen.choose(1, 1000)
-  } yield {
-    CreateDummy(dummyId, name, description, value)
-  }
-  implicit def changeName: Gen[ChangeName] = for { name <- Gen.alphaStr } yield ChangeName(dummyId, name)
-  implicit def generateValue: Gen[GenerateValue] = _aggregateIdGen.flatMap(GenerateValue(_))
+  implicit def aValue: A[Value] = Arbitrary { Gen.choose(1, 1000).map(Value) }
 
   "Dummy office" should {
     /**
-     * Commands are generated (see generators above).
+     * Commands are generated automatically (custom generators can be provided, see generators above).
      * The command under test (created inside When clause)
      * is accessible from inside Then/expect clause.
      *
@@ -56,20 +43,20 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](
         a [CreateDummy]
       }
       .expect { c =>
-        DummyCreated(c.id, c.name, c.description, c.value)
+        DummyCreated(c.id, c.name, c.description, c.value.value)
       }
     }
 
     /**
      * Events triggered by Given command(s) are accessible from inside When clause.
-     * Gen.suchThat can be used to configure command generator inside test body.
+     * Properties of generated command can be changed inside test body.
      */
     "update Dummy's name" in {
       given {
         a [CreateDummy]
       }
       .when { implicit hist =>
-        a [ChangeName] suchThat (_.name != past[DummyCreated].name)
+        a[ChangeName].copy(name = past[DummyCreated].name.toLowerCase)
       }
       .expect { c =>
         NameChanged(c.id, c.name)
@@ -123,13 +110,11 @@ class DummyOfficeWithGenSpec extends OfficeSpec[DummyEvent, DummyAggregateRoot](
     }
 
     /**
-     * Gen.map can be used to modify generated command.
+     * Another example showing how to modify generated command.
      */
     "reject negative value" in {
       when {
-        a [CreateDummy] map (_ copy(value = -1))
-        // alternatively:
-        //arbitraryOf[CreateDummy](_ copy(value = -1))
+        a[CreateDummy].copy(value = Value(-1))
       }
       .expectException[DomainException]("negative value not allowed")
     }

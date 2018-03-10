@@ -3,6 +3,7 @@ package pl.newicom.dddd.messaging
 import enumeratum.EnumEntry.LowerCamelcase
 import enumeratum._
 import org.joda.time.DateTime
+import pl.newicom.dddd.utils.ImplicitUtils._
 
 import scala.collection.immutable
 
@@ -25,7 +26,7 @@ object MetaAttribute extends Enum[MetaAttribute[_]] {
     }
   }
 
-  case object Event_Number   extends MetaAttribute[Int]
+  case object Event_Number   extends MetaAttribute[Long]
 
   case object Id             extends MetaAttribute[String]
 
@@ -41,7 +42,7 @@ object MetaAttribute extends Enum[MetaAttribute[_]] {
 
   case object Tags extends MetaAttribute[Set[String]] {
     def merge(md1: MetaData, md2: MetaData): Set[String] = {
-      md1.tryGet(Tags).orElse(Some(Set())).flatMap(t1 => md2.tryGet(Tags).map(t1 ++ _)).getOrElse(Set())
+      (md1.tryGet(Tags) ++ md2.tryGet(Tags)).flatten.toSet
     }
   }
 
@@ -52,7 +53,7 @@ object MetaAttribute extends Enum[MetaAttribute[_]] {
   }
 
   def apply(name: String): Option[MetaAttribute[Any]] =
-    withNameInsensitiveOption(name).asInstanceOf[Option[MetaAttribute[Any]]]
+    withNameInsensitiveOption(name).asParameterizedBy[MetaAttribute[Any]]
 
   val values: immutable.IndexedSeq[MetaAttribute[_]] = findValues
 

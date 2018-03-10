@@ -4,32 +4,30 @@ import akka.actor.{ActorPath, ActorSystem}
 import org.joda.time.DateTime.now
 import org.joda.time.{DateTime, Period}
 import pl.newicom.dddd.aggregate._
+import pl.newicom.dddd.coordination.ToDeliverableCommandTransformation
 import pl.newicom.dddd.delivery.protocol.DeliveryHandler
-import pl.newicom.dddd.messaging.{Message, MetaData, MetaDataPropagationPolicy}
 import pl.newicom.dddd.messaging.command.CommandMessage
-import pl.newicom.dddd.office.OfficeFactory._
-import pl.newicom.dddd.office.{CommandHandlerResolver, Office, RemoteOfficeId}
+import pl.newicom.dddd.messaging.{Message, MetaData, MetaDataPropagationPolicy}
+import pl.newicom.dddd.office._
 import pl.newicom.dddd.scheduling.ScheduleEvent
+import pl.newicom.dddd.utils.UUIDSupport.uuid
 
 trait SagaCollaboration {
   this: SagaBase =>
-
-  protected def processCollaborators: List[RemoteOfficeId[_]]
 
   protected def deliverMsg(target: ActorPath, msg: Message): Unit = {
     deliver(target)(msg.withDeliveryId(_))
   }
 
   protected def deliverCommand(target: ActorPath, command: Command): Unit = {
-    deliverMsg(target, CommandMessage(command).withMetaData(
-      MetaDataPropagationPolicy.onCommandSentByPM(currentEventMsg.metadata, MetaData.empty))
-    )
+    val metadata = MetaDataPropagationPolicy.onCommandSentByPM(currentEventMsg.metadata)
+    deliverMsg(target, CommandMessage(command, metadata))
   }
 
   protected def schedule(event: DomainEvent, deadline: DateTime, correlationId: EntityId = sagaId): Unit = {
     val command = ScheduleEvent("global", officePath, deadline, event)
-    handlerOf(command) deliver {
-      CommandMessage(command)
+    officeRegistry.commandHandler(command) !! {
+      CommandMessage(command, MetaData.initial(uuid(currentEventMsg.id)))
         .withCorrelationId(correlationId)
         .withTag(officeId.id)
     }
@@ -40,8 +38,10 @@ trait SagaCollaboration {
   // DSL helpers
   //
 
-  def ⟶[C <: Command](command: C): Unit =
-    handlerOf(command) deliver command
+  def ⟶[C <: Command](command: C): Unit = {
+    val dc = deliverableCommand(command)
+    officeRegistry.commandHandler(dc) !! dc
+  }
 
   def ⟵(event: DomainEvent): ToBeScheduled = schedule(event)
 
@@ -67,10 +67,12 @@ trait SagaCollaboration {
   // Private members
   //
 
-  private implicit val as: ActorSystem = context.system
+  private implicit lazy val as: ActorSystem = context.system
 
-  private val officeIdResolver = new CommandHandlerResolver(processCollaborators)
+  private lazy val officeRegistry = OfficeRegistry(as)
 
-  private def handlerOf(command: Command)(implicit as: ActorSystem): Office = office(officeIdResolver(command))
+  private def deliverableCommand(command: Command): Command = {
+    new ToDeliverableCommandTransformation(officeRegistry)(command)
+  }
 
 }

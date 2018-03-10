@@ -4,6 +4,7 @@ import pl.newicom.dddd.office.LocalOfficeId
 
 package object dms {
 
-  implicit val documentOfficeId = new LocalOfficeId[DocumentAR](classOf[DocumentAR].getSimpleName, "dms")
+  implicit val documentOfficeId: LocalOfficeId[DocumentAR] =
+    new LocalOfficeId[DocumentAR](classOf[DocumentAR].getSimpleName, "dms")
 
 }

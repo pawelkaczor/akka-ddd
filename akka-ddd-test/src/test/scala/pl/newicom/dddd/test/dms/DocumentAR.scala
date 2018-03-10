@@ -2,7 +2,7 @@ package pl.newicom.dddd.test.dms
 
 import org.joda.time.DateTime
 import org.joda.time.DateTime.now
-import pl.newicom.dddd.aggregate.error.DomainException
+import pl.newicom.dddd.actor.{Config, ConfigClass}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.test.dms.DocumentAR.DMSActionsRoot
 import pl.newicom.dddd.test.dms.DMSProtocol.VersionUpdate.creation
@@ -30,23 +30,19 @@ object DocumentAR extends AggregateRootSupport {
     def actions: Actions =
       handleCommand {
         case c: TargetingVersion =>
-          rejectIf(!docsByVersion.contains(c.version), s"Unknown version: ${c.version}").orElse {
-            docsByVersion(c.version).commandHandlerNoCtx(c)
-          }
+          acceptIf(docsByVersion.contains(c.version)) {
+            docsByVersion(c.version)(c)
+          }.orElse(s"Unknown version: ${c.version}")
 
         case c: DMSCommand =>
-          val ch = latestOrNew.commandHandlerNoCtx
-          if (ch.isDefinedAt(c)) {
-            ch(c)
-          } else {
-            reject(new DomainException(s"Document does not exist. $c can not be processed: missing command handler!"))
-          }
+          latestOrNew(c)
+
       }.handleEvent {
           case e: DMSEvent =>
             if (docsByVersion.isEmpty && e.versionUpdate.isCreation)
-              UntitledDocument.apply(e)
+              UntitledDocument(e)
             else
-              docsByVersion(e.versionUpdate.from.get).apply(e)
+              docsByVersion(e.versionUpdate.from.get)(e)
       }
       .map(withDocument)
       .handleQuery[GetPublishedVersions] { q =>
@@ -54,7 +50,7 @@ object DocumentAR extends AggregateRootSupport {
       }
       .handleQuery[GetPublishedRevisions] { q =>
         reply(PublishedRevisions(docsByVersion.map {
-          case (a, b) => Revision("a", a, b.epoch)
+          case (a, b) => Revision(new DocId("a"), a, b.epoch)
         }.toSet))
       }
 

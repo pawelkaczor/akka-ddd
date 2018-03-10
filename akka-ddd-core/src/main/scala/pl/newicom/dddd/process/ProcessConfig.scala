@@ -1,20 +1,18 @@
-package pl.newicom.dddd.saga
+package pl.newicom.dddd.process
 
 import pl.newicom.dddd.aggregate.{DomainEvent, EntityId}
 import pl.newicom.dddd.office.LocalOfficeId
+import pl.newicom.dddd.process.ProcessConfig.CorrelationIdResolver
+import pl.newicom.dddd.saga.BusinessProcessId
 
 import scala.reflect.ClassTag
-import ProcessConfig._
 
 object ProcessConfig {
   type CorrelationIdResolver = PartialFunction[DomainEvent, EntityId]
 }
 
-/**
-  * @param bpsName name of Business Process Stream (bps)
-  */
-abstract class ProcessConfig[E : ClassTag](val bpsName: String, departmentId: EntityId = null)
-  extends LocalOfficeId[E](bpsName, Option(departmentId).getOrElse(bpsName)) {
+abstract class ProcessConfig[E : ClassTag](val process: BusinessProcessId)
+  extends LocalOfficeId[E](process.processId, Option(process.department).getOrElse(process.processDomain)) {
 
   /**
     * Correlation ID identifies process instance.

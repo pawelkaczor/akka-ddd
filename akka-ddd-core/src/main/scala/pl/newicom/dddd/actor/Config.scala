@@ -1,6 +1,6 @@
-package pl.newicom.dddd.aggregate
+package pl.newicom.dddd.actor
 
-import pl.newicom.dddd.actor.PassivationConfig
+import pl.newicom.dddd.aggregate._
 
 trait Config {
   def pc: PassivationConfig

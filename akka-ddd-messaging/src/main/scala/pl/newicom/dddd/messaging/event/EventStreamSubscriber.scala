@@ -1,7 +1,7 @@
 package pl.newicom.dddd.messaging.event
 
 import akka.actor.Actor
-import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.Eventsourced
 import pl.newicom.dddd.messaging.event.EventStreamSubscriber._
 
 object EventStreamSubscriber {
@@ -24,7 +24,7 @@ trait EventStreamSubscriber {
    *                              from given position (exclusively)
     * @return callback that the subscriber should invoke after processing an event.
    */
-  def subscribe(observable: BusinessEntity, fromPosExcl: Option[Long], demandConfig: DemandConfig): DemandCallback
+  def subscribe(observable: Eventsourced, fromPosExcl: Option[Long], demandConfig: DemandConfig): DemandCallback
 
 
 }

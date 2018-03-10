@@ -3,17 +3,17 @@ package pl.newicom.dddd.view
 import akka.actor.Status.Failure
 import akka.actor.SupervisorStrategy._
 import akka.actor._
-import akka.pattern.{BackoffSupervisor, Backoff, pipe}
+import akka.pattern.{Backoff, BackoffSupervisor, pipe}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Keep, RunnableGraph, Sink}
 import pl.newicom.dddd.messaging.event.EventSourceProvider
-
-import pl.newicom.dddd.aggregate.BusinessEntity
 import pl.newicom.dddd.view.ViewUpdateInitializer.ViewUpdateInitException
 import pl.newicom.dddd.view.ViewUpdateService._
+
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import akka.Done
+import pl.newicom.dddd.Eventsourced
 
 object ViewUpdateService {
   object EnsureViewStoreAvailable
@@ -25,8 +25,8 @@ object ViewUpdateService {
 
   case class ViewUpdateConfigured(viewUpdate: ViewUpdate)
 
-  case class ViewUpdate(office: BusinessEntity, lastEventNr: Option[Long], runnable: RunnableGraph[Future[Done]]) {
-    override def toString = s"ViewUpdate(officeId = ${office.id}, lastEventNr = $lastEventNr)"
+  case class ViewUpdate(eventsource: Eventsourced, lastEventNr: Option[Long], runnable: RunnableGraph[Future[Done]]) {
+    override def toString = s"ViewUpdate(officeId = ${eventsource.streamName}, lastEventNr = $lastEventNr)"
   }
 
 }
@@ -35,7 +35,7 @@ abstract class ViewUpdateService extends Actor with ActorLogging { this: EventSo
 
   type VUConfig <: ViewUpdateConfig
 
-  implicit val actorMaterializer = ActorMaterializer()
+  implicit val actorMaterializer: ActorMaterializer = ActorMaterializer()
 
   implicit val ec: ExecutionContext = context.dispatcher
 
@@ -105,12 +105,12 @@ abstract class ViewUpdateService extends Actor with ActorLogging { this: EventSo
 
   def viewUpdate(eventStore: EventStore, vuConfig: VUConfig): Future[ViewUpdate] = {
     val handler = viewHandler(vuConfig)
-    val office  = vuConfig.office
+    val observable  = vuConfig.eventSource
     handler.lastEventNumber.map { lastEvtNrOpt =>
       ViewUpdate(
-        office,
+        observable,
         lastEvtNrOpt,
-        eventSource(eventStore, office, lastEvtNrOpt)
+        eventSource(eventStore, observable, lastEvtNrOpt)
           .mapAsync(1) { msgRecord =>
             handler.handle(msgRecord.msg, msgRecord.position)
           }

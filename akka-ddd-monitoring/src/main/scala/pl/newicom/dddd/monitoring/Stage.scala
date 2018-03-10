@@ -1,11 +1,11 @@
 package pl.newicom.dddd.monitoring
 
-import pl.newicom.dddd.aggregate.BusinessEntity
+import pl.newicom.dddd.Eventsourced
 import pl.newicom.dddd.messaging.AddressableMessage
 
 case class Stage(position: Integer, shortName: String) {
 
-  def traceContextName(observed: BusinessEntity, msg: AddressableMessage): String =
+  def traceContextName(observed: Eventsourced, msg: AddressableMessage): String =
     s"$position-${observed.department.capitalize}-$shortName-${msg.payloadName}"
 }
 

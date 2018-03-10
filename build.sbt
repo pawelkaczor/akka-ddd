@@ -1,13 +1,13 @@
 import Deps._
-import Deps.TestFrameworks._
+import Deps.TestFrameworks.{scalaTest, _}
 import sbt.Keys._
 import java.net.URL
 
 name := "akka-ddd"
 
-version      in ThisBuild := "1.7.4-SNAPSHOT"
+version      in ThisBuild := "1.7.7-SNAPSHOT"
 organization in ThisBuild := "pl.newicom.dddd"
-scalaVersion in ThisBuild := "2.12.3"
+scalaVersion in ThisBuild := "2.12.4"
 
 scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions", "-unchecked")
 
@@ -28,7 +28,7 @@ lazy val root = (project in file("."))
 lazy val `akka-ddd-protocol` = project
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(Akka.actor, Enum.enumeratum) ++ Json.`4s`
+    libraryDependencies ++= Seq(Akka.actor, Enum.enumeratum, scalaTagging, scalaTest % "test") ++ Json.`4s`
   )
 
 lazy val `akka-ddd-messaging` = project
@@ -43,8 +43,9 @@ lazy val `akka-ddd-core` = project
     commonSettings,
     publishArtifact in Test := true,
     libraryDependencies ++= Seq(
-      Akka.clusterTools, Akka.clusterSharding, Akka.persistence, Akka.contributions, Akka.slf4j
-    ))
+      Akka.clusterTools, Akka.clusterSharding, Akka.persistence, Akka.contributions, Akka.slf4j,
+      scalaTest % "test", Akka.testkit % "test", logbackClassic % "test", scalaCheck % "test"
+  ))
   .dependsOn(`akka-ddd-messaging`)
 
 
@@ -91,7 +92,7 @@ lazy val `akka-ddd-test` = project
     testOptions       in IntegrationTest := Seq(Tests.Filter(integrationFilter)),
     parallelExecution in IntegrationTest := false,
     libraryDependencies ++= Seq(
-      Akka.testkit, Akka.multiNodeTestkit, scalaCheck, scalaTest, commonIO, logbackClassic % "test"
+      Akka.testkit, Akka.multiNodeTestkit, scalaCheck, randomDataGen, scalaTest, commonIO, logbackClassic % "test"
     ))
   .dependsOn(`akka-ddd-core`, `eventstore-akka-persistence` % "test->compile")
 

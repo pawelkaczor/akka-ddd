@@ -1,9 +1,10 @@
 package pl.newicom.dddd.test.dummy
 
 import akka.actor.ActorRef
-import pl.newicom.dddd.actor.PassivationConfig
-import pl.newicom.dddd.aggregate.AggregateRootSupport.{Reaction, Reject, RejectConditionally}
+import pl.newicom.dddd.actor._
+import pl.newicom.dddd.aggregate.AggregateRootSupport.{NoReaction, Reaction, RejectConditionally}
 import pl.newicom.dddd.aggregate._
+import pl.newicom.dddd.persistence.{RegularSnapshotting, RegularSnapshottingConfig}
 import pl.newicom.dddd.test.dummy.DummyProtocol._
 import pl.newicom.dddd.test.dummy.ValueGeneratorActor.GenerateRandom
 import pl.newicom.dddd.utils.UUIDSupport.uuidObj
@@ -12,14 +13,16 @@ import scala.concurrent.duration._
 
 object DummyAggregateRoot extends AggregateRootSupport {
 
-  case class DummyConfig(pc: PassivationConfig,
-                         valueGenerator: () => Int = () => (Math.random() * 100).toInt - 50, //  -50 < v < 50,
-                         valueGeneration: Reaction[DummyEvent] = reject("value generation not defined"))
-      extends Config {
+  val defaultValueGenerator: () => Int =
+    () => (Math.random() * 100).toInt - 50 //  -50 < v < 50
+
+  case class DummyConfig(pc: PassivationConfig, valueGenerator: () => Int = defaultValueGenerator)
+
+  case class DummyRuntimeConfig(pc: PassivationConfig, generateEventuallyValid: Reaction[DummyEvent], generateRandom: Reaction[DummyEvent]) extends Config {
     def respondingPolicy: RespondingPolicy = ReplyWithEvents
   }
 
-  sealed trait Dummy extends Behavior[DummyEvent, Dummy, DummyConfig] {
+  sealed trait Dummy extends Behavior[DummyEvent, Dummy, DummyRuntimeConfig] {
     def isActive = false
 
     def rejectInvalid(value: Int): RejectConditionally =
@@ -31,8 +34,8 @@ object DummyAggregateRoot extends AggregateRootSupport {
     def actions: Actions =
       handleCommand {
         case CreateDummy(id, name, description, value) =>
-          rejectInvalid(value) orElse
-            DummyCreated(id, name, description, value)
+          rejectInvalid(value.value) orElse
+            DummyCreated(id, name, description, value.value)
       }.handleEvent {
           case DummyCreated(_, _, _, value) =>
             Active(value, 0)
@@ -60,7 +63,12 @@ object DummyAggregateRoot extends AggregateRootSupport {
             NameChanged(id, name) & ValueChanged(id, 0, version + 1)
 
           case GenerateValue(_) =>
-            ctx.config.valueGeneration
+            ctx.config.generateRandom
+              .flatMapMatching {
+                case ValueGenerated(_, value, _) =>
+                  rejectInvalid(value) orElse NoReaction
+              }
+              .recoverWith(ctx.config.generateEventuallyValid)
 
         }
       }.handleEvent {
@@ -86,7 +94,7 @@ object DummyAggregateRoot extends AggregateRootSupport {
       }.handleEvent {
           case ValueChanged(_, newValue, newVersion) =>
             Active(value = newValue, version = newVersion)
-        }
+      }
 
   }
 }
@@ -96,22 +104,30 @@ import pl.newicom.dddd.test.dummy.DummyAggregateRoot._
 class DummyAggregateRoot(cfg: DummyConfig)
     extends AggregateRoot[DummyEvent, Dummy, DummyAggregateRoot]
     with AggregateRootLogger[DummyEvent]
-    with ConfigClass[DummyConfig] {
+    with ConfigClass[DummyRuntimeConfig] {
 
-  val config: DummyConfig = cfg.copy(valueGeneration = valueGeneration)
+  val config = DummyRuntimeConfig(cfg.pc, generateEventuallyValid, generateRandom)
 
   lazy val valueGeneratorActor: ActorRef = context.actorOf(ValueGeneratorActor.props(cfg.valueGenerator))
 
-  private def valueGeneration: Collaboration = {
+  private def generateRandom: Reaction[DummyEvent] = {
+    implicit val timeout: FiniteDuration = 10.millis
+    (valueGeneratorActor !< GenerateRandom) {
+      case ValueGeneratorActor.ValueGenerated(value) =>
+          ValueGenerated(new DummyId(id), value, confirmationToken = uuidObj)
+    }
+  }
+
+  private def generateEventuallyValid: Reaction[DummyEvent] = {
     implicit val timeout: FiniteDuration = 10.millis
     (valueGeneratorActor !< GenerateRandom) {
       case ValueGeneratorActor.ValueGenerated(value) =>
         state.rejectInvalid(value) orElse
-          ValueGenerated(id, value, confirmationToken = uuidObj) match {
-          case Reject(_) => valueGeneration
-          case r         => r
-        }
+          ValueGenerated(new DummyId(id), value, confirmationToken = uuidObj)
+    }.recoverWith {
+      generateEventuallyValid
     }
   }
 
+  def snapshottingConfig = RegularSnapshottingConfig(receiveCommand, interval = 1)
 }

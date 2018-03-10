@@ -3,7 +3,7 @@ package pl.newicom.dddd.process
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
-import pl.newicom.dddd.actor.PassivationConfig
+import pl.newicom.dddd.actor.{DefaultConfig, PassivationConfig}
 import pl.newicom.dddd.aggregate.EntityId
 import pl.newicom.dddd.delivery.protocol.alod.Delivered
 import pl.newicom.dddd.messaging.MetaAttribute.{Correlation_Id, Delivery_Id}
@@ -12,7 +12,7 @@ import pl.newicom.dddd.messaging.event.{EventMessage, OfficeEventMessage}
 import pl.newicom.dddd.office.SimpleOffice._
 import pl.newicom.dddd.office.OfficeFactory._
 import pl.newicom.dddd.office.{CaseRef, OfficeListener}
-import pl.newicom.dddd.test.dummy.DummyProtocol.ValueChanged
+import pl.newicom.dddd.test.dummy.DummyProtocol.{DummyId, ValueChanged}
 import pl.newicom.dddd.test.dummy.DummySaga
 import pl.newicom.dddd.test.dummy.DummySaga.{DummySagaConfig, EventApplied}
 import pl.newicom.dddd.test.support.TestConfig
@@ -33,7 +33,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
 
   implicit object TestSagaActorFactory extends SagaActorFactory[DummySaga] {
     override def props(pc: PassivationConfig): Props =
-      Props(new DummySaga(pc, officeId, None))
+      Props(new DummySaga(DefaultConfig(pc, replyWithEvents = false), None))
   }
 
   def processId: EntityId = uuid10
@@ -43,7 +43,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
     "not process previously processed events" in {
       // Given
       val probe = testProbe
-      val em1 = eventMessage(ValueChanged(processId, 1, 1L))
+      val em1 = eventMessage(ValueChanged(new DummyId(processId), 1, 1L))
 
       // When
       coordinationOffice ! em1
@@ -51,7 +51,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
 
       // Then
       probe.expectMsgClass(classOf[EventApplied])
-      probe.expectNoMsg(1.seconds)
+      probe.expectNoMessage(1.seconds)
     }
   }
 
@@ -59,7 +59,7 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
     "process messages received in order" in {
       // Given
       val probe = testProbe
-      val em1 = eventMessage(ValueChanged(processId, 1, 1L))
+      val em1 = eventMessage(ValueChanged(new DummyId(processId), 1, 1L))
 
       // When
       coordinationOffice ! em1
@@ -67,10 +67,10 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
       probe.expectMsgClass(classOf[EventApplied])
 
       // When
-      coordinationOffice ! eventMessage(ValueChanged(processId, 2, 2L), previouslySentMsg = Some(em1))
+      coordinationOffice ! eventMessage(ValueChanged(new DummyId(processId), 2, 2L), previouslySentMsg = Some(em1))
       // Then
       probe.expectMsgClass(classOf[EventApplied])
-      probe.expectNoMsg(1.seconds)
+      probe.expectNoMessage(1.seconds)
     }
   }
 
@@ -78,8 +78,8 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
     "not process message received out of order" in {
       // Given
       val probe = testProbe
-      val em1 = eventMessage(ValueChanged(processId, 1, 1L))
-      val em2 = eventMessage(ValueChanged(processId, 2, 2L), previouslySentMsg = Some(em1))
+      val em1 = eventMessage(ValueChanged(new DummyId(processId), 1, 1L))
+      val em2 = eventMessage(ValueChanged(new DummyId(processId), 2, 2L), previouslySentMsg = Some(em1))
         .withMustFollow(Some("0"))
 
       // When
@@ -90,14 +90,14 @@ class SagaSpec extends TestKit(TestConfig.testSystem) with WordSpecLike with Imp
       // When
       coordinationOffice ! em2
       // Then
-      probe.expectNoMsg(1.seconds)
+      probe.expectNoMessage(1.seconds)
     }
   }
 
   "Saga" should {
     "acknowledge previously processed events" in {
       // Given
-      val em1 = eventMessage(ValueChanged(processId, 1, 1L))
+      val em1 = eventMessage(ValueChanged(new DummyId(processId), 1, 1L))
 
       // When/Then
       coordinationOffice ! em1

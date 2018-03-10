@@ -1,13 +1,16 @@
 package pl.newicom.dddd.aggregate
 
-import pl.newicom.dddd.aggregate.AggregateRootSupport.{AcceptC, AcceptQ, Reaction}
+import pl.newicom.dddd.actor.Config
+import pl.newicom.dddd.aggregate.AggregateRootSupport._
+import pl.newicom.dddd.aggregate.error.CommandHandlerNotDefined
+import pl.newicom.dddd.utils.ImplicitUtils._
 
 import scala.PartialFunction.empty
 import scala.reflect.ClassTag
 
-trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends AggregateState[S] with BehaviorSupport  {
+trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends AggregateState[S] with BehaviorSupport[E]  {
 
-  type HandleQuery              = PartialFunction[Query, Reaction[_]]
+  type HandleQuery              = PartialFunction[Query, AbstractReaction[_]]
   type HandleCommand            = PartialFunction[Command, Reaction[E]]
   type HandleCommandWithContext = CommandHandlerContext[C] => HandleCommand
 
@@ -20,13 +23,13 @@ trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends Ag
     def handleEvent(eh: StateMachine): Actions =
       copy(eventHandler = eh)
 
-    def handleQuery[Q <: Query: ClassTag](hq: Function[Q, Reaction[Q#R]]): Actions = {
+    def handleQuery[Q <: Query: ClassTag](hq: Function[Q, AbstractReaction[Q#R]]): Actions = {
       val pf: HandleQuery = { case x: Q => hq(x) }
       copy(qHandler = qHandler.orElse(pf))
     }
 
     def map[SS <: S](f: SS => S): Actions =
-      copy(eventHandler = eventHandler.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
+      copy(eventHandler = eventHandler.asParameterizedBy2[SS].andThen(f))
 
     def ++(other: Actions): Actions =
       Actions(ctx => cHandler(ctx).orElse(other.cHandler(ctx)), qHandler.orElse(other.qHandler), eventHandler.orElse(other.eventHandler))
@@ -35,12 +38,21 @@ trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends Ag
       Actions(
         ctx => cHandler(ctx).orElse(other.commandHandlerNoCtx),
         qHandler.orElse(other.qHandler),
-        eventHandler.orElse(other.apply.asInstanceOf[PartialFunction[DomainEvent, SS]].andThen(f))
+        eventHandler.orElse(other.eventHandler.asParameterizedBy2[SS].andThen(f))
       )
 
     def orElse(other: Actions): Actions =
       Actions(ctx => cHandler(ctx).orElse(other.cHandler(ctx)), qHandler.orElse(other.qHandler), eventHandler.orElse(other.eventHandler))
+
+    def isDefinedAt(e: E): Boolean =
+      eventHandler.isDefinedAt(e)
+
+    def isDefinedAt(c: Command): Boolean =
+      cHandler(null).isDefinedAt(c)
   }
+
+  def orElse[SS <: S, B <: Behavior[E, S, C]](other: Behavior[E, S, C]): B#Actions =
+    actions.orElse(other).asInstanceOf[B#Actions]
 
   def commandHandlerNoCtx: HandleCommand =
     commandHandler(null)
@@ -48,13 +60,23 @@ trait Behavior[E <: DomainEvent, S <: AggregateState[S], C <: Config] extends Ag
   def commandHandler: HandleCommandWithContext =
     actions.cHandler
 
+  def apply(command: Command): Reaction[E] =
+    if (commandHandlerNoCtx.isDefinedAt(command)) {
+      commandHandlerNoCtx(command)
+    } else {
+      Reject(new CommandHandlerNotDefined(command.getClass.getSimpleName))
+    }
+
+  def apply(event: E): S =
+    eventHandler(event)
+
+  override def eventHandler: StateMachine =
+    actions.eventHandler
+
   def qHandler: HandleQuery =
     actions.qHandler
 
   def reply[R](r: R): AcceptQ[R] = AcceptQ[R](r)
-
-  def apply: StateMachine =
-    actions.eventHandler
 
   protected def actions: Actions
 

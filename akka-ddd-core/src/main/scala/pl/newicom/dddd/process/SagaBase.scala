@@ -3,12 +3,15 @@ package pl.newicom.dddd.process
 import akka.actor.ActorPath
 import akka.contrib.pattern.ReceivePipeline
 import akka.persistence.{AtLeastOnceDelivery, PersistentActor}
-import pl.newicom.dddd.actor.GracefulPassivation
+import pl.newicom.dddd.BusinessEntity
+import pl.newicom.dddd.actor.{Config, GracefulPassivation}
 import pl.newicom.dddd.aggregate._
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.messaging.{Deduplication, Message}
 import pl.newicom.dddd.office.OfficeId
 import pl.newicom.dddd.persistence.PersistentActorLogging
+
+import scala.util.Try
 
 trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentActor
   with AtLeastOnceDelivery with ReceivePipeline with Deduplication with PersistentActorLogging {
@@ -34,17 +37,19 @@ trait SagaBase extends BusinessEntity with GracefulPassivation with PersistentAc
   }
 
   override def handleDuplicated(msg: Message): Unit =
-    acknowledgeEvent(msg)
+    acknowledgeEvent(msg.asInstanceOf[EventMessage])
 
   protected def sagaId: String = self.path.name
 
   protected def officeId: OfficeId
 
+  protected def config: Config
+
   protected def currentEventMsg: EventMessage =
     _lastEventMessage.get
 
-  protected def acknowledgeEvent(em: Message) {
-    val deliveryReceipt = em.deliveryReceipt()
+  protected def acknowledgeEvent(em: EventMessage) {
+    val deliveryReceipt = em.deliveryReceipt(Try(config.respondingPolicy.successMapper(Seq(em))))
     sender() ! deliveryReceipt
     log.debug(s"Delivery receipt (for received event) sent ($deliveryReceipt)")
   }

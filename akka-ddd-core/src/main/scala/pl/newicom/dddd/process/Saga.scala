@@ -26,7 +26,7 @@ trait SagaAbstractStateHandling {
 }
 
 
-abstract class Saga extends SagaBase {
+trait Saga extends SagaBase {
   this: SagaAbstractStateHandling =>
 
   override def receiveRecover: Receive = {
