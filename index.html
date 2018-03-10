@@ -2,11 +2,33 @@
 
 <p><a href="https://gitter.im/pawelkaczor/akka-ddd?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Join the chat at https://gitter.im/pawelkaczor/akka-ddd" /></a></p>
 
-<p>Reusable artifacts for building applications on top of the Akka platform following <a href="http://abdullin.com/post/dddd-cqrs-and-other-enterprise-development-buzz-words">CQRS/DDDD</a>-based approach.</p>
+<p>Akka-DDD is a framework for building distributed services following DDD/CQRS/ES architecture on top of the Akka platform. Thanks to the pluggable architecture of the Akka-Persistence, Akka-DDD is not tied to any particular event journal provider.</p>
 
-<p>Used by: <a href="https://github.com/pawelkaczor/ddd-leaven-akka-v2">DDD Leaven Akka Ver 2</a></p>
+<p>The services are built as actor systems. Different services can be distributed in the same cluster (Akka cluster) or can be deployed to independent clusters.</p>
 
-<h4 id="modules-overview">Modules overview</h4>
+<p>Akka-DDD offers concise APIs for implementing business logic of the following actor types:</p>
+
+<ul>
+  <li>Aggregate Root</li>
+  <li>Process Manager</li>
+  <li>Receptor</li>
+</ul>
+
+<p>All of these are event-sourced actors that support reliable (effectively-once delivery) communication.</p>
+
+<p>Akka-DDD has been tested with the <a href="https://eventstore.org/">EventStore</a> journal implementation. A <a href="https://github.com/pawelkaczor/ddd-leaven-akka-v2">demo project</a> of an e-commerce system implemented using Akka-DDD is available on GitHub.</p>
+
+<h3 id="documentation">Documentation</h3>
+
+<p>Project <a href="http://newicom.pl/akka-ddd/">homepage</a>.</p>
+
+<p><a href="http://newicom.pl/akka-ddd/docs/getting-started.html">Documentation</a>.</p>
+
+<p>Articles in <a href="http://pkaczor.blogspot.com/search/label/Reactive-DDD">Reactive DDD with Akka</a> series.</p>
+
+<p>Demo <a href="https://github.com/pawelkaczor/ddd-leaven-akka-v2">project</a>.</p>
+
+<h3 id="modules-overview">Modules overview</h3>
 
 <h4 id="akka-ddd-core">akka-ddd-core</h4>
 
@@ -70,6 +92,7 @@ allows one office to react on events occurred in another office. Receptor is cap
     <p><strong>CommandDispatcher</strong> - takes care of forwarding the incoming commands to the appropriate offices operating on backend. The forwarding is performed using the <a href="http://doc.akka.io/docs/akka/current/scala/cluster-client.html">Akka Cluster Client</a>.</p>
   </li>
 </ul>
+
 </div></div></section><section class="technologies"><div class="container"><div class="row"></div></div></section></main><footer id="site-footer"><div class="container"><div class="row"><div class="col-xs-6"><p>Akka-DDD is designed and developed by <a href="http://github.com/pawelkaczor/akka-ddd" target="_blank">Paweł Kaczor</a></p></div><div class="col-xs-6"><p class="text-right"><a href="https://github.com/pawelkaczor/akka-ddd"><span class="fa fa-github"></span>View on GitHub</a></p></div></div><div class="row"><div class="col-xs-6"><p>Website built with <a href="https://47deg.github.io/sbt-microsites/" target="_blank">Sbt-microsites</a> - © 2016 <a href="https://www.47deg.com/" target="_blank">47 Degrees</a></p></div></div></div></footer><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script><script src="/akka-ddd/highlight/highlight.pack.js"></script><script>hljs.configure({
 languages:['scala','java','bash']
 });
