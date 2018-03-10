@@ -4,7 +4,7 @@ title: Modules overview
 ---
 ## Modules overview
 
-#### akka-ddd-core
+### akka-ddd-core
 
 Contains core artifacts to be used on the write side of the system:
 
@@ -24,27 +24,27 @@ allows one office to react on events occurred in another office. Receptor is cap
 
 - [Saga / Process Manager](akka-ddd-core/src/main/scala/pl/newicom/dddd/process/Saga.scala) - implementation of [Saga / Process Manager](https://msdn.microsoft.com/en-us/library/jj591569.aspx) pattern. See: [Saga - big picture](https://github.com/pawelkaczor/akka-ddd/wiki/Saga). See example Process Manager: [OrderProcessManager](https://github.com/pawelkaczor/ddd-leaven-akka-v2/blob/master/headquarters/write-back/src/main/scala/ecommerce/headquarters/processes/OrderProcessManager.scala)
 
-#### eventstore-akka-persistence
+### eventstore-akka-persistence
 
 Incorporates [Akka Persistence journal and snapshot-store](https://github.com/EventStore/EventStore.Akka.Persistence) backed by [Event Store](http://eventstore.org). Registers [JSON Serializer](eventstore-akka-persistence/src/main/scala/pl/newicom/eventstore/plugin/EventStoreSerializer.scala) as [Akka custom serializer](http://doc.akka.io/docs/akka/snapshot/scala/persistence.html#Custom_serialization) for ```akka.persistence.PersistentRepr``` (wrapper class that is used by Akka Persistence to store event in the journal). Provides also [EventstoreSubscriber](eventstore-akka-persistence/src/main/scala/pl/newicom/eventstore/EventstoreSubscriber.scala) that should be mixed into the [Receptor](https://github.com/pawelkaczor/akka-ddd/blob/master/akka-ddd-core/src/main/scala/pl/newicom/dddd/process/Receptor.scala) (available in akka-ddd-core).     
 
-#### akka-ddd-scheduling
+### akka-ddd-scheduling
 
 Provides durable scheduler (backed by the Event Store!) that is typically used by a Saga to schedule timeout/deadline messages. See: [Durable Scheduler - big picture](https://github.com/pawelkaczor/akka-ddd/wiki/Durable-Scheduler).
 
-#### view-update
+### view-update
 
 Generic artifacts for building View Update Service - a service that consumes events from an Event Store and updates a View Store (i.e. SQL database). See: [View Update Service - big picture](https://github.com/pawelkaczor/akka-ddd/wiki/View-Update-Service)
 
-#### view-update-sql
+### view-update-sql
 
 SQL-specific implementation of view-update artifacts.
 
-#### akka-ddd-test
+### akka-ddd-test
 
 Allows easy creation of Aggregate Root specifications (tests). See [Testing Aggregate Root’s behavior](http://newicom.pl/akka-ddd/docs/aggregate-root/testing).
 
-#### akka-ddd-write-front
+### akka-ddd-write-front
 
 Provides building blocks for the write-front application. 
  
