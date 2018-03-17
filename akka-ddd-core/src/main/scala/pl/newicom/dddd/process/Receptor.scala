@@ -67,7 +67,8 @@ abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySuppo
   override def receiveCommand: Receive =
     receiveEvent.orElse(deliveryStateReceive).orElse {
       case Cleanup =>
-        oldestUnconfirmedDeliveryId.foreach(deliveryId => deleteMessages(deliveryId - 1))
+        oldestUnconfirmedDeliveryId.map(_ - 1).orElse(lastSentDeliveryId)
+          .foreach(deleteMessages)
       case DeleteMessagesSuccess(_) =>
         // do nothing
       case other =>
