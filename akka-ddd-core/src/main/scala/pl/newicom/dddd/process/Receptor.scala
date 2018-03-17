@@ -1,14 +1,16 @@
 package pl.newicom.dddd.process
 
-import akka.actor.ActorPath
+import akka.actor.{ActorPath, Timers}
 import akka.contrib.pattern.ReceivePipeline
-import akka.persistence.PersistentActor
+import akka.persistence.{DeleteMessagesSuccess, PersistentActor}
 import pl.newicom.dddd.coordination.ReceptorConfig
 import pl.newicom.dddd.delivery.AtLeastOnceDeliverySupport
 import pl.newicom.dddd.messaging.Message
 import pl.newicom.dddd.messaging.event.EventStreamSubscriber.{DemandCallback, DemandConfig}
 import pl.newicom.dddd.messaging.event._
 import pl.newicom.dddd.persistence.{RegularSnapshotting, RegularSnapshottingConfig}
+import pl.newicom.dddd.process.Receptor.{Cleanup, CleanupKey}
+
 import scala.concurrent.duration._
 
 
@@ -18,7 +20,12 @@ trait ReceptorPersistence extends ReceivePipeline with RegularSnapshotting {
   override def journalPluginId = "akka.persistence.journal.inmem"
 }
 
-abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySupport with ReceptorPersistence {
+object Receptor {
+  private case object CleanupKey
+  case object Cleanup
+}
+
+abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySupport with ReceptorPersistence with Timers {
   this: EventStreamSubscriber =>
 
   override def redeliverInterval: FiniteDuration = 30.seconds
@@ -48,6 +55,9 @@ abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySuppo
         demandConfig = DemandConfig(
                          subscriberCapacity = config.capacity,
                          initialDemand = config.capacity - unconfirmedNumber)))
+
+    timers.startPeriodicTimer(CleanupKey, Cleanup, config.cleanupInterval)
+
     log.info(s"Receptor $persistenceId subscribed to '${config.stimuliSource.streamName}' event stream " +
       s"from position: ${lastSentDeliveryId.getOrElse(0)}. " +
       s"Receptor's capacity: ${config.capacity}")
@@ -56,6 +66,10 @@ abstract class Receptor(config: ReceptorConfig) extends AtLeastOnceDeliverySuppo
 
   override def receiveCommand: Receive =
     receiveEvent.orElse(deliveryStateReceive).orElse {
+      case Cleanup =>
+        oldestUnconfirmedDeliveryId.foreach(deliveryId => deleteMessages(deliveryId - 1))
+      case DeleteMessagesSuccess(_) =>
+        // do nothing
       case other =>
         log.warning(s"RECEIVED: $other")
     }

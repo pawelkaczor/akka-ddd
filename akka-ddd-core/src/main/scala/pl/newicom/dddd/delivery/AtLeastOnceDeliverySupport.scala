@@ -22,16 +22,16 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
 
   def recoveryCompleted(): Unit
 
-  def lastSentDeliveryId: Option[Long] = deliveryState.lastSentOpt
-
-  def unconfirmedNumber: Int = deliveryState.unconfirmedNumber
+  def lastSentDeliveryId: Option[Long]          = deliveryState.lastSentOpt
+  def oldestUnconfirmedDeliveryId: Option[Long] = deliveryState.oldestUnconfirmedDeliveryId
+  def unconfirmedNumber: Int                    = deliveryState.unconfirmedNumber
 
   def deliver(msg: Message, deliveryId: Long): Unit =
     persist(msg.withDeliveryId(deliveryId))(updateState)
 
   def deliveryIdToMessage(msg: DeliverableMessage, destination: ActorPath): Long ⇒ Any = internalDeliveryId => {
-    val deliveryId = msg.deliveryId.get
-    val destinationId: EntityId = msg.destination.get
+    val deliveryId                                   = msg.deliveryId.get
+    val destinationId: EntityId                      = msg.destination.get
     val lastSentToDestinationMsgId: Option[EntityId] = deliveryState.lastSentToDestinationMsgId(destinationId)
     deliveryState = deliveryState.withSent(msg.id, internalDeliveryId, deliveryId, destinationId)
 
@@ -42,7 +42,6 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
     log.debug(s"[DELIVERY-ID: $deliveryId] Delivering: $msgToDeliver to $destination")
     msgToDeliver
   }
-
 
   def updateState(msg: Any): Unit = msg match {
     case message: DeliverableMessage =>
@@ -83,7 +82,7 @@ trait AtLeastOnceDeliverySupport extends PersistentActor with AtLeastOnceDeliver
   }
 
   override def receiveRecover: Receive = {
-    case RecoveryCompleted  =>
+    case RecoveryCompleted =>
       log.debug("Recovery completed")
       recoveryCompleted()
 

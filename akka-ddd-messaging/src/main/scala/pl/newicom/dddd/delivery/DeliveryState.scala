@@ -27,6 +27,8 @@ sealed trait DeliveryState {
     */
   def lastSentOpt: Option[Long]
 
+  def oldestUnconfirmedDeliveryId: Option[Long]
+
   def unconfirmedNumber: Int
 
   def lastSentToDestinationMsgId(destinationId: EntityId): Option[EntityId]
@@ -45,13 +47,11 @@ case object InitialState extends DeliveryState {
 
   def withDelivered(deliveryId: Long): InitialState.type = this
 
-  def internalDeliveryId(deliveryId: Long) = None
-
-  def lastSentOpt = None
-
+  def internalDeliveryId(deliveryId: Long)                = None
+  def lastSentOpt                                         = None
+  def oldestUnconfirmedDeliveryId                         = None
   def lastSentToDestinationMsgId(destinationId: EntityId) = None
-
-  def unconfirmedNumber = 0
+  def unconfirmedNumber                                   = 0
 
 }
 
@@ -90,6 +90,9 @@ case class DeliveryInProgressState(lastSent: Long,
 
   def lastSentOpt: Some[Long] =
     Some(lastSent)
+
+  def oldestUnconfirmedDeliveryId: Option[Long] =
+    unconfirmed.headOption.map(_._1)
 
   def unconfirmedNumber: Int =
     size

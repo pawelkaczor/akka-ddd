@@ -10,6 +10,8 @@ import pl.newicom.dddd.messaging.command.CommandMessage
 import pl.newicom.dddd.messaging.event.EventMessage
 import pl.newicom.dddd.office.{LocalOfficeId, OfficeRegistryImpl}
 
+import scala.concurrent.duration._
+
 object ReceptorConfig {
   type Transduction     = PartialFunction[EventMessage, Message]
   type ReceiverResolver = PartialFunction[Message, ActorPath]
@@ -22,6 +24,7 @@ case class ReceptorConfig(
     transduction: Transduction,
     receiverResolver: ReceiverResolver,
     capacity: Int,
+    cleanupInterval: FiniteDuration = 30.seconds,
     isSupporting_MustFollow_Attribute: Boolean = true
 )
 
