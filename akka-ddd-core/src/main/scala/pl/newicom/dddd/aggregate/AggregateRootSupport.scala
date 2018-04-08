@@ -75,7 +75,10 @@ object AggregateRootSupport {
 
   class Reject private[aggregate] (val reason: Throwable) extends Reaction[Nothing] {
     def flatMap[B](f: Seq[Nothing] => Reaction[B]): Reaction[B] = this
-    def recoverWith[B](f: => Reaction[B]): Reaction[B] = f
+    def recoverWith[B](f: => Reaction[B]): Reaction[B] = f match {
+      case NoReaction => this
+      case o => o
+    }
   }
 
   class RejectConditionally(condition: Boolean, reject: => Reject) {
