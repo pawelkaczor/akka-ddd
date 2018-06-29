@@ -5,9 +5,9 @@ import java.net.URL
 
 name := "akka-ddd"
 
-version      in ThisBuild := "1.7.8"
+version      in ThisBuild := "1.7.9-SNAPSHOT"
 organization in ThisBuild := "pl.newicom.dddd"
-scalaVersion in ThisBuild := "2.12.4"
+scalaVersion in ThisBuild := "2.12.6"
 
 scalacOptions     in ThisBuild := Seq("-encoding", "utf8", "-deprecation", "-feature", "-language:postfixOps", "-language:implicitConversions", "-unchecked")
 

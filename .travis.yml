@@ -1,7 +1,7 @@
  language: scala
 
  scala:
-   - "2.12.4"
+   - "2.12.6"
 
  jdk:
    - oraclejdk8
@@ -11,6 +11,10 @@
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
 
+ before_cache:
+    - find $HOME/.sbt -name "*.lock" | xargs rm
+    - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+
  branches:
   except:
   - docs
@@ -18,10 +22,6 @@
  script:
   - sbt test
   - sbt "it:test"
-  # See http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
-  # Tricks to avoid unnecessary cache updates
-  - find $HOME/.sbt -name "*.lock" | xargs rm
-  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
 
  sudo: required
 
